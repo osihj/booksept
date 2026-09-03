@@ -419,7 +419,7 @@
             手動輸入 ISBN
           </button>
         </div>
-        <p class="scan-hint">拍照小提醒：讓條碼盡量佔滿畫面、對準對焦、避免反光和陰影，成功率會高很多。</p>
+        <p class="scan-hint">拍照小提醒：請讓書背的黑白直條碼完整入鏡，盡量靠近、保持條碼水平、避免反光和陰影。程式會自動嘗試多種辨識方式。</p>
         <p id="scan-status" class="scan-status" hidden></p>
         <div id="isbn-manual-row" class="isbn-manual-row" hidden>
           <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="isbn-manual-input" placeholder="輸入 13 碼 ISBN">
@@ -864,66 +864,161 @@
       if (isbn) lookupISBN(isbn);
     });
 
-    // 把照片縮放到適合辨識的大小：太大的照片會拖慢辨識、有時反而讓引擎抓不到條碼區域
-    function prepareImageForScan(file, maxDim = 1600) {
+    // 將圖片縮放成「真正的 File」。
+    // 原本這裡 canvas.toBlob() 回傳的是 Blob，但 html5-qrcode 的 scanFile()
+    // 官方 API 要求的是 File；手機照片通常會被縮放，因此原本很容易在這一步失敗。
+    function prepareImageForScan(file, maxDim = 2400) {
       return new Promise((resolve) => {
         const img = new Image();
         const reader = new FileReader();
+
         reader.onload = (e) => { img.src = e.target.result; };
+
         img.onload = () => {
-          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-          if (scale === 1) { resolve(file); return; }
+          const longest = Math.max(img.width, img.height);
+          const scale = Math.min(1, maxDim / longest);
+
+          if (scale === 1) {
+            resolve(file);
+            return;
+          }
+
           const canvas = document.createElement("canvas");
-          canvas.width = Math.round(img.width * scale);
-          canvas.height = Math.round(img.height * scale);
-          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", 0.9);
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+
+            // 重要：轉成 File，不要直接把 Blob 傳給 scanFile()
+            const preparedFile = new File(
+              [blob],
+              "isbn-scan.jpg",
+              { type: "image/jpeg", lastModified: Date.now() }
+            );
+            resolve(preparedFile);
+          }, "image/jpeg", 0.95);
         };
+
         img.onerror = () => resolve(file);
         reader.readAsDataURL(file);
       });
     }
 
-    // 優先使用手機瀏覽器內建的條碼辨識引擎（BarcodeDetector，Android Chrome 準確率高很多）
-    // 不支援的瀏覽器（例如 iOS Safari）就退回用 html5-qrcode 函式庫辨識
-    async function decodeBarcodeFromFile(file) {
-      const prepared = await prepareImageForScan(file);
+    // 嘗試使用瀏覽器原生 BarcodeDetector。
+    // BarcodeDetector 並不是所有瀏覽器都有，所以失敗時一定要繼續走 html5-qrcode。
+    async function tryBarcodeDetector(file) {
+      if (!("BarcodeDetector" in window)) return null;
 
-      if ("BarcodeDetector" in window) {
-        try {
-          const supported = await window.BarcodeDetector.getSupportedFormats();
-          const wanted = ["ean_13", "ean_8", "upc_a", "upc_e"].filter((f) => supported.includes(f));
-          if (wanted.length) {
-            const detector = new window.BarcodeDetector({ formats: wanted });
-            const bitmap = await createImageBitmap(prepared);
-            const results = await detector.detect(bitmap);
-            if (results.length) return results[0].rawValue;
-          }
-        } catch (err) {
-          // 原生辨識失敗就繼續往下退回函式庫辨識，不中斷流程
+      try {
+        const supported = await window.BarcodeDetector.getSupportedFormats();
+        const wanted = ["ean_13", "ean_8", "upc_a", "upc_e"]
+          .filter((f) => supported.includes(f));
+
+        if (!wanted.length) return null;
+
+        const detector = new window.BarcodeDetector({ formats: wanted });
+
+        // 原圖先試一次，避免縮放造成條碼細節損失
+        let results = await detector.detect(file);
+        if (results.length) return results[0].rawValue;
+
+        // 再試縮放後的圖片
+        const prepared = await prepareImageForScan(file);
+        if (prepared !== file) {
+          results = await detector.detect(prepared);
+          if (results.length) return results[0].rawValue;
         }
+      } catch (err) {
+        console.warn("BarcodeDetector 辨識失敗，改用 html5-qrcode：", err);
       }
 
-      const scanner = new Html5Qrcode("reader-hidden", {
+      return null;
+    }
+
+    // html5-qrcode 是主要 fallback。
+    // 先用原始照片，再用處理過的 File；這比原本只掃一次可靠很多。
+    async function tryHtml5Qrcode(file) {
+      const config = {
         formatsToSupport: [
           Html5QrcodeSupportedFormats.EAN_13,
           Html5QrcodeSupportedFormats.EAN_8,
           Html5QrcodeSupportedFormats.UPC_A,
           Html5QrcodeSupportedFormats.UPC_E,
         ],
+        useBarCodeDetectorIfSupported: false,
         verbose: false,
-      });
-      return await scanner.scanFile(prepared, false);
+      };
+
+      const scanner = new Html5Qrcode("reader-hidden", config);
+
+      try {
+        // 第一輪：直接使用手機原始照片
+        try {
+          return await scanner.scanFile(file, false);
+        } catch (firstErr) {
+          console.warn("原始照片辨識失敗，嘗試處理後圖片：", firstErr);
+        }
+
+        // 第二輪：縮放後的「File」
+        const prepared = await prepareImageForScan(file);
+        return await scanner.scanFile(prepared, false);
+      } finally {
+        // file scan 完成後清理 scanner 狀態
+        try {
+          if (typeof scanner.clear === "function") scanner.clear();
+        } catch (_) {}
+      }
+    }
+
+    async function decodeBarcodeFromFile(file) {
+      // 第一優先：瀏覽器原生辨識
+      const nativeResult = await tryBarcodeDetector(file);
+      if (nativeResult) return nativeResult;
+
+      // 第二優先：html5-qrcode
+      return await tryHtml5Qrcode(file);
+    }
+
+    function normalizeIsbn(rawValue) {
+      const digits = String(rawValue || "").replace(/\D/g, "");
+
+      // 台灣書籍條碼最常見是 EAN-13；也保留 10 碼 ISBN 的手動輸入可能性。
+      if (digits.length === 13 || digits.length === 10) return digits;
+
+      // 有些條碼辨識結果可能包含前置/後置數字，只有在結果看起來像 ISBN 時才接受。
+      if (digits.length > 13 && digits.startsWith("978") && digits.length >= 13) {
+        return digits.slice(0, 13);
+      }
+
+      throw new Error("辨識到的內容不是有效的 ISBN 條碼：" + rawValue);
     }
 
     async function handleScanFile(file) {
       if (!file) return;
-      showScanStatus("正在辨識條碼...");
+
+      showScanStatus("正在讀取照片並辨識 ISBN 條碼，請稍候...");
+
       try {
         const decoded = await decodeBarcodeFromFile(file);
-        await lookupISBN(decoded.replace(/\D/g, ""));
+        const isbn = normalizeIsbn(decoded);
+
+        showScanStatus(`已辨識 ISBN：${isbn}，正在查詢書籍資料...`);
+        await lookupISBN(isbn);
       } catch (err) {
-        showScanStatus("無法從照片辨識出條碼，請換一張更清晰、對準條碼的照片，或改用手動輸入 ISBN。");
+        console.error("ISBN 條碼辨識失敗：", err);
+
+        showScanStatus(
+          "這張照片沒有成功辨識 ISBN 條碼。請讓「黑白直條碼」完整入鏡，盡量靠近、保持水平、避免反光；也可以改用「上傳條碼照片」或手動輸入 ISBN。"
+        );
       }
     }
 
