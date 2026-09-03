@@ -110,7 +110,7 @@
   .brand-name { font-size: 18px; }
   .page-title { font-size: 18px; }
 
-  .main { max-width: 760px; margin: 0 auto; padding: 20px 20px 100px; }
+  .main { max-width: 760px; margin: 0 auto; padding: 20px 20px 175px; }
   .page { display: none; }
   .page.active { display: block; }
 
@@ -252,7 +252,7 @@
 
   /* ---------- FAB ---------- */
   .fab {
-    position: fixed; right: 20px; bottom: 84px; z-index: 90;
+    position: fixed; right: 20px; bottom: 144px; z-index: 90;
     width: 52px; height: 52px; border-radius: 50%;
     background: var(--accent2); color: #fff; border: none;
     box-shadow: 0 6px 16px rgba(184,98,29,0.35);
@@ -261,11 +261,28 @@
   }
   .fab:active { transform: scale(0.95); }
 
-  /* ---------- Bottom nav ---------- */
+  /* ---------- Bottom bars (category dock + bottom nav) ---------- */
+  .bottom-bars {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    display: flex; flex-direction: column;
+  }
+  .category-dock {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .category-dock.hidden { display: none; }
+  .category-dock-inner {
+    display: flex; align-items: center; gap: 8px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    padding: 10px 14px; max-width: 760px; margin: 0 auto;
+    scrollbar-width: none;
+  }
+  .category-dock-inner::-webkit-scrollbar { display: none; }
+  .category-dock-inner .filter-tab { flex-shrink: 0; }
+
   nav.bottom-nav {
     background: var(--surface);
     border-top: 1px solid var(--border);
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
   }
   .nav-inner { display: flex; align-items: center; justify-content: space-around; padding: 8px 0 max(8px, env(safe-area-inset-bottom)); max-width: 760px; margin: 0 auto; }
   .nav-btn {
@@ -289,10 +306,7 @@
   .scan-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .scan-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; border-radius: var(--radius); padding: 9px 14px; font-size: 13px; cursor: pointer; border: 1px solid var(--accent); }
   .scan-btn-secondary { background: var(--surface); color: var(--accent); border-color: var(--accent); }
-  .scan-hint { font-size: 12px; color: var(--text3); margin: 0 0 10px; }
   .scan-status { font-size: 13px; color: var(--text2); margin: 0 0 14px; }
-  .isbn-manual-row { display: flex; gap: 8px; margin-bottom: 14px; }
-  .isbn-manual-row input { flex: 1; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 12px; height: 38px; }
 
   .cover-field { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
   .cover-preview { width: 68px; height: 92px; border-radius: 6px; background: var(--accent-light); color: var(--accent); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
@@ -398,10 +412,6 @@
           <button class="filter-tab" data-status="reading">閱讀中</button>
           <button class="filter-tab" data-status="finished">已讀完</button>
         </div>
-        <div class="category-tabs-wrap">
-          <div class="category-tabs-label">書籍分類</div>
-          <div class="filter-tabs" id="category-filters"></div>
-        </div>
         <div class="filter-tabs" id="tag-filters"></div>
 
         <section id="book-grid" class="book-grid"></section>
@@ -463,13 +473,18 @@
 
     <button id="fab-add" class="fab"><i class="ti ti-plus"></i></button>
 
-    <nav class="bottom-nav">
-      <div class="nav-inner">
-        <button class="nav-btn active" data-page="shelf"><i class="ti ti-books"></i><span>書架</span></button>
-        <button class="nav-btn" data-page="stats"><i class="ti ti-chart-bar"></i><span>統計</span></button>
-        <button class="nav-btn" data-page="profile"><i class="ti ti-user"></i><span>我的</span></button>
+    <div class="bottom-bars">
+      <div class="category-dock" id="category-dock">
+        <div class="category-dock-inner" id="category-dock-filters"></div>
       </div>
-    </nav>
+      <nav class="bottom-nav">
+        <div class="nav-inner">
+          <button class="nav-btn active" data-page="shelf"><i class="ti ti-books"></i><span>書架</span></button>
+          <button class="nav-btn" data-page="stats"><i class="ti ti-chart-bar"></i><span>統計</span></button>
+          <button class="nav-btn" data-page="profile"><i class="ti ti-user"></i><span>我的</span></button>
+        </div>
+      </nav>
+    </div>
   </div>
 
   <!-- 新增／編輯書籍面板 -->
@@ -483,32 +498,17 @@
       <div class="modal-body">
 
         <div class="scan-row" id="scan-row">
-          <label class="scan-btn">
-            <i class="ti ti-camera"></i>
-            拍照掃描 ISBN
-            <input type="file" accept="image/*" capture="environment" id="scan-camera-input" hidden>
-          </label>
-          <label class="scan-btn scan-btn-secondary">
-            <i class="ti ti-upload"></i>
-            上傳條碼照片
-            <input type="file" accept="image/*" id="scan-upload-input" hidden>
-          </label>
-          <button class="scan-btn scan-btn-secondary" id="manual-isbn-btn" type="button">
-            <i class="ti ti-keyboard"></i>
-            手動輸入 ISBN
+          <button class="scan-btn scan-btn-secondary" id="isbn-lookup-btn" type="button">
+            <i class="ti ti-search"></i>
+            查詢書目
           </button>
           <button class="scan-btn scan-btn-secondary" id="ncl-search-btn" type="button">
             <i class="ti ti-library"></i>
             國圖查詢
           </button>
         </div>
-        <p class="source-help">書目查詢會優先嘗試 Google Books／Open Library；若外部網站無法連線或被瀏覽器限制，仍可用國圖查詢或手動輸入，避免整個新增流程卡住。</p>
-        <p class="scan-hint">拍照小提醒：請讓書背的黑白直條碼完整入鏡，盡量靠近、保持條碼水平、避免反光和陰影。程式會自動嘗試多種辨識方式。</p>
+        <p class="source-help">直接輸入 ISBN 後按「查詢書目」，會優先嘗試 Google Books／Open Library 自動帶入書名等資料；查不到時可按「國圖查詢」到國家圖書館網站查詢。</p>
         <p id="scan-status" class="scan-status" hidden></p>
-        <div id="isbn-manual-row" class="isbn-manual-row" hidden>
-          <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="isbn-manual-input" placeholder="輸入 13 碼 ISBN">
-          <button class="btn btn-accent-outline" id="isbn-lookup-btn" type="button">查詢</button>
-        </div>
 
         <form id="book-form">
 
@@ -530,7 +530,7 @@
             <label class="field"><span>作者</span><input type="text" id="field-author"></label>
             <label class="field"><span>譯者</span><input type="text" id="field-translator" placeholder="原文書可留空"></label>
             <label class="field"><span>出版社</span><input type="text" id="field-publisher"></label>
-            <label class="field"><span>ISBN</span><input type="text" id="field-isbn" readonly></label>
+            <label class="field"><span>ISBN</span><input type="text" inputmode="numeric" autocomplete="off" id="field-isbn" placeholder="可直接輸入 10 或 13 碼 ISBN"></label>
             <label class="field"><span>購買日期</span><input type="date" id="field-purchase-date"></label>
             <label class="field"><span>購買金額（NT$）</span><input type="number" id="field-price" min="0" step="1"></label>
             <label class="field">
@@ -579,9 +579,6 @@
       </div>
     </div>
   </div>
-
-  <div id="reader-hidden" style="position:fixed; top:-9999px; left:-9999px; width:300px; height:300px; overflow:hidden;"></div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
@@ -642,11 +639,6 @@
     const cancelBtn = $("cancel-btn");
     const deleteBookBtn = $("delete-book-btn");
 
-    const scanCameraInput = $("scan-camera-input");
-    const scanUploadInput = $("scan-upload-input");
-    const manualIsbnBtn = $("manual-isbn-btn");
-    const isbnManualRow = $("isbn-manual-row");
-    const isbnManualInput = $("isbn-manual-input");
     const isbnLookupBtn = $("isbn-lookup-btn");
     const nclSearchBtn = $("ncl-search-btn");
     const scanStatus = $("scan-status");
@@ -972,7 +964,7 @@
       bookForm.reset();
       currentCoverUrl = ""; pendingCoverFile = null; currentRating = 0; currentNotes = [];
       updateCoverPreview(); updateStarDisplay(); renderNotesList();
-      scanStatus.hidden = true; isbnManualRow.hidden = true;
+      scanStatus.hidden = true;
       modal.hidden = false;
     }
 
@@ -995,7 +987,7 @@
       currentCoverUrl = book.coverUrl || ""; pendingCoverFile = null;
       currentRating = book.rating || 0; currentNotes = [...(book.notes || [])];
       updateCoverPreview(); updateStarDisplay(); renderNotesList();
-      scanStatus.hidden = true; isbnManualRow.hidden = true;
+      scanStatus.hidden = true;
       modal.hidden = false;
     }
 
@@ -1053,177 +1045,22 @@
       });
     }
 
-    // ================= Barcode scan =================
-    manualIsbnBtn.addEventListener("click", () => { isbnManualRow.hidden = !isbnManualRow.hidden; });
-    scanCameraInput.addEventListener("change", () => handleScanFile(scanCameraInput.files[0]));
-    scanUploadInput.addEventListener("change", () => handleScanFile(scanUploadInput.files[0]));
+    // ================= ISBN 查詢 =================
     isbnLookupBtn.addEventListener("click", () => {
-      const isbn = isbnManualInput.value.trim();
+      const isbn = $("field-isbn").value.trim();
       if (isbn) lookupISBN(isbn);
+      else showScanStatus("請先輸入 ISBN，再按「查詢書目」。");
     });
-
-    // 將圖片縮放成「真正的 File」。
-    // 原本這裡 canvas.toBlob() 回傳的是 Blob，但 html5-qrcode 的 scanFile()
-    // 官方 API 要求的是 File；手機照片通常會被縮放，因此原本很容易在這一步失敗。
-    function prepareImageForScan(file, maxDim = 2400) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        const reader = new FileReader();
-
-        reader.onload = (e) => { img.src = e.target.result; };
-
-        img.onload = () => {
-          const longest = Math.max(img.width, img.height);
-          const scale = Math.min(1, maxDim / longest);
-
-          if (scale === 1) {
-            resolve(file);
-            return;
-          }
-
-          const canvas = document.createElement("canvas");
-          canvas.width = Math.max(1, Math.round(img.width * scale));
-          canvas.height = Math.max(1, Math.round(img.height * scale));
-
-          const ctx = canvas.getContext("2d", { willReadFrequently: true });
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = "high";
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-          canvas.toBlob((blob) => {
-            if (!blob) {
-              resolve(file);
-              return;
-            }
-
-            // 重要：轉成 File，不要直接把 Blob 傳給 scanFile()
-            const preparedFile = new File(
-              [blob],
-              "isbn-scan.jpg",
-              { type: "image/jpeg", lastModified: Date.now() }
-            );
-            resolve(preparedFile);
-          }, "image/jpeg", 0.95);
-        };
-
-        img.onerror = () => resolve(file);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // 嘗試使用瀏覽器原生 BarcodeDetector。
-    // BarcodeDetector 並不是所有瀏覽器都有，所以失敗時一定要繼續走 html5-qrcode。
-    async function tryBarcodeDetector(file) {
-      if (!("BarcodeDetector" in window)) return null;
-
-      try {
-        const supported = await window.BarcodeDetector.getSupportedFormats();
-        const wanted = ["ean_13", "ean_8", "upc_a", "upc_e"]
-          .filter((f) => supported.includes(f));
-
-        if (!wanted.length) return null;
-
-        const detector = new window.BarcodeDetector({ formats: wanted });
-
-        // 原圖先試一次，避免縮放造成條碼細節損失
-        let results = await detector.detect(file);
-        if (results.length) return results[0].rawValue;
-
-        // 再試縮放後的圖片
-        const prepared = await prepareImageForScan(file);
-        if (prepared !== file) {
-          results = await detector.detect(prepared);
-          if (results.length) return results[0].rawValue;
-        }
-      } catch (err) {
-        console.warn("BarcodeDetector 辨識失敗，改用 html5-qrcode：", err);
-      }
-
-      return null;
-    }
-
-    // html5-qrcode 是主要 fallback。
-    // 先用原始照片，再用處理過的 File；這比原本只掃一次可靠很多。
-    async function tryHtml5Qrcode(file) {
-      const config = {
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-        ],
-        useBarCodeDetectorIfSupported: false,
-        verbose: false,
-      };
-
-      const scanner = new Html5Qrcode("reader-hidden", config);
-
-      try {
-        // 第一輪：直接使用手機原始照片
-        try {
-          return await scanner.scanFile(file, false);
-        } catch (firstErr) {
-          console.warn("原始照片辨識失敗，嘗試處理後圖片：", firstErr);
-        }
-
-        // 第二輪：縮放後的「File」
-        const prepared = await prepareImageForScan(file);
-        return await scanner.scanFile(prepared, false);
-      } finally {
-        // file scan 完成後清理 scanner 狀態
-        try {
-          if (typeof scanner.clear === "function") scanner.clear();
-        } catch (_) {}
-      }
-    }
-
-    async function decodeBarcodeFromFile(file) {
-      // 第一優先：瀏覽器原生辨識
-      const nativeResult = await tryBarcodeDetector(file);
-      if (nativeResult) return nativeResult;
-
-      // 第二優先：html5-qrcode
-      return await tryHtml5Qrcode(file);
-    }
-
-    function normalizeIsbn(rawValue) {
-      const digits = String(rawValue || "").replace(/\D/g, "");
-
-      // 台灣書籍條碼最常見是 EAN-13；也保留 10 碼 ISBN 的手動輸入可能性。
-      if (digits.length === 13 || digits.length === 10) return digits;
-
-      // 有些條碼辨識結果可能包含前置/後置數字，只有在結果看起來像 ISBN 時才接受。
-      if (digits.length > 13 && digits.startsWith("978") && digits.length >= 13) {
-        return digits.slice(0, 13);
-      }
-
-      throw new Error("辨識到的內容不是有效的 ISBN 條碼：" + rawValue);
-    }
-
-    async function handleScanFile(file) {
-      if (!file) return;
-
-      showScanStatus("正在讀取照片並辨識 ISBN 條碼，請稍候...");
-
-      try {
-        const decoded = await decodeBarcodeFromFile(file);
-        const isbn = normalizeIsbn(decoded);
-
-        showScanStatus(`已辨識 ISBN：${isbn}，正在查詢書籍資料...`);
-        await lookupISBN(isbn);
-      } catch (err) {
-        console.error("ISBN 條碼辨識失敗：", err);
-
-        showScanStatus(
-          "這張照片沒有成功辨識 ISBN 條碼。請讓「黑白直條碼」完整入鏡，盡量靠近、保持水平、避免反光；也可以改用「上傳條碼照片」或手動輸入 ISBN。"
-        );
-      }
-    }
 
     // ================= 國家圖書館查詢 / 回填 =================
     // 國圖沒有提供給這個前端頁面直接使用的公開 JSON API；瀏覽器端直接 fetch
     // 會受到跨網域限制。因此提供「開啟國圖 → 一鍵帶回」流程。
     const NCL_ORIGIN = "https://isbn.ncl.edu.tw";
+    // 國圖原本的 Pact=Search&Pval= 連結已失效；目前可正常使用的官方
+    // 「書目資料查詢」簡易查詢頁是 Pact=DisplayAll4Simple（實際查詢是頁面內
+    // 以 POST 送出，無法直接用網址帶入 ISBN 自動查詢），因此改為開啟該頁，
+    // 再請使用者在頁面上貼上 ISBN 查詢。
+    const NCL_SIMPLE_SEARCH_URL = "https://isbn.ncl.edu.tw/NEW_ISBNNet/H30_SearchBooks.php?Pact=DisplayAll4Simple";
 
     function normalizeISBNForNcl(isbn) {
       return String(isbn || "").replace(/\D/g, "");
@@ -1232,16 +1069,15 @@
     function openNclSearch(isbn) {
       isbn = normalizeISBNForNcl(isbn);
       if (!isbn) {
-        showScanStatus("請先掃描或輸入 ISBN，再開啟國家圖書館查詢。");
+        showScanStatus("請先輸入 ISBN，再開啟國家圖書館查詢。");
         return;
       }
-      const url = `https://isbn.ncl.edu.tw/NEW_ISBNNet/H30_SearchBooks.php?Pact=Search&Pval=${encodeURIComponent(isbn)}`;
-      const win = window.open(url, "ncl-isbn-search");
+      const win = window.open(NCL_SIMPLE_SEARCH_URL, "ncl-isbn-search");
       if (!win) {
         showScanStatus("瀏覽器阻擋了新分頁，請允許此網站開啟新視窗後再試。");
         return;
       }
-      showScanStatus(`已開啟國家圖書館查詢 ISBN ${isbn}。查到書目後，可按「帶回我的書單」自動填入。`);
+      showScanStatus(`已開啟國家圖書館書目資料查詢頁面，請在該頁貼上 ISBN ${isbn} 查詢。查到書目後，可按「帶回我的書單」自動填入。`);
     }
 
     // NCL Userscript 會從國圖頁把資料 postMessage 回本頁。
@@ -1260,15 +1096,14 @@
     });
 
     nclSearchBtn.addEventListener("click", () => {
-      openNclSearch($("field-isbn").value || isbnManualInput.value);
+      openNclSearch($("field-isbn").value);
     });
 
     function showScanStatus(msg, ncLinkIsbn) {
       scanStatus.hidden = false;
       if (ncLinkIsbn) {
         const isbn = normalizeISBNForNcl(ncLinkIsbn);
-        const ncUrl = `https://isbn.ncl.edu.tw/NEW_ISBNNet/H30_SearchBooks.php?Pact=Search&Pval=${encodeURIComponent(isbn)}`;
-        scanStatus.innerHTML = `${escapeHtml(msg)}<br><a href="${ncUrl}" target="_blank" rel="noopener">到國家圖書館查詢「${escapeHtml(isbn)}」→</a>`;
+        scanStatus.innerHTML = `${escapeHtml(msg)}<br><a href="${NCL_SIMPLE_SEARCH_URL}" target="_blank" rel="noopener">到國家圖書館查詢「${escapeHtml(isbn)}」→</a>`;
       } else {
         scanStatus.textContent = msg;
       }
