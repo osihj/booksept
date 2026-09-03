@@ -195,6 +195,56 @@
   .empty-state h3 { margin-bottom: 6px; font-size: 16px; }
   .empty-state p { margin: 0 0 20px; font-size: 14px; }
 
+
+  /* ---------- Shelf overview / category bar ---------- */
+  .shelf-overview { margin-bottom: 18px; }
+  .shelf-welcome {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 2px 16px;
+  }
+  .shelf-eyebrow { font-size: 10px; letter-spacing: .16em; color: var(--text3); font-weight: 700; }
+  .shelf-welcome h2 { font-size: 22px; margin: 2px 0 3px; }
+  .shelf-welcome p { margin: 0; color: var(--text2); font-size: 13px; }
+  .shelf-welcome p strong { color: var(--accent); font-size: 16px; }
+  .shelf-mini-stats {
+    display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px;
+  }
+  .mini-stat {
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius);
+    padding: 10px 6px; cursor: pointer; color: var(--text); box-shadow: var(--shadow-sm);
+  }
+  .mini-stat:hover { background: var(--surface2); }
+  .mini-stat span { display:block; font:700 19px Roboto,sans-serif; color:var(--accent); }
+  .mini-stat small { display:block; margin-top:2px; color:var(--text2); font-size:11px; }
+  .recent-reading {
+    background: var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding: 14px; box-shadow: var(--shadow-sm);
+  }
+  .section-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:700; }
+  .text-btn { border:0; background:none; color:var(--accent); font-size:12px; cursor:pointer; padding:3px; }
+  .recent-book-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .recent-book { min-width:0; cursor:pointer; }
+  .recent-book-cover { aspect-ratio:3/4; border-radius:4px; overflow:hidden; background:var(--accent-light); display:flex; align-items:center; justify-content:center; color:var(--accent); }
+  .recent-book-cover img { width:100%; height:100%; object-fit:cover; }
+  .recent-book-title { font-size:11px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .recent-book-status { font-size:10px; color:var(--text3); }
+  .category-label { display:inline-flex; align-items:center; margin-top:3px; padding:2px 7px; border-radius:10px; background:var(--accent2-light); color:var(--accent2); font-size:10px; }
+  .category-tabs-wrap { position:relative; margin-bottom:10px; }
+  .category-tabs-label { font-size:11px; color:var(--text3); margin:0 0 5px 2px; }
+  #category-filters { margin-bottom:0; padding-bottom:2px; }
+  .category-tab { border-radius:8px; }
+  .category-stat-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .category-stat-row:last-child { border-bottom:none; }
+  .category-stat-bar { flex:1; height:6px; background:var(--surface2); border-radius:10px; overflow:hidden; }
+  .category-stat-bar > span { display:block; height:100%; background:var(--accent); border-radius:10px; }
+  .category-stat-count { min-width:40px; text-align:right; font:500 12px Roboto,sans-serif; color:var(--text2); }
+  .source-help { font-size:12px; color:var(--text3); margin-top:6px; }
+  @media (max-width:640px) {
+    .shelf-welcome { align-items:flex-start; }
+    .recent-book-row { grid-template-columns:repeat(4,1fr); gap:7px; }
+    .shelf-mini-stats { gap:6px; }
+  }
+
   /* ---------- Profile page ---------- */
   .profile-header { display: flex; flex-direction: column; align-items: center; padding: 24px 0 8px; }
   .profile-avatar { width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; margin-bottom: 12px; }
@@ -307,6 +357,27 @@
 
       <!-- 書架 -->
       <section id="page-shelf" class="page active">
+        <div class="shelf-overview">
+          <div class="shelf-welcome">
+            <div>
+              <div class="shelf-eyebrow">MY LIBRARY</div>
+              <h2>我的書單</h2>
+              <p>目前收藏 <strong id="shelf-total-inline">0</strong> 本書</p>
+            </div>
+            <button class="btn btn-accent btn-sm" id="overview-add-btn"><i class="ti ti-plus"></i> 新增書籍</button>
+          </div>
+          <div class="shelf-mini-stats">
+            <button class="mini-stat" data-status-jump="unread"><span id="mini-unread">0</span><small>未讀</small></button>
+            <button class="mini-stat" data-status-jump="reading"><span id="mini-reading">0</span><small>閱讀中</small></button>
+            <button class="mini-stat" data-status-jump="finished"><span id="mini-finished">0</span><small>已讀完</small></button>
+            <button class="mini-stat" data-page-jump="stats"><span id="mini-categories">0</span><small>分類</small></button>
+          </div>
+          <div class="recent-reading" id="recent-reading">
+            <div class="section-heading"><span>最近加入</span><button class="text-btn" id="show-all-books-btn">查看全部</button></div>
+            <div class="recent-book-row" id="recent-book-row"></div>
+          </div>
+        </div>
+
         <div class="toolbar">
           <div class="search-box">
             <i class="ti ti-search"></i>
@@ -326,6 +397,10 @@
           <button class="filter-tab" data-status="unread">未讀</button>
           <button class="filter-tab" data-status="reading">閱讀中</button>
           <button class="filter-tab" data-status="finished">已讀完</button>
+        </div>
+        <div class="category-tabs-wrap">
+          <div class="category-tabs-label">書籍分類</div>
+          <div class="filter-tabs" id="category-filters"></div>
         </div>
         <div class="filter-tabs" id="tag-filters"></div>
 
@@ -361,6 +436,10 @@
             <span class="stat-num" id="stat-year">0</span>
             <span class="stat-label">今年購入</span>
           </div>
+        </div>
+        <div class="card">
+          <div class="card-title">依分類統計</div>
+          <div id="category-stats-list"></div>
         </div>
         <div class="card">
           <div class="card-title">依標籤統計</div>
@@ -423,6 +502,7 @@
             國圖查詢
           </button>
         </div>
+        <p class="source-help">書目查詢會優先嘗試 Google Books／Open Library；若外部網站無法連線或被瀏覽器限制，仍可用國圖查詢或手動輸入，避免整個新增流程卡住。</p>
         <p class="scan-hint">拍照小提醒：請讓書背的黑白直條碼完整入鏡，盡量靠近、保持條碼水平、避免反光和陰影。程式會自動嘗試多種辨識方式。</p>
         <p id="scan-status" class="scan-status" hidden></p>
         <div id="isbn-manual-row" class="isbn-manual-row" hidden>
@@ -460,6 +540,11 @@
             <label class="field">
               <span>閱讀狀態</span>
               <select id="field-status"><option value="unread">未讀</option><option value="reading">閱讀中</option><option value="finished">已讀完</option></select>
+            </label>
+            <label class="field">
+              <span>書籍分類</span>
+              <input type="text" id="field-category" list="category-options" placeholder="例：文學、心理學、歷史">
+              <datalist id="category-options"></datalist>
             </label>
             <label class="field">
               <span>評分</span>
@@ -544,8 +629,11 @@
     const searchInput = $("search-input");
     const sortSelect = $("sort-select");
     const statusFilters = $("status-filters");
+    const categoryFiltersEl = $("category-filters");
     const tagFiltersEl = $("tag-filters");
     const tagStatsList = $("tag-stats-list");
+    const categoryStatsList = $("category-stats-list");
+    const categoryOptions = $("category-options");
 
     const modal = $("book-modal");
     const modalTitle = $("modal-title");
@@ -576,6 +664,7 @@
     let allBooks = [];
     let unsubscribeBooks = null;
     let activeStatus = "all";
+    let activeCategory = "all";
     let activeTag = null;
     let editingId = null;
     let currentCoverUrl = "";
@@ -593,6 +682,29 @@
         pageTitle.textContent = pageLabels[target];
         window.scrollTo(0, 0);
       });
+    });
+
+    $("overview-add-btn").addEventListener("click", () => openAddModal());
+    $("show-all-books-btn").addEventListener("click", () => {
+      activeStatus = "all";
+      activeCategory = "all";
+      activeTag = null;
+      [...statusFilters.children].forEach((c) => c.classList.toggle("active", c.dataset.status === "all"));
+      renderCategoryFilters();
+      renderTagFilters();
+      render();
+      window.scrollTo({top: 0, behavior: "smooth"});
+    });
+    document.querySelectorAll("[data-status-jump]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activeStatus = btn.dataset.statusJump;
+        [...statusFilters.children].forEach((c) => c.classList.toggle("active", c.dataset.status === activeStatus));
+        render();
+        window.scrollTo({top: 0, behavior: "smooth"});
+      });
+    });
+    document.querySelectorAll("[data-page-jump]").forEach((btn) => {
+      btn.addEventListener("click", () => document.querySelector('.nav-btn[data-page="' + btn.dataset.pageJump + '"]').click());
     });
 
     // ================= Auth =================
@@ -639,6 +751,7 @@
       const q = query(collection(db, "books"), where("uid", "==", uid));
       unsubscribeBooks = onSnapshot(q, (snap) => {
         allBooks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        renderCategoryFilters();
         renderTagFilters();
         render();
       }, (err) => console.error(err));
@@ -648,6 +761,7 @@
     function render() {
       let books = [...allBooks];
       if (activeStatus !== "all") books = books.filter((b) => b.status === activeStatus);
+      if (activeCategory !== "all") books = books.filter((b) => (b.category || "未分類") === activeCategory);
       if (activeTag) books = books.filter((b) => (b.tags || []).includes(activeTag));
       const term = searchInput.value.trim().toLowerCase();
       if (term) {
@@ -671,9 +785,17 @@
       });
 
       bookGrid.innerHTML = "";
-      emptyState.hidden = allBooks.length > 0;
+      emptyState.hidden = books.length > 0 || allBooks.length === 0;
+      if (allBooks.length > 0 && books.length === 0) {
+        emptyState.hidden = false;
+        emptyState.innerHTML = `<i class="ti ti-filter-off"></i><h3>沒有符合條件的書</h3><p>請調整搜尋、閱讀狀態或分類篩選。</p>`;
+      } else if (allBooks.length === 0) {
+        emptyState.innerHTML = `<i class="ti ti-books"></i><h3>書單還是空的</h3><p>掃描一本書的條碼，或手動輸入資料，開始建立你的書單。</p><button class="btn btn-accent" id="empty-add-btn"><i class="ti ti-plus"></i>新增第一本書</button>`;
+        $("empty-add-btn").onclick = () => openAddModal();
+      }
       books.forEach((b) => bookGrid.appendChild(renderCard(b)));
       renderStats();
+      renderShelfOverview();
     }
 
     function renderCard(b) {
@@ -688,6 +810,7 @@
         <div class="book-cover">${b.coverUrl ? `<img src="${escapeHtml(b.coverUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
         <p class="book-title">${escapeHtml(b.title || "未命名")}</p>
         <p class="book-author">${escapeHtml(b.author || "")}</p>
+        ${b.category ? `<span class="category-label">${escapeHtml(b.category)}</span>` : ""}
         <div class="book-meta">
           <span class="status-badge ${b.status === "unread" ? "unread" : ""}">${statusLabel}</span>
           <span class="book-rating">${stars}</span>
@@ -703,12 +826,79 @@
       const thisYear = String(new Date().getFullYear());
       $("stat-year").textContent = allBooks.filter((b) => (b.purchaseDate || "").startsWith(thisYear)).length;
 
+      const categoryCounts = {};
+      allBooks.forEach((b) => {
+        const category = (b.category || "未分類").trim() || "未分類";
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+      });
+      const categoryEntries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
+      const maxCategory = categoryEntries[0]?.[1] || 1;
+      categoryStatsList.innerHTML = categoryEntries.length
+        ? categoryEntries.map(([category, count]) => `
+            <div class="category-stat-row">
+              <span style="min-width:72px">${escapeHtml(category)}</span>
+              <div class="category-stat-bar"><span style="width:${Math.round(count / maxCategory * 100)}%"></span></div>
+              <span class="category-stat-count">${count} 本</span>
+            </div>`).join("")
+        : `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有分類資料</p>`;
+
       const tagCounts = {};
       allBooks.forEach((b) => (b.tags || []).forEach((t) => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
       const entries = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
       tagStatsList.innerHTML = entries.length
         ? entries.map(([tag, count]) => `<div class="tag-stat-row"><span>${escapeHtml(tag)}</span><span class="tag-stat-count">${count} 本</span></div>`).join("")
         : `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有標籤資料</p>`;
+    }
+
+    function renderShelfOverview() {
+      $("shelf-total-inline").textContent = allBooks.length;
+      $("mini-unread").textContent = allBooks.filter((b) => b.status === "unread").length;
+      $("mini-reading").textContent = allBooks.filter((b) => b.status === "reading").length;
+      $("mini-finished").textContent = allBooks.filter((b) => b.status === "finished").length;
+
+      const categories = new Set(allBooks.map(b => (b.category || "未分類").trim() || "未分類"));
+      $("mini-categories").textContent = allBooks.length ? categories.size : 0;
+
+      const recent = [...allBooks].sort((a,b) => {
+        const av = a.createdAt?.seconds || 0, bv = b.createdAt?.seconds || 0;
+        return bv - av;
+      }).slice(0, 4);
+      const row = $("recent-book-row");
+      row.innerHTML = recent.length ? recent.map(b => `
+        <div class="recent-book" data-book-id="${escapeHtml(b.id)}">
+          <div class="recent-book-cover">${b.coverUrl ? `<img src="${escapeHtml(b.coverUrl)}" alt="">` : `<i class="ti ti-book"></i>`}</div>
+          <div class="recent-book-title">${escapeHtml(b.title || "未命名")}</div>
+          <div class="recent-book-status">${escapeHtml({unread:"未讀",reading:"閱讀中",finished:"已讀完"}[b.status] || "未讀")}</div>
+        </div>`).join("") :
+        `<div style="grid-column:1/-1;color:var(--text3);font-size:12px;padding:8px 0;">新增書籍後，最近加入的書會顯示在這裡。</div>`;
+
+      row.querySelectorAll(".recent-book").forEach(el => {
+        el.addEventListener("click", () => {
+          const book = allBooks.find(b => b.id === el.dataset.bookId);
+          if (book) openEditModal(book);
+        });
+      });
+
+      const categoriesSorted = [...categories].sort((a,b) => a.localeCompare(b, "zh-Hant"));
+      categoryOptions.innerHTML = categoriesSorted.map(c => `<option value="${escapeHtml(c)}"></option>`).join("");
+    }
+
+    function renderCategoryFilters() {
+      const categories = new Set();
+      allBooks.forEach((b) => categories.add((b.category || "未分類").trim() || "未分類"));
+      const list = ["all", ...[...categories].sort((a,b) => a.localeCompare(b, "zh-Hant"))];
+      categoryFiltersEl.innerHTML = "";
+      list.forEach((category) => {
+        const chip = document.createElement("button");
+        chip.className = "filter-tab category-tab" + (activeCategory === category ? " active" : "");
+        chip.textContent = category === "all" ? "全部分類" : category;
+        chip.addEventListener("click", () => {
+          activeCategory = category;
+          renderCategoryFilters();
+          render();
+        });
+        categoryFiltersEl.appendChild(chip);
+      });
     }
 
     function renderTagFilters() {
@@ -768,7 +958,9 @@
 
     // ================= Modal open/close =================
     $("fab-add").addEventListener("click", () => openAddModal());
-    $("empty-add-btn").addEventListener("click", () => openAddModal());
+    document.addEventListener("click", (e) => {
+      if (e.target.closest("#empty-add-btn")) openAddModal();
+    });
     closeModalBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
     modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
@@ -797,6 +989,7 @@
       $("field-price").value = book.price ?? "";
       $("field-condition").value = book.condition || "new";
       $("field-status").value = book.status || "unread";
+      $("field-category").value = book.category || "";
       $("field-location").value = book.location || "";
       $("field-tags").value = (book.tags || []).join(", ");
       currentCoverUrl = book.coverUrl || ""; pendingCoverFile = null;
@@ -1176,6 +1369,7 @@
           price: $("field-price").value ? Number($("field-price").value) : null,
           condition: $("field-condition").value || "new",
           status: $("field-status").value || "unread",
+          category: $("field-category").value.trim() || "未分類",
           location: $("field-location").value.trim(),
           tags,
           rating: Number(currentRating) || 0,
