@@ -297,6 +297,9 @@
   .stat-num { font-size: 24px; font-weight: 700; font-family: 'Roboto', sans-serif; color: var(--accent); }
   .stat-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-top: 6px; }
 
+  .tag-stat-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .tag-stat-row:last-child { border-bottom: none; }
+  .tag-stat-count { font-family: 'Roboto', sans-serif; font-weight: 500; color: var(--text2); }
 
   /* ---------- Toolbar / filters ---------- */
   .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
@@ -470,35 +473,10 @@
   .field input, .field select { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; height: 38px; color: var(--text); background: var(--surface); font-family: inherit; }
   .field input[readonly] { background: var(--surface2); color: var(--text3); }
 
-  .star-input {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    height: 40px;
-  }
-  .star-input button {
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: #c9c5be;
-    font-family: Arial, sans-serif;
-    font-size: 30px;
-    line-height: 34px;
-    cursor: pointer;
-    transition: transform .12s ease, color .12s ease;
-  }
-  .star-input button:hover {
-    transform: scale(1.1);
-    color: var(--accent2);
-  }
-  .star-input button.filled { color: var(--accent2); }
-  .star-input button:focus-visible {
-    outline: 2px solid var(--accent2);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
+  .star-input { display: flex; gap: 6px; font-size: 26px; color: #d8d8d8; height: 38px; align-items: center; }
+  .star-input i { cursor: pointer; transition: transform .12s ease, color .12s ease; }
+  .star-input i:hover { transform: scale(1.08); color: var(--accent2); }
+  .star-input i.filled { color: var(--accent2); }
 
   .field-label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 8px; }
   .notes-section { margin-bottom: 10px; }
@@ -614,7 +592,7 @@
         <div class="toolbar">
           <div class="search-box">
             <i class="ti ti-search"></i>
-            <input type="text" id="search-input" placeholder="搜尋書名、作者、譯者...">
+            <input type="text" id="search-input" placeholder="搜尋書名、作者、譯者、標籤...">
           </div>
           <select id="sort-select" class="sort-select">
             <option value="createdAt-desc">最新加入</option>
@@ -635,6 +613,7 @@
           <div class="category-tabs-label">書籍分類</div>
           <div class="filter-tabs" id="category-filters"></div>
         </div>
+        <div class="filter-tabs" id="tag-filters"></div>
 
         <section id="book-grid" class="book-grid"></section>
 
@@ -651,7 +630,25 @@
 
       <!-- 統計 -->
       <section id="page-stats" class="page">
-<div class="card">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-num" id="stat-total">0</span>
+            <span class="stat-label">藏書量</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="stat-spent">$0</span>
+            <span class="stat-label">總花費</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="stat-finished">0</span>
+            <span class="stat-label">已讀完</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="stat-year">0</span>
+            <span class="stat-label">今年購入</span>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-title">依分類統計</div>
           <div id="category-stats-list"></div>
         </div>
@@ -745,14 +742,15 @@
             <label class="field">
               <span>評分</span>
               <div class="star-input" id="star-input" data-value="0" role="radiogroup" aria-label="書籍評分">
-                <button type="button" data-star="1" role="radio" aria-label="1 星">☆</button>
-                <button type="button" data-star="2" role="radio" aria-label="2 星">☆</button>
-                <button type="button" data-star="3" role="radio" aria-label="3 星">☆</button>
-                <button type="button" data-star="4" role="radio" aria-label="4 星">☆</button>
-                <button type="button" data-star="5" role="radio" aria-label="5 星">☆</button>
+                <i class="ti ti-star" data-star="1" role="radio" aria-label="1 星"></i>
+                <i class="ti ti-star" data-star="2" role="radio" aria-label="2 星"></i>
+                <i class="ti ti-star" data-star="3" role="radio" aria-label="3 星"></i>
+                <i class="ti ti-star" data-star="4" role="radio" aria-label="4 星"></i>
+                <i class="ti ti-star" data-star="5" role="radio" aria-label="5 星"></i>
               </div>
             </label>
             <label class="field"><span>存放位置</span><input type="text" id="field-location" placeholder="例：客廳書櫃 B 排"></label>
+            <label class="field field-wide"><span>標籤（用逗號分隔）</span><input type="text" id="field-tags" placeholder="例：心理學, 心靈成長"></label>
           </div>
 
           <div class="notes-section">
@@ -871,6 +869,7 @@
     let unsubscribeBooks = null;
     let activeStatus = "all";
     let activeCategory = "all";
+    let activeTag = null;
     let editingId = null;
     let currentCoverUrl = "";
     let pendingCoverFile = null;
@@ -894,8 +893,10 @@
     $("show-all-books-btn").addEventListener("click", () => {
       activeStatus = "all";
       activeCategory = "all";
+      activeTag = null;
       [...statusFilters.children].forEach((c) => c.classList.toggle("active", c.dataset.status === "all"));
       renderCategoryFilters();
+      renderTagFilters();
       render();
       window.scrollTo({top: 0, behavior: "smooth"});
     });
@@ -1053,7 +1054,8 @@
       unsubscribeBooks = onSnapshot(q, (snap) => {
         allBooks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         renderCategoryFilters();
-          render();
+        renderTagFilters();
+        render();
       }, (err) => console.error(err));
     }
 
@@ -1062,6 +1064,7 @@
       let books = [...allBooks];
       if (activeStatus !== "all") books = books.filter((b) => b.status === activeStatus);
       if (activeCategory !== "all") books = books.filter((b) => (b.category || "未分類") === activeCategory);
+      if (activeTag) books = books.filter((b) => (b.tags || []).includes(activeTag));
       const term = searchInput.value.trim().toLowerCase();
       if (term) {
         books = books.filter((b) => {
@@ -1117,6 +1120,12 @@
     }
 
     function renderStats() {
+      $("stat-total").textContent = allBooks.length;
+      const spent = allBooks.reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+      $("stat-spent").textContent = "$" + spent.toLocaleString();
+      $("stat-finished").textContent = allBooks.filter((b) => b.status === "finished").length;
+      const thisYear = String(new Date().getFullYear());
+      $("stat-year").textContent = allBooks.filter((b) => (b.purchaseDate || "").startsWith(thisYear)).length;
 
       const categoryCounts = {};
       allBooks.forEach((b) => {
@@ -1193,6 +1202,23 @@
       // 書架清單上方那一排，與底部固定的可滑動分類 Bar，內容與選取狀態互相同步
       buildChips(categoryFiltersEl);
       buildChips(categoryDockFiltersEl);
+    }
+
+    function renderTagFilters() {
+      const tagSet = new Set();
+      allBooks.forEach((b) => (b.tags || []).forEach((t) => tagSet.add(t)));
+      tagFiltersEl.innerHTML = "";
+      [...tagSet].sort().forEach((tag) => {
+        const chip = document.createElement("button");
+        chip.className = "filter-tab" + (activeTag === tag ? " active" : "");
+        chip.textContent = tag;
+        chip.addEventListener("click", () => {
+          activeTag = activeTag === tag ? null : tag;
+          renderTagFilters();
+          render();
+        });
+        tagFiltersEl.appendChild(chip);
+      });
     }
 
     statusFilters.addEventListener("click", (e) => {
@@ -1302,13 +1328,7 @@
       updateStarDisplay();
     });
     function updateStarDisplay() {
-      [...starInput.children].forEach((el) => {
-        const filled = Number(el.dataset.star) <= currentRating;
-        el.classList.toggle("filled", filled);
-        el.textContent = filled ? "★" : "☆";
-        el.setAttribute("aria-checked", filled ? "true" : "false");
-      });
-    });
+      [...starInput.children].forEach((el) => el.classList.toggle("filled", Number(el.dataset.star) <= currentRating));
     }
 
     // ================= Notes =================
@@ -1483,6 +1503,7 @@
         const id = editingId || doc(collection(db, "books")).id;
         let coverUrl = currentCoverUrl;
         if (pendingCoverFile) coverUrl = await compressImageToDataUrl(pendingCoverFile);
+        const tags = $("field-tags").value.split(",").map((t) => t.trim()).filter(Boolean);
         const data = {
           uid: currentUser.uid,
           title,
@@ -1496,6 +1517,7 @@
           status: $("field-status").value || "unread",
           category: $("field-category").value.trim() || "未分類",
           location: $("field-location").value.trim(),
+          tags,
           rating: Number(currentRating) || 0,
           notes: Array.isArray(currentNotes) ? currentNotes : [],
           coverUrl: coverUrl || "",
