@@ -237,7 +237,7 @@
   .category-stat-row:last-child { border-bottom:none; }
   .category-stat-bar { flex:1; height:6px; background:var(--surface2); border-radius:10px; overflow:hidden; }
   .category-stat-bar > span { display:block; height:100%; background:var(--accent); border-radius:10px; }
-  .category-stat-count { min-width:40px; text-align:right; font:500 12px Roboto,sans-serif; color:var(--text2); }
+  .category-stat-count { min-width:78px; text-align:right; font:500 12px Roboto,sans-serif; color:var(--text2); white-space:nowrap; }
   .source-help { font-size:12px; color:var(--text3); margin-top:6px; }
   @media (max-width:640px) {
     .shelf-welcome { align-items:flex-start; }
@@ -411,6 +411,10 @@
           <button class="filter-tab" data-status="unread">未讀</button>
           <button class="filter-tab" data-status="reading">閱讀中</button>
           <button class="filter-tab" data-status="finished">已讀完</button>
+        </div>
+        <div class="category-tabs-wrap">
+          <div class="category-tabs-label">書籍分類</div>
+          <div class="filter-tabs" id="category-filters"></div>
         </div>
         <div class="filter-tabs" id="tag-filters"></div>
 
@@ -627,6 +631,8 @@
     const sortSelect = $("sort-select");
     const statusFilters = $("status-filters");
     const categoryFiltersEl = $("category-filters");
+    const categoryDockEl = $("category-dock");
+    const categoryDockFiltersEl = $("category-dock-filters");
     const tagFiltersEl = $("tag-filters");
     const tagStatsList = $("tag-stats-list");
     const categoryStatsList = $("category-stats-list");
@@ -672,6 +678,7 @@
         document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
         document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + target));
         pageTitle.textContent = pageLabels[target];
+        categoryDockEl.classList.toggle("hidden", target !== "shelf");
         window.scrollTo(0, 0);
       });
     });
@@ -825,12 +832,13 @@
       });
       const categoryEntries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
       const maxCategory = categoryEntries[0]?.[1] || 1;
+      const totalForPercent = allBooks.length || 1;
       categoryStatsList.innerHTML = categoryEntries.length
         ? categoryEntries.map(([category, count]) => `
             <div class="category-stat-row">
               <span style="min-width:72px">${escapeHtml(category)}</span>
               <div class="category-stat-bar"><span style="width:${Math.round(count / maxCategory * 100)}%"></span></div>
-              <span class="category-stat-count">${count} 本</span>
+              <span class="category-stat-count">${count} 本 · ${Math.round(count / totalForPercent * 100)}%</span>
             </div>`).join("")
         : `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有分類資料</p>`;
 
@@ -879,18 +887,25 @@
       const categories = new Set();
       allBooks.forEach((b) => categories.add((b.category || "未分類").trim() || "未分類"));
       const list = ["all", ...[...categories].sort((a,b) => a.localeCompare(b, "zh-Hant"))];
-      categoryFiltersEl.innerHTML = "";
-      list.forEach((category) => {
-        const chip = document.createElement("button");
-        chip.className = "filter-tab category-tab" + (activeCategory === category ? " active" : "");
-        chip.textContent = category === "all" ? "全部分類" : category;
-        chip.addEventListener("click", () => {
-          activeCategory = category;
-          renderCategoryFilters();
-          render();
+
+      const buildChips = (container) => {
+        container.innerHTML = "";
+        list.forEach((category) => {
+          const chip = document.createElement("button");
+          chip.className = "filter-tab category-tab" + (activeCategory === category ? " active" : "");
+          chip.textContent = category === "all" ? "全部分類" : category;
+          chip.addEventListener("click", () => {
+            activeCategory = category;
+            renderCategoryFilters();
+            render();
+          });
+          container.appendChild(chip);
         });
-        categoryFiltersEl.appendChild(chip);
-      });
+      };
+
+      // 書架清單上方那一排，與底部固定的可滑動分類 Bar，內容與選取狀態互相同步
+      buildChips(categoryFiltersEl);
+      buildChips(categoryDockFiltersEl);
     }
 
     function renderTagFilters() {
