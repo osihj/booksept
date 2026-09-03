@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的書單</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 未登入畫面 -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="login-mark">冊</div>
+      <h1>我的書單</h1>
+      <p class="login-sub">記錄家裡的每一本書：從哪裡來、讀到哪、想些什麼。</p>
+      <button id="google-login-btn" class="btn-primary">
+        <i class="ti ti-brand-google"></i>
+        使用 Google 帳號登入
+      </button>
+      <p id="login-error" class="login-error" hidden></p>
+    </div>
+  </div>
+
+  <!-- 主畫面 -->
+  <div id="app" class="app" hidden>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">冊</span>
+        <span class="brand-name">我的書單</span>
+      </div>
+      <div class="topbar-actions">
+        <button id="add-book-btn" class="btn-accent">
+          <i class="ti ti-plus"></i>
+          新增書籍
+        </button>
+        <button id="user-menu-btn" class="avatar-btn">
+          <img id="user-avatar" src="" alt="使用者頭像">
+        </button>
+      </div>
+    </header>
+
+    <div id="user-menu" class="user-menu" hidden>
+      <p id="user-email" class="user-email"></p>
+      <button id="logout-btn" class="menu-item">
+        <i class="ti ti-logout"></i>
+        登出
+      </button>
+    </div>
+
+    <main class="main">
+
+      <section class="stats-row" id="stats-row">
+        <div class="stat-card">
+          <span class="stat-label">藏書量</span>
+          <span class="stat-value" id="stat-total">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">總花費</span>
+          <span class="stat-value" id="stat-spent">$0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">已讀完</span>
+          <span class="stat-value" id="stat-finished">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">今年購入</span>
+          <span class="stat-value" id="stat-year">0</span>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <div class="search-box">
+          <i class="ti ti-search"></i>
+          <input type="text" id="search-input" placeholder="搜尋書名、作者、譯者、標籤...">
+        </div>
+        <select id="sort-select" class="sort-select">
+          <option value="createdAt-desc">最新加入</option>
+          <option value="purchaseDate-desc">購買日期（新到舊）</option>
+          <option value="purchaseDate-asc">購買日期（舊到新）</option>
+          <option value="title-asc">書名（A-Z）</option>
+          <option value="rating-desc">評分（高到低）</option>
+        </select>
+      </section>
+
+      <section class="filters" id="status-filters">
+        <button class="chip active" data-status="all">全部</button>
+        <button class="chip" data-status="unread">未讀</button>
+        <button class="chip" data-status="reading">閱讀中</button>
+        <button class="chip" data-status="finished">已讀完</button>
+      </section>
+
+      <section class="filters tag-filters" id="tag-filters"></section>
+
+      <section id="book-grid" class="book-grid"></section>
+
+      <div id="empty-state" class="empty-state" hidden>
+        <i class="ti ti-books"></i>
+        <h3>書單還是空的</h3>
+        <p>掃描一本書的條碼，或手動輸入資料，開始建立你的書單。</p>
+        <button class="btn-accent" id="empty-add-btn">
+          <i class="ti ti-plus"></i>
+          新增第一本書
+        </button>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- 新增／編輯書籍面板 -->
+  <div id="book-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">新增書籍</h2>
+        <button class="icon-btn" id="close-modal-btn"><i class="ti ti-x"></i></button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="scan-row" id="scan-row">
+          <label class="scan-btn">
+            <i class="ti ti-camera"></i>
+            拍照掃描 ISBN
+            <input type="file" accept="image/*" capture="environment" id="scan-camera-input" hidden>
+          </label>
+          <label class="scan-btn scan-btn-secondary">
+            <i class="ti ti-upload"></i>
+            上傳條碼照片
+            <input type="file" accept="image/*" id="scan-upload-input" hidden>
+          </label>
+          <button class="scan-btn scan-btn-secondary" id="manual-isbn-btn" type="button">
+            <i class="ti ti-keyboard"></i>
+            手動輸入 ISBN
+          </button>
+        </div>
+        <p id="scan-status" class="scan-status" hidden></p>
+        <div id="isbn-manual-row" class="isbn-manual-row" hidden>
+          <input type="text" id="isbn-manual-input" placeholder="輸入 13 碼 ISBN">
+          <button class="btn-accent-outline" id="isbn-lookup-btn" type="button">查詢</button>
+        </div>
+
+        <form id="book-form">
+
+          <div class="cover-field">
+            <div class="cover-preview" id="cover-preview">
+              <i class="ti ti-photo"></i>
+            </div>
+            <div class="cover-actions">
+              <label class="btn-accent-outline btn-sm">
+                上傳封面
+                <input type="file" accept="image/*" id="cover-upload-input" hidden>
+              </label>
+              <button type="button" class="btn-ghost btn-sm" id="remove-cover-btn" hidden>移除封面</button>
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>書名 *</span>
+              <input type="text" id="field-title" required>
+            </label>
+            <label class="field">
+              <span>作者</span>
+              <input type="text" id="field-author">
+            </label>
+            <label class="field">
+              <span>譯者</span>
+              <input type="text" id="field-translator" placeholder="原文書可留空">
+            </label>
+            <label class="field">
+              <span>出版社</span>
+              <input type="text" id="field-publisher">
+            </label>
+            <label class="field">
+              <span>ISBN</span>
+              <input type="text" id="field-isbn" readonly>
+            </label>
+            <label class="field">
+              <span>購買日期</span>
+              <input type="date" id="field-purchase-date">
+            </label>
+            <label class="field">
+              <span>購買金額（NT$）</span>
+              <input type="number" id="field-price" min="0" step="1">
+            </label>
+            <label class="field">
+              <span>書況</span>
+              <select id="field-condition">
+                <option value="new">全新</option>
+                <option value="used">二手</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>閱讀狀態</span>
+              <select id="field-status">
+                <option value="unread">未讀</option>
+                <option value="reading">閱讀中</option>
+                <option value="finished">已讀完</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>評分</span>
+              <div class="star-input" id="star-input" data-value="0">
+                <i class="ti ti-star" data-star="1"></i>
+                <i class="ti ti-star" data-star="2"></i>
+                <i class="ti ti-star" data-star="3"></i>
+                <i class="ti ti-star" data-star="4"></i>
+                <i class="ti ti-star" data-star="5"></i>
+              </div>
+            </label>
+            <label class="field">
+              <span>存放位置</span>
+              <input type="text" id="field-location" placeholder="例：客廳書櫃 B 排">
+            </label>
+            <label class="field field-wide">
+              <span>標籤（用逗號分隔）</span>
+              <input type="text" id="field-tags" placeholder="例：心理學, 心靈成長">
+            </label>
+          </div>
+
+          <div class="notes-section">
+            <span class="field-label">閱讀心得</span>
+            <div id="notes-list" class="notes-list"></div>
+            <div class="note-add-row">
+              <textarea id="note-input" placeholder="寫下這次讀到這裡的想法..." rows="2"></textarea>
+              <button type="button" class="btn-accent-outline btn-sm" id="add-note-btn">加入心得</button>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" id="delete-book-btn" hidden>
+              <i class="ti ti-trash"></i>
+              刪除這本書
+            </button>
+            <div class="footer-spacer"></div>
+            <button type="button" class="btn-ghost" id="cancel-btn">取消</button>
+            <button type="submit" class="btn-accent">儲存</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+  <div id="reader-hidden" style="display:none"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
+  <!-- Firebase -->
+  <script type="module" src="js/firebase-config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
