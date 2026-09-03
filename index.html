@@ -239,6 +239,7 @@
   .scan-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .scan-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; border-radius: var(--radius); padding: 9px 14px; font-size: 13px; cursor: pointer; border: 1px solid var(--accent); }
   .scan-btn-secondary { background: var(--surface); color: var(--accent); border-color: var(--accent); }
+  .scan-hint { font-size: 12px; color: var(--text3); margin: 0 0 10px; }
   .scan-status { font-size: 13px; color: var(--text2); margin: 0 0 14px; }
   .isbn-manual-row { display: flex; gap: 8px; margin-bottom: 14px; }
   .isbn-manual-row input { flex: 1; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 12px; height: 38px; }
@@ -418,9 +419,10 @@
             手動輸入 ISBN
           </button>
         </div>
+        <p class="scan-hint">拍照小提醒：讓條碼盡量佔滿畫面、對準對焦、避免反光和陰影，成功率會高很多。</p>
         <p id="scan-status" class="scan-status" hidden></p>
         <div id="isbn-manual-row" class="isbn-manual-row" hidden>
-          <input type="text" id="isbn-manual-input" placeholder="輸入 13 碼 ISBN">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" id="isbn-manual-input" placeholder="輸入 13 碼 ISBN">
           <button class="btn btn-accent-outline" id="isbn-lookup-btn" type="button">查詢</button>
         </div>
 
@@ -489,7 +491,7 @@
     </div>
   </div>
 
-  <div id="reader-hidden" style="display:none"></div>
+  <div id="reader-hidden" style="position:fixed; top:-9999px; left:-9999px; width:300px; height:300px; overflow:hidden;"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 
   <script type="module">
@@ -858,12 +860,63 @@
       if (isbn) lookupISBN(isbn);
     });
 
+    // 把照片縮放到適合辨識的大小：太大的照片會拖慢辨識、有時反而讓引擎抓不到條碼區域
+    function prepareImageForScan(file, maxDim = 1600) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const reader = new FileReader();
+        reader.onload = (e) => { img.src = e.target.result; };
+        img.onload = () => {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          if (scale === 1) { resolve(file); return; }
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", 0.9);
+        };
+        img.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // 優先使用手機瀏覽器內建的條碼辨識引擎（BarcodeDetector，Android Chrome 準確率高很多）
+    // 不支援的瀏覽器（例如 iOS Safari）就退回用 html5-qrcode 函式庫辨識
+    async function decodeBarcodeFromFile(file) {
+      const prepared = await prepareImageForScan(file);
+
+      if ("BarcodeDetector" in window) {
+        try {
+          const supported = await window.BarcodeDetector.getSupportedFormats();
+          const wanted = ["ean_13", "ean_8", "upc_a", "upc_e"].filter((f) => supported.includes(f));
+          if (wanted.length) {
+            const detector = new window.BarcodeDetector({ formats: wanted });
+            const bitmap = await createImageBitmap(prepared);
+            const results = await detector.detect(bitmap);
+            if (results.length) return results[0].rawValue;
+          }
+        } catch (err) {
+          // 原生辨識失敗就繼續往下退回函式庫辨識，不中斷流程
+        }
+      }
+
+      const scanner = new Html5Qrcode("reader-hidden", {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+        ],
+        verbose: false,
+      });
+      return await scanner.scanFile(prepared, false);
+    }
+
     async function handleScanFile(file) {
       if (!file) return;
       showScanStatus("正在辨識條碼...");
       try {
-        const scanner = new Html5Qrcode("reader-hidden");
-        const decoded = await scanner.scanFile(file, false);
+        const decoded = await decodeBarcodeFromFile(file);
         await lookupISBN(decoded.replace(/\D/g, ""));
       } catch (err) {
         showScanStatus("無法從照片辨識出條碼，請換一張更清晰、對準條碼的照片，或改用手動輸入 ISBN。");
@@ -871,25 +924,55 @@
     }
     function showScanStatus(msg) { scanStatus.textContent = msg; scanStatus.hidden = false; }
 
-    async function lookupISBN(isbn) {
-      showScanStatus(`查詢 ISBN ${isbn} 中...`);
-      $("field-isbn").value = isbn;
+    // 依序查詢 Google Books、Open Library 兩個公開書目資料庫，涵蓋範圍比單一來源更廣
+    async function tryGoogleBooks(isbn) {
       try {
         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
         const data = await res.json();
         const info = data.items && data.items[0] && data.items[0].volumeInfo;
-        if (!info) { showScanStatus("查無這本書的資料，請手動填寫書籍資訊。"); return; }
-        $("field-title").value = info.title || "";
-        $("field-author").value = (info.authors || []).join("、");
-        $("field-publisher").value = info.publisher || "";
-        if (!pendingCoverFile && info.imageLinks && info.imageLinks.thumbnail) {
-          currentCoverUrl = info.imageLinks.thumbnail.replace("http://", "https://");
-          updateCoverPreview();
-        }
-        showScanStatus("已自動帶入書籍資料，請確認並補上譯者等資訊。");
-      } catch (err) {
-        showScanStatus("查詢失敗，請檢查網路連線或手動輸入資料。");
+        if (!info) return null;
+        return {
+          title: info.title || "",
+          author: (info.authors || []).join("、"),
+          publisher: info.publisher || "",
+          cover: info.imageLinks && info.imageLinks.thumbnail ? info.imageLinks.thumbnail.replace("http://", "https://") : "",
+          source: "Google Books",
+        };
+      } catch (err) { return null; }
+    }
+
+    async function tryOpenLibrary(isbn) {
+      try {
+        const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+        const data = await res.json();
+        const info = data[`ISBN:${isbn}`];
+        if (!info) return null;
+        return {
+          title: info.title || "",
+          author: (info.authors || []).map((a) => a.name).join("、"),
+          publisher: (info.publishers || []).map((p) => p.name).join("、"),
+          cover: info.cover ? (info.cover.medium || info.cover.large || info.cover.small || "") : "",
+          source: "Open Library",
+        };
+      } catch (err) { return null; }
+    }
+
+    async function lookupISBN(isbn) {
+      showScanStatus(`查詢 ISBN ${isbn} 中...`);
+      $("field-isbn").value = isbn;
+      const result = (await tryGoogleBooks(isbn)) || (await tryOpenLibrary(isbn));
+      if (!result) {
+        showScanStatus("兩個書目資料庫都查無這本書，請手動填寫書籍資訊。");
+        return;
       }
+      $("field-title").value = result.title;
+      $("field-author").value = result.author;
+      $("field-publisher").value = result.publisher;
+      if (!pendingCoverFile && result.cover) {
+        currentCoverUrl = result.cover;
+        updateCoverPreview();
+      }
+      showScanStatus(`已從 ${result.source} 自動帶入書籍資料，請確認並補上譯者等資訊。`);
     }
 
     // ================= Save / Delete =================
@@ -924,7 +1007,7 @@
         closeModal();
       } catch (err) {
         console.error(err);
-        alert("儲存失敗，請稍後再試。");
+        alert("儲存失敗：" + (err.code || err.message || err));
       } finally {
         submitBtn.disabled = false;
       }
