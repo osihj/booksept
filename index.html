@@ -263,6 +263,7 @@
   }
   .brand-name { font-size: 18px; }
   .page-title { font-size: 18px; }
+  .topbar-logout { margin-left: auto; }
 
   .main { max-width: 760px; margin: 0 auto; padding: 20px 20px 175px; }
   .page { display: none; }
@@ -382,7 +383,6 @@
   .recent-book-cover img { width:100%; height:100%; object-fit:cover; }
   .recent-book-title { font-size:11px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .recent-book-status { font-size:10px; color:var(--text3); }
-  .category-label { display:inline-flex; align-items:center; margin-top:3px; padding:2px 7px; border-radius:10px; background:var(--accent2-light); color:var(--accent2); font-size:10px; }
   .category-tabs-wrap { position:relative; margin-bottom:10px; }
   .category-tabs-label { font-size:11px; color:var(--text3); margin:0 0 5px 2px; }
   #category-filters { margin-bottom:0; padding-bottom:2px; }
@@ -473,8 +473,9 @@
   .field input, .field select { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; height: 38px; color: var(--text); background: var(--surface); font-family: inherit; }
   .field input[readonly] { background: var(--surface2); color: var(--text3); }
 
-  .star-input { display: flex; gap: 4px; font-size: 20px; color: var(--border); height: 38px; align-items: center; }
-  .star-input i { cursor: pointer; }
+  .star-input { display: flex; gap: 6px; font-size: 26px; color: #d8d8d8; height: 38px; align-items: center; }
+  .star-input i { cursor: pointer; transition: transform .12s ease, color .12s ease; }
+  .star-input i:hover { transform: scale(1.08); color: var(--accent2); }
   .star-input i.filled { color: var(--accent2); }
 
   .field-label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 8px; }
@@ -555,8 +556,12 @@
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark">冊</span>
-        <span class="brand-name page-title" id="page-title">書架</span>
+        <span class="brand-name page-title" id="page-title">書庫</span>
       </div>
+      <button id="logout-top-btn" class="btn btn-ghost btn-sm topbar-logout" type="button">
+        <i class="ti ti-logout"></i>
+        登出
+      </button>
     </header>
 
     <main class="main">
@@ -647,10 +652,6 @@
           <div class="card-title">依分類統計</div>
           <div id="category-stats-list"></div>
         </div>
-        <div class="card">
-          <div class="card-title">依標籤統計</div>
-          <div id="tag-stats-list"></div>
-        </div>
       </section>
 
       <!-- 我的 -->
@@ -658,10 +659,6 @@
         <div class="profile-header">
           <img id="profile-avatar" class="profile-avatar" src="" alt="使用者頭像">
           <p id="profile-email" class="profile-email"></p>
-          <button id="logout-btn" class="btn btn-danger">
-            <i class="ti ti-logout"></i>
-            登出
-          </button>
         </div>
       </section>
 
@@ -675,7 +672,7 @@
       </div>
       <nav class="bottom-nav">
         <div class="nav-inner">
-          <button class="nav-btn active" data-page="shelf"><i class="ti ti-books"></i><span>書架</span></button>
+          <button class="nav-btn active" data-page="shelf"><i class="ti ti-books"></i><span>書庫</span></button>
           <button class="nav-btn" data-page="stats"><i class="ti ti-chart-bar"></i><span>統計</span></button>
           <button class="nav-btn" data-page="profile"><i class="ti ti-user"></i><span>我的</span></button>
         </div>
@@ -731,7 +728,7 @@
             <label class="field"><span>購買金額（NT$）</span><input type="number" id="field-price" min="0" step="1"></label>
             <label class="field">
               <span>書況</span>
-              <select id="field-condition"><option value="new">全新</option><option value="used">二手</option></select>
+              <select id="field-condition"><option value="new">全新</option><option value="used">二手</option><option value="sold">賣出</option></select>
             </label>
             <label class="field">
               <span>閱讀狀態</span>
@@ -744,8 +741,12 @@
             </label>
             <label class="field">
               <span>評分</span>
-              <div class="star-input" id="star-input" data-value="0">
-                <i class="ti ti-star" data-star="1"></i><i class="ti ti-star" data-star="2"></i><i class="ti ti-star" data-star="3"></i><i class="ti ti-star" data-star="4"></i><i class="ti ti-star" data-star="5"></i>
+              <div class="star-input" id="star-input" data-value="0" role="radiogroup" aria-label="書籍評分">
+                <i class="ti ti-star" data-star="1" role="radio" aria-label="1 星"></i>
+                <i class="ti ti-star" data-star="2" role="radio" aria-label="2 星"></i>
+                <i class="ti ti-star" data-star="3" role="radio" aria-label="3 星"></i>
+                <i class="ti ti-star" data-star="4" role="radio" aria-label="4 星"></i>
+                <i class="ti ti-star" data-star="5" role="radio" aria-label="5 星"></i>
               </div>
             </label>
             <label class="field"><span>存放位置</span><input type="text" id="field-location" placeholder="例：客廳書櫃 B 排"></label>
@@ -826,7 +827,7 @@
     const emailLoginBtn = $("email-login-btn");
     const forgotPasswordBtn = $("forgot-password-btn");
     const loginError = $("login-error");
-    const logoutBtn = $("logout-btn");
+    const logoutTopBtn = $("logout-top-btn");
     const profileAvatar = $("profile-avatar");
     const profileEmail = $("profile-email");
     const pageTitle = $("page-title");
@@ -840,7 +841,6 @@
     const categoryDockEl = $("category-dock");
     const categoryDockFiltersEl = $("category-dock-filters");
     const tagFiltersEl = $("tag-filters");
-    const tagStatsList = $("tag-stats-list");
     const categoryStatsList = $("category-stats-list");
     const categoryOptions = $("category-options");
 
@@ -877,7 +877,7 @@
     let currentNotes = [];
 
     // ================= Bottom nav / pages =================
-    const pageLabels = { shelf: "書架", stats: "統計", profile: "我的" };
+    const pageLabels = { shelf: "書庫", stats: "統計", profile: "我的" };
     document.querySelectorAll(".nav-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const target = btn.dataset.page;
@@ -1012,7 +1012,7 @@
       }
     });
 
-    logoutBtn.addEventListener("click", () => signOut(auth));
+    logoutTopBtn.addEventListener("click", () => signOut(auth));
 
     // 頁面載入時，預設一定先顯示登入頁；只有 Firebase 確認有合法使用者後才顯示主畫面。
     loginScreen.hidden = false;
@@ -1112,7 +1112,6 @@
         <div class="book-cover">${b.coverUrl ? `<img src="${escapeHtml(b.coverUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
         <p class="book-title">${escapeHtml(b.title || "未命名")}</p>
         <p class="book-author">${escapeHtml(b.author || "")}</p>
-        ${b.category ? `<span class="category-label">${escapeHtml(b.category)}</span>` : ""}
         <div class="book-meta">
           <span class="status-badge ${b.status === "unread" ? "unread" : ""}">${statusLabel}</span>
           <span class="book-rating">${stars}</span>
@@ -1145,12 +1144,6 @@
             </div>`).join("")
         : `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有分類資料</p>`;
 
-      const tagCounts = {};
-      allBooks.forEach((b) => (b.tags || []).forEach((t) => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
-      const entries = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
-      tagStatsList.innerHTML = entries.length
-        ? entries.map(([tag, count]) => `<div class="tag-stat-row"><span>${escapeHtml(tag)}</span><span class="tag-stat-count">${count} 本</span></div>`).join("")
-        : `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有標籤資料</p>`;
     }
 
     function renderShelfOverview() {
