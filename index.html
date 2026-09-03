@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#b8621d">
-<title>我的書單</title>
+<title>藏書閣</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <style>
@@ -42,28 +42,180 @@
   /* ---------- Login ---------- */
   .login-screen {
     min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 24px;
+    background: #f8f7f4;
   }
+
   .login-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: var(--shadow);
-    padding: 48px 40px;
-    max-width: 380px; width: 100%;
+    width: 100%;
+    max-width: 456px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 54px 38px 52px;
+    box-shadow:
+      0 8px 30px rgba(0, 0, 0, 0.06),
+      0 2px 8px rgba(0, 0, 0, 0.03);
     text-align: center;
   }
-  .login-mark {
-    width: 56px; height: 56px; margin: 0 auto 20px;
-    border-radius: 14px;
-    background: var(--accent-light); color: var(--accent);
-    font-family: 'Noto Serif TC', serif; font-size: 26px; font-weight: 600;
-    display: flex; align-items: center; justify-content: center;
+
+  .login-card h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #292929;
   }
-  .login-card h1 { font-size: 22px; margin-bottom: 10px; }
-  .login-sub { color: var(--text2); font-size: 14px; margin: 0 0 28px; }
-  .login-error { color: var(--red); font-size: 13px; margin-top: 14px; }
+
+  .login-sub {
+    margin: 12px 0 32px;
+    color: #aaa;
+    font-size: 16px;
+  }
+
+  .login-google-btn {
+    width: 100%;
+    height: 66px;
+    border: none;
+    border-radius: 12px;
+    background: #2c5a38;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+    font-size: 19px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .login-google-btn:hover {
+    background: #234a2d;
+  }
+
+  .login-google-btn:disabled,
+  .login-email-btn:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+
+  .login-google-btn i {
+    font-size: 22px;
+  }
+
+  .login-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 30px 0;
+    color: #b8b8b8;
+    font-size: 16px;
+  }
+
+  .login-divider::before,
+  .login-divider::after {
+    content: "";
+    height: 1px;
+    background: #ddd;
+    flex: 1;
+  }
+
+  .login-divider span {
+    flex: 0 0 auto;
+  }
+
+  .login-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 62px;
+    padding: 0 18px;
+    margin-bottom: 14px;
+    border: 2px solid #e1e1e1;
+    border-radius: 12px;
+    background: #fff;
+    color: #333;
+    font-family: inherit;
+    font-size: 18px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .login-input:focus {
+    border-color: #aaa;
+  }
+
+  .login-input::placeholder {
+    color: #888;
+  }
+
+  .login-email-btn {
+    width: 100%;
+    height: 63px;
+    border: none;
+    border-radius: 12px;
+    background: #2878e5;
+    color: #fff;
+    font-family: inherit;
+    font-size: 19px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .login-email-btn:hover {
+    background: #1768d5;
+  }
+
+  .forgot-password-btn {
+    margin-top: 22px;
+    border: none;
+    background: transparent;
+    color: #aaa;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .forgot-password-btn:hover {
+    color: #777;
+    text-decoration: underline;
+  }
+
+  .login-error {
+    margin: 16px 0 0;
+    color: #96352b;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .login-screen {
+      padding: 16px;
+    }
+
+    .login-card {
+      max-width: 100%;
+      padding: 42px 24px;
+    }
+
+    .login-card h1 {
+      font-size: 24px;
+    }
+
+    .login-google-btn,
+    .login-email-btn {
+      height: 58px;
+      font-size: 17px;
+    }
+
+    .login-input {
+      height: 56px;
+      font-size: 16px;
+    }
+  }
 
   /* ---------- Buttons ---------- */
   .btn {
@@ -346,14 +498,52 @@
   <!-- 未登入畫面 -->
   <div id="login-screen" class="login-screen">
     <div class="login-card">
-      <div class="login-mark">冊</div>
-      <h1>我的書單</h1>
-      <p class="login-sub">記錄家裡的每一本書：從哪裡來、讀到哪、想些什麼。</p>
-      <button id="google-login-btn" class="btn btn-primary">
+
+      <h1>活動行事曆</h1>
+
+      <p class="login-sub">請登入以繼續</p>
+
+      <!-- Google 登入 -->
+      <button id="google-login-btn" class="login-google-btn" type="button">
         <i class="ti ti-brand-google"></i>
-        使用 Google 帳號登入
+        使用 Google 登入
       </button>
+
+      <!-- 分隔線 -->
+      <div class="login-divider">
+        <span>或</span>
+      </div>
+
+      <!-- Email -->
+      <input
+        id="email-input"
+        class="login-input"
+        type="email"
+        placeholder="Email"
+        autocomplete="email"
+      >
+
+      <!-- 密碼 -->
+      <input
+        id="password-input"
+        class="login-input"
+        type="password"
+        placeholder="密碼"
+        autocomplete="current-password"
+      >
+
+      <!-- Email 登入 -->
+      <button id="email-login-btn" class="login-email-btn" type="button">
+        Email 登入
+      </button>
+
+      <!-- 忘記密碼 -->
+      <button id="forgot-password-btn" class="forgot-password-btn" type="button">
+        忘記密碼？寄送重設信
+      </button>
+
       <p id="login-error" class="login-error" hidden></p>
+
     </div>
   </div>
 
@@ -587,7 +777,13 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     import {
-      getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      sendPasswordResetEmail,
+      signOut,
+      onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
     import {
       getFirestore, collection, doc, setDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
@@ -619,6 +815,10 @@
     const loginScreen = $("login-screen");
     const appRoot = $("app");
     const loginBtn = $("google-login-btn");
+    const emailInput = $("email-input");
+    const passwordInput = $("password-input");
+    const emailLoginBtn = $("email-login-btn");
+    const forgotPasswordBtn = $("forgot-password-btn");
     const loginError = $("login-error");
     const logoutBtn = $("logout-btn");
     const profileAvatar = $("profile-avatar");
@@ -717,6 +917,91 @@
         // 代表 Firebase Console → Authentication → Settings → Authorized domains
         // 還沒加入這個網站的網域，導致 Google 登入視窗根本開不起來）
         loginError.textContent = "登入失敗：" + (err.code || err.message || err);
+        loginError.hidden = false;
+      }
+    });
+
+    // Email / 密碼登入
+    emailLoginBtn.addEventListener("click", async () => {
+      loginError.hidden = true;
+      loginError.style.color = "#96352b";
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!email || !password) {
+        loginError.textContent = "請輸入 Email 和密碼。";
+        loginError.hidden = false;
+        return;
+      }
+
+      emailLoginBtn.disabled = true;
+      emailLoginBtn.textContent = "登入中...";
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        console.error(err);
+
+        switch (err.code) {
+          case "auth/invalid-credential":
+          case "auth/wrong-password":
+          case "auth/user-not-found":
+            loginError.textContent = "Email 或密碼錯誤，請確認後再試。";
+            break;
+          case "auth/invalid-email":
+            loginError.textContent = "Email 格式不正確。";
+            break;
+          case "auth/too-many-requests":
+            loginError.textContent = "登入嘗試次數過多，請稍後再試。";
+            break;
+          default:
+            loginError.textContent = "登入失敗：" + (err.message || err);
+        }
+
+        loginError.hidden = false;
+      } finally {
+        emailLoginBtn.disabled = false;
+        emailLoginBtn.textContent = "Email 登入";
+      }
+    });
+
+    // Enter 鍵登入
+    [emailInput, passwordInput].forEach((input) => {
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          emailLoginBtn.click();
+        }
+      });
+    });
+
+    // 忘記密碼
+    forgotPasswordBtn.addEventListener("click", async () => {
+      loginError.hidden = true;
+      loginError.style.color = "#96352b";
+
+      const email = emailInput.value.trim();
+
+      if (!email) {
+        loginError.textContent = "請先輸入 Email，再按「忘記密碼」。";
+        loginError.hidden = false;
+        return;
+      }
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        loginError.textContent = "重設密碼信已寄出，請查看你的 Email。";
+        loginError.style.color = "#2c5a38";
+        loginError.hidden = false;
+      } catch (err) {
+        console.error(err);
+
+        if (err.code === "auth/invalid-email") {
+          loginError.textContent = "Email 格式不正確。";
+        } else {
+          loginError.textContent = "無法寄送重設信：" + (err.message || err);
+        }
+
         loginError.hidden = false;
       }
     });
