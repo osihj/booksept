@@ -596,7 +596,11 @@
       try {
         await signInWithPopup(auth, provider);
       } catch (err) {
-        loginError.textContent = "登入失敗，請再試一次。";
+        console.error(err);
+        // 直接顯示錯誤代碼，方便判斷原因（最常見：auth/unauthorized-domain，
+        // 代表 Firebase Console → Authentication → Settings → Authorized domains
+        // 還沒加入這個網站的網域，導致 Google 登入視窗根本開不起來）
+        loginError.textContent = "登入失敗：" + (err.code || err.message || err);
         loginError.hidden = false;
       }
     });
@@ -922,9 +926,25 @@
         showScanStatus("無法從照片辨識出條碼，請換一張更清晰、對準條碼的照片，或改用手動輸入 ISBN。");
       }
     }
-    function showScanStatus(msg) { scanStatus.textContent = msg; scanStatus.hidden = false; }
 
-    // 依序查詢 Google Books、Open Library 兩個公開書目資料庫，涵蓋範圍比單一來源更廣
+    // 第二個參數 ncLinkIsbn：查無資料時，附上一個連到「全國新書資訊網」的連結，方便手動查詢。
+    // 這個網站的查詢是網頁前端用 JavaScript 動態載入結果，沒有提供公開的查詢 API，
+    // 瀏覽器也無法直接用 fetch() 跨網域讀取它的搜尋結果（會被 CORS 擋下來），
+    // 所以沒辦法像 Google Books／Open Library 一樣自動帶入資料，只能連過去手動查。
+    function showScanStatus(msg, ncLinkIsbn) {
+      scanStatus.hidden = false;
+      if (ncLinkIsbn) {
+        const ncUrl = `https://isbn.ncl.edu.tw/NEW_ISBNNet/H30_SearchBooks.php?Pact=Search&Pval=${encodeURIComponent(ncLinkIsbn)}`;
+        scanStatus.innerHTML = `${escapeHtml(msg)}<br><a href="${ncUrl}" target="_blank" rel="noopener">到全國新書資訊網手動查詢「${escapeHtml(ncLinkIsbn)}」→</a>`;
+      } else {
+        scanStatus.textContent = msg;
+      }
+    }
+
+    // 依序查詢 Google Books、Open Library 兩個公開書目資料庫，涵蓋範圍比單一來源更廣。
+    // 原本也想優先查「全國新書資訊網」(isbn.ncl.edu.tw)，但實測那個網站的查詢結果是
+    // 用前端 JavaScript 動態載入、沒有公開 API，瀏覽器端 fetch() 直接查會被 CORS 擋下、
+    // 拿不到資料，所以查無資料時改成附上連結讓你手動點過去查（見 showScanStatus）。
     async function tryGoogleBooks(isbn) {
       try {
         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
@@ -962,7 +982,7 @@
       $("field-isbn").value = isbn;
       const result = (await tryGoogleBooks(isbn)) || (await tryOpenLibrary(isbn));
       if (!result) {
-        showScanStatus("兩個書目資料庫都查無這本書，請手動填寫書籍資訊。");
+        showScanStatus("Google Books 和 Open Library 都查無這本書（常見於台灣小型出版社），請手動填寫書籍資訊，或到國家圖書館查詢後手動抄過來：", isbn);
         return;
       }
       $("field-title").value = result.title;
