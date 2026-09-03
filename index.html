@@ -40,6 +40,8 @@
   h1, h2, h3 { font-family: 'Noto Serif TC', serif; font-weight: 600; margin: 0; }
 
   /* ---------- Login ---------- */
+  [hidden] { display: none !important; }
+
   .login-screen {
     min-height: 100vh;
     display: flex;
@@ -810,6 +812,10 @@
     const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
+    // 每次重新開啟網頁都要求重新登入，避免 Firebase 保留上次登入狀態直接進入書架。
+    // 若希望保持登入，可把這一行移除。
+    signOut(auth).catch(() => {});
+
     // ---------- DOM refs ----------
     const $ = (id) => document.getElementById(id);
     const loginScreen = $("login-screen");
@@ -1008,14 +1014,23 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
+    // 頁面載入時，預設一定先顯示登入頁；只有 Firebase 確認有合法使用者後才顯示主畫面。
+    loginScreen.hidden = false;
+    appRoot.hidden = true;
+
     onAuthStateChanged(auth, (user) => {
       if (user && ALLOWED_EMAIL && user.email !== ALLOWED_EMAIL) {
         loginError.textContent = "這個 Google 帳號沒有使用權限。";
         loginError.hidden = false;
+        currentUser = null;
+        loginScreen.hidden = false;
+        appRoot.hidden = true;
         signOut(auth);
         return;
       }
+
       currentUser = user;
+
       if (user) {
         loginScreen.hidden = true;
         appRoot.hidden = false;
@@ -1025,7 +1040,10 @@
       } else {
         loginScreen.hidden = false;
         appRoot.hidden = true;
-        if (unsubscribeBooks) unsubscribeBooks();
+        if (unsubscribeBooks) {
+          unsubscribeBooks();
+          unsubscribeBooks = null;
+        }
         allBooks = [];
       }
     });
