@@ -548,6 +548,23 @@
   .scan-btn-secondary { background: var(--surface); color: var(--accent); border-color: var(--accent); }
   .scan-status { font-size: 13px; color: var(--text2); margin: 0 0 14px; }
 
+  /* ---------- ISBN camera scanner overlay ---------- */
+  .isbn-scanner-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(20,18,15,0.72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .isbn-scanner-box {
+    width: 100%; max-width: 420px;
+    background: var(--surface); border-radius: 14px;
+    padding: 18px; box-shadow: var(--shadow);
+  }
+  .isbn-scanner-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .isbn-scanner-header h3 { font-size: 16px; }
+  #isbn-scanner-reader { width: 100%; min-height: 220px; border-radius: 10px; overflow: hidden; background: #000; }
+  .isbn-scanner-hint { margin: 10px 0 0; font-size: 13px; color: var(--text2); text-align: center; }
+
   .cover-field { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
   .cover-preview { width: 68px; height: 92px; border-radius: 6px; background: var(--accent-light); color: var(--accent); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
   .cover-preview img { width: 100%; height: 100%; object-fit: cover; }
@@ -881,6 +898,10 @@
             <div class="card">
 
               <div class="scan-row" id="scan-row">
+                <button class="scan-btn" id="scan-isbn-btn" type="button">
+                  <i class="ti ti-scan"></i>
+                  掃描 ISBN
+                </button>
                 <button class="scan-btn scan-btn-secondary" id="isbn-lookup-btn" type="button">
                   <i class="ti ti-search"></i>
                   查詢書目
@@ -890,7 +911,7 @@
                   國圖查詢
                 </button>
               </div>
-              <p class="source-help">直接輸入 ISBN 後按「查詢書目」，會優先嘗試 Google Books／Open Library 自動帶入書名等資料；查不到時可按「國圖查詢」到國家圖書館網站查詢。</p>
+              <p class="source-help">按「掃描 ISBN」可用相機掃描書籍背面的條碼自動帶入書目資料；也可直接輸入 ISBN 後按「查詢書目」，會優先嘗試 Google Books／Open Library 自動帶入書名等資料，查不到時可按「國圖查詢」到國家圖書館網站查詢。</p>
               <p id="scan-status" class="scan-status" hidden></p>
 
               <form id="book-form">
@@ -975,6 +996,22 @@
     </div>
   </div>
 
+  <!-- ISBN 相機掃描條碼用的浮層，固定於畫面最上層，與新增書籍頁面各自獨立 -->
+  <div class="isbn-scanner-overlay" id="isbn-scanner-overlay" hidden>
+    <div class="isbn-scanner-box">
+      <div class="isbn-scanner-header">
+        <h3>掃描 ISBN 條碼</h3>
+        <button type="button" class="icon-btn" id="isbn-scanner-close" aria-label="關閉掃描"><i class="ti ti-x"></i></button>
+      </div>
+      <div id="isbn-scanner-reader"></div>
+      <p class="isbn-scanner-hint" id="isbn-scanner-hint">請將書籍背面的 ISBN 條碼對準框內</p>
+    </div>
+  </div>
+
+  <!-- 條碼掃描函式庫：在使用者的瀏覽器裡讀取相機影像並辨識 EAN-13 條碼，
+       非本站伺服器程式碼，僅用來把掃到的條碼文字丟回頁面上既有的 ISBN 查詢流程。 -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     import {
@@ -1057,6 +1094,10 @@
     const isbnLookupBtn = $("isbn-lookup-btn");
     const nclSearchBtn = $("ncl-search-btn");
     const scanStatus = $("scan-status");
+    const scanIsbnBtn = $("scan-isbn-btn");
+    const isbnScannerOverlay = $("isbn-scanner-overlay");
+    const isbnScannerCloseBtn = $("isbn-scanner-close");
+    const isbnScannerHint = $("isbn-scanner-hint");
 
     const coverPreview = $("cover-preview");
     const coverUploadInput = $("cover-upload-input");
@@ -1085,6 +1126,9 @@
     let pendingCoverFile = null;
     let currentRating = 0;
     let currentNotes = [];
+    let html5QrScanner = null;
+    let isbnScanFlowActive = false; // true：目前處於「掃描 ISBN」流程中（用於存檔後詢問是否繼續掃描下一本）
+    let isbnScanBusy = false; // 避免同一次掃描結果被重複處理
 
     // ================= Icons (內嵌 SVG，取代外部圖示字型) =================
     // 之前用的 tabler-icons 圖示字型是從外部 CDN 載入，一旦網路環境擋掉或
@@ -1121,6 +1165,7 @@
       "adjustments-horizontal": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h6"/><path d="M14 6h6"/><circle cx="11" cy="6" r="2"/><path d="M4 12h10"/><path d="M18 12h2"/><circle cx="16" cy="12" r="2"/><path d="M4 18h4"/><path d="M12 18h8"/><circle cx="9" cy="18" r="2"/></svg>`,
       pencil: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a1.5 1.5 0 000-2.12l-1.88-1.88a1.5 1.5 0 00-2.12 0L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>`,
       "grip-vertical": `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>`,
+      scan: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 011-1h3"/><path d="M20 8V5a1 1 0 00-1-1h-3"/><path d="M4 16v3a1 1 0 001 1h3"/><path d="M20 16v3a1 1 0 01-1 1h-3"/><path d="M7 9v6"/><path d="M10 9v6"/><path d="M13 9v6"/><path d="M16.5 9v6"/></svg>`,
     };
 
     function hydrateIcon(el) {
@@ -1166,7 +1211,7 @@
       btn.addEventListener("click", () => goToPage(btn.dataset.page));
     });
 
-    $("overview-add-btn").addEventListener("click", () => openAddModal());
+    $("overview-add-btn").addEventListener("click", () => { isbnScanFlowActive = false; openAddModal(); });
 
     document.querySelectorAll("[data-status-jump]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1926,7 +1971,7 @@
     document.addEventListener("click", (e) => {
       if (e.target.closest("#empty-add-btn")) openAddModal();
     });
-    cancelBtn.addEventListener("click", closeModal);
+    cancelBtn.addEventListener("click", () => { isbnScanFlowActive = false; closeModal(); });
 
     // 記住開啟表單前所在的頁面，取消／儲存／刪除後回到原本畫面
     let formReturnPage = "shelf";
@@ -1948,6 +1993,7 @@
     }
 
     function openEditModal(book) {
+      isbnScanFlowActive = false;
       rememberReturnPage();
       editingId = book.id;
       modalTitle.textContent = "編輯書籍";
@@ -2031,6 +2077,73 @@
       if (isbn) lookupISBN(isbn);
       else showScanStatus("請先輸入 ISBN，再按「查詢書目」。");
     });
+
+    // ================= 掃描 ISBN（相機掃描 EAN-13 條碼）=================
+    scanIsbnBtn.addEventListener("click", () => {
+      isbnScanFlowActive = true;
+      startIsbnScanner();
+    });
+
+    isbnScannerCloseBtn.addEventListener("click", () => {
+      isbnScanFlowActive = false;
+      stopIsbnScanner();
+    });
+
+    async function startIsbnScanner() {
+      if (typeof Html5Qrcode === "undefined") {
+        isbnScannerOverlay.hidden = true;
+        showScanStatus("掃描功能載入失敗，請確認網路連線正常後重試，或改用「查詢書目」手動輸入 ISBN。");
+        return;
+      }
+      isbnScanBusy = false;
+      isbnScannerOverlay.hidden = false;
+      isbnScannerHint.textContent = "請將書籍背面的 ISBN 條碼對準框內";
+      try {
+        html5QrScanner = new Html5Qrcode("isbn-scanner-reader", { verbose: false });
+        await html5QrScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 260, height: 140 } },
+          onIsbnScanDecoded,
+          () => {} // 每一格掃不到條碼時都會呼叫一次，屬正常情況，不需處理
+        );
+      } catch (err) {
+        console.error("啟動相機掃描失敗：", err);
+        isbnScannerHint.textContent = "無法開啟相機，請確認已允許此網站使用相機權限，或改用「查詢書目」手動輸入 ISBN。";
+      }
+    }
+
+    function stopIsbnScanner() {
+      isbnScannerOverlay.hidden = true;
+      const scanner = html5QrScanner;
+      html5QrScanner = null;
+      if (scanner) {
+        scanner.stop().then(() => scanner.clear()).catch(() => {});
+      }
+    }
+
+    // 掃到條碼文字後的處理：驗證是否為書籍 ISBN-13、檢查是否已在書庫中，
+    // 都通過才停止掃描、開啟新增書籍表單並自動查詢書目資料，等使用者確認後才會存檔。
+    async function onIsbnScanDecoded(decodedText) {
+      if (isbnScanBusy) return;
+      const isbn = normalizeIsbn(decodedText);
+      const looksLikeBookIsbn = isbn.length === 13 && (isbn.startsWith("978") || isbn.startsWith("979"));
+      if (!looksLikeBookIsbn) {
+        isbnScannerHint.textContent = "無法辨識 ISBN，請重新掃描。";
+        return; // 繼續掃描，不中斷流程
+      }
+      const dup = allBooks.find((b) => normalizeIsbn(b.isbn) === isbn);
+      if (dup) {
+        isbnScanBusy = true;
+        isbnScannerHint.textContent = `此書已在書庫中：${dup.title || isbn}，可繼續掃描下一本。`;
+        setTimeout(() => { isbnScanBusy = false; }, 1800);
+        return; // 繼續掃描，不中斷流程
+      }
+      isbnScanBusy = true;
+      stopIsbnScanner();
+      openAddModal();
+      await lookupISBN(isbn);
+      isbnScanBusy = false;
+    }
 
     // ================= 國家圖書館查詢 / 回填 =================
     // 國圖沒有提供給這個前端頁面直接使用的公開 JSON API；瀏覽器端直接 fetch
@@ -2193,7 +2306,17 @@
         };
         if (!editingId) data.createdAt = serverTimestamp();
         await setDoc(doc(db, "books", id), data, { merge: true });
-        closeModal();
+        if (isbnScanFlowActive) {
+          // 連續掃描模式：加入書庫後詢問是否繼續掃描下一本
+          if (confirm("已加入書庫！要繼續掃描下一本書嗎？")) {
+            startIsbnScanner();
+          } else {
+            isbnScanFlowActive = false;
+            closeModal();
+          }
+        } else {
+          closeModal();
+        }
       } catch (err) {
         console.error("Firestore 儲存錯誤：", err);
         let message = "儲存失敗。";
