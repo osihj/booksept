@@ -406,10 +406,42 @@
   .book-grid.view-list .book-select { left: 14px; }
 
   /* Management / export / help pages */
-  .manage-row { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--border); }
-  .manage-row:last-child { border-bottom: none; }
-  .manage-row input[type="text"] { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface); }
-  .manage-row-count { font-size: 12px; color: var(--text3); min-width: 56px; text-align: right; flex-shrink: 0; }
+  .card-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .card-title-row .card-title { margin-bottom: 0; }
+  .manage-add-btn { flex-shrink: 0; }
+  .manage-add-form { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .manage-add-form input[type="text"] {
+    flex: 1; border: 1px solid var(--border); border-radius: 999px; padding: 7px 16px;
+    font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface);
+  }
+  .manage-add-form input[type="text"]:focus { outline: none; border-color: var(--accent); }
+
+  .manage-pill-list { display: flex; flex-direction: column; gap: 6px; }
+  .manage-empty-hint { color: var(--text3); font-size: 13px; margin: 0; }
+  .manage-pill {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 2px;
+    border-radius: 12px; border: 1px solid transparent; background: transparent;
+  }
+  .manage-pill:hover { background: var(--surface2); }
+  .manage-pill.dragging { background: var(--surface2); border-color: var(--border); box-shadow: var(--shadow); opacity: 0.85; position: relative; z-index: 5; }
+  .manage-drag-handle { flex-shrink: 0; display: flex; align-items: center; color: var(--text3); cursor: grab; touch-action: none; padding: 4px 2px; }
+  .manage-drag-handle:active { cursor: grabbing; }
+  .manage-drag-handle svg { width: 15px; height: 15px; }
+  .manage-pill-badge {
+    display: inline-flex; align-items: center; max-width: 100%;
+    padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    background: var(--accent-light); color: var(--accent);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .manage-pill-badge.is-tag { background: var(--accent2-light); color: var(--accent2); }
+  .manage-pill-input {
+    flex: 1; min-width: 0; border: 1px solid var(--accent); border-radius: 999px;
+    padding: 5px 14px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface);
+  }
+  .manage-pill-input:focus { outline: none; }
+  .manage-pill-badge, .manage-pill-input { flex: 1; }
+  .manage-row-count { font-size: 12px; color: var(--text3); min-width: 40px; text-align: right; flex-shrink: 0; }
+  .manage-pill-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
   .help-block { margin-bottom: 18px; }
   .help-block:last-child { margin-bottom: 0; }
   .help-block h3 { font-size: 14.5px; margin: 0 0 6px; color: var(--accent); }
@@ -762,11 +794,27 @@
             </div>
             <div class="manage-columns">
               <div class="card">
-                <div class="card-title">所有書單</div>
+                <div class="card-title-row">
+                  <div class="card-title">所有書單</div>
+                  <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-category-btn"><i class="ti ti-plus"></i> 新增書單</button>
+                </div>
+                <div class="manage-add-form" id="manage-category-add-form" hidden>
+                  <input type="text" id="new-category-input" placeholder="輸入書單名稱，按 Enter 新增">
+                  <button type="button" class="icon-btn" id="confirm-add-category" title="新增"><i class="ti ti-check"></i></button>
+                  <button type="button" class="icon-btn" id="cancel-add-category" title="取消"><i class="ti ti-x"></i></button>
+                </div>
                 <div id="manage-category-list"></div>
               </div>
               <div class="card">
-                <div class="card-title">所有標籤</div>
+                <div class="card-title-row">
+                  <div class="card-title">所有標籤</div>
+                  <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-tag-btn"><i class="ti ti-plus"></i> 新增標籤</button>
+                </div>
+                <div class="manage-add-form" id="manage-tag-add-form" hidden>
+                  <input type="text" id="new-tag-input" placeholder="輸入標籤名稱，按 Enter 新增">
+                  <button type="button" class="icon-btn" id="confirm-add-tag" title="新增"><i class="ti ti-check"></i></button>
+                  <button type="button" class="icon-btn" id="cancel-add-tag" title="取消"><i class="ti ti-x"></i></button>
+                </div>
                 <div id="manage-tag-list"></div>
               </div>
             </div>
@@ -1021,6 +1069,10 @@
     // ---------- State ----------
     let currentUser = null;
     let allBooks = [];
+    let listMeta = { categoryOrder: [], tagOrder: [], manualCategories: [], manualTags: [] };
+    let unsubscribeMeta = null;
+    let lastCategoryCounts = {};
+    let lastTagCounts = {};
     let unsubscribeBooks = null;
     let activeStatus = "all";
     let activeCategory = "all";
@@ -1067,6 +1119,8 @@
       "brand-google": `<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.23c0-.82-.07-1.42-.22-2.05H12v3.72h6.02c-.12.97-.78 2.43-2.24 3.41l-.02.14 3.25 2.52.23.02c2.07-1.91 3.26-4.72 3.26-7.76z"/><path fill="#34A853" d="M12 23c2.94 0 5.4-.97 7.2-2.63l-3.43-2.66c-.92.64-2.16 1.09-3.77 1.09-2.88 0-5.32-1.9-6.19-4.53l-.13.01-3.38 2.62-.04.13C4.24 20.55 7.83 23 12 23z"/><path fill="#FBBC05" d="M5.81 14.27a6.6 6.6 0 01-.36-2.13c0-.74.13-1.46.35-2.13l-.01-.14-3.42-2.66-.11.05A10.94 10.94 0 001 12.14c0 1.78.43 3.46 1.26 4.94z"/><path fill="#EA4335" d="M12 5.48c2.04 0 3.42.88 4.21 1.62l3.07-3c-1.9-1.77-4.36-2.85-7.28-2.85-4.17 0-7.76 2.45-9.43 6.03l3.55 2.76c.87-2.63 3.31-4.56 6.19-4.56z"/></svg>`,
       bookshelf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v16"/><path d="M21 4v16"/><path d="M3 20h18"/><path d="M6 4v13"/><path d="M9.5 4v13"/><path d="M14.8 4.6l2.9-.5 2.2 12.8-2.9.5z"/></svg>`,
       "adjustments-horizontal": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h6"/><path d="M14 6h6"/><circle cx="11" cy="6" r="2"/><path d="M4 12h10"/><path d="M18 12h2"/><circle cx="16" cy="12" r="2"/><path d="M4 18h4"/><path d="M12 18h8"/><circle cx="9" cy="18" r="2"/></svg>`,
+      pencil: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a1.5 1.5 0 000-2.12l-1.88-1.88a1.5 1.5 0 00-2.12 0L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>`,
+      "grip-vertical": `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>`,
     };
 
     function hydrateIcon(el) {
@@ -1269,6 +1323,7 @@
         loginScreen.hidden = true;
         appRoot.hidden = false;
         subscribeBooks(user.uid);
+        subscribeMeta(user.uid);
       } else {
         loginScreen.hidden = false;
         appRoot.hidden = true;
@@ -1276,7 +1331,12 @@
           unsubscribeBooks();
           unsubscribeBooks = null;
         }
+        if (unsubscribeMeta) {
+          unsubscribeMeta();
+          unsubscribeMeta = null;
+        }
         allBooks = [];
+        listMeta = { categoryOrder: [], tagOrder: [], manualCategories: [], manualTags: [] };
       }
     });
 
@@ -1289,6 +1349,34 @@
         renderSidebarShelves();
         render();
       }, (err) => console.error(err));
+    }
+
+    // 書單／標籤的「手動新增（尚無書籍）」清單與自訂排序，存在每位使用者專屬的
+    // meta 文件裡，和書籍分開儲存，這樣使用者不用先加書就能先建立書單／標籤骨架。
+    function subscribeMeta(uid) {
+      const ref = doc(db, "meta", uid);
+      unsubscribeMeta = onSnapshot(ref, (snap) => {
+        const d = snap.exists() ? snap.data() : {};
+        listMeta = {
+          categoryOrder: Array.isArray(d.categoryOrder) ? d.categoryOrder : [],
+          tagOrder: Array.isArray(d.tagOrder) ? d.tagOrder : [],
+          manualCategories: Array.isArray(d.manualCategories) ? d.manualCategories : [],
+          manualTags: Array.isArray(d.manualTags) ? d.manualTags : [],
+        };
+        renderSidebarShelves();
+        renderTagChips();
+      }, (err) => console.error(err));
+    }
+    function saveMeta(partial) {
+      if (!currentUser) return Promise.resolve();
+      return setDoc(doc(db, "meta", currentUser.uid), partial, { merge: true });
+    }
+    // 依照使用者自訂順序排列名稱；還沒被排過序的新項目，依字母排序附加在最後面。
+    function orderNames(names, orderArr) {
+      const idx = new Map(orderArr.map((n, i) => [n, i]));
+      const known = names.filter((n) => idx.has(n)).sort((a, b) => idx.get(a) - idx.get(b));
+      const unknown = names.filter((n) => !idx.has(n)).sort((a, b) => a.localeCompare(b, "zh-Hant"));
+      return [...known, ...unknown];
     }
 
     // ---------- helpers ----------
@@ -1411,11 +1499,13 @@
         : `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有分類資料</p>`;
     }
 
-    // ================= 左側「書單」清單（依分類自動產生） =================
+    // ================= 左側「書單」清單（依分類自動產生，並合併手動新增、尚無書籍的書單） =================
     function renderSidebarShelves() {
       const categoryCounts = {};
       allBooks.forEach((b) => { const c = getCategory(b); categoryCounts[c] = (categoryCounts[c] || 0) + 1; });
-      const categoriesSorted = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, "zh-Hant"));
+      const allCategoryNames = new Set([...Object.keys(categoryCounts), ...listMeta.manualCategories]);
+      const categoriesSorted = orderNames([...allCategoryNames], listMeta.categoryOrder);
+      lastCategoryCounts = categoryCounts;
 
       let html = `<button class="sidebar-link${activeCategory === "all" ? " active" : ""}" data-page="shelf" data-category="all">
           <i class="ti ti-bookshelf"></i><span class="label">我的書架</span>
@@ -1440,16 +1530,18 @@
       renderManageCategoryList(categoriesSorted, categoryCounts);
     }
 
-    // ================= Tag chips（書單內容區） =================
+    // ================= Tag chips（書單內容區，並合併手動新增、尚無書籍的標籤） =================
     function renderTagChips() {
       const tagCounts = {};
       allBooks.forEach((b) => getTags(b).forEach((t) => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
-      const tagsSorted = Object.keys(tagCounts).sort((a, b) => a.localeCompare(b, "zh-Hant"));
+      const allTagNames = new Set([...Object.keys(tagCounts), ...listMeta.manualTags]);
+      const tagsSorted = orderNames([...allTagNames], listMeta.tagOrder);
+      lastTagCounts = tagCounts;
 
       tagChipList.innerHTML = tagsSorted.length ? tagsSorted.map((t) => `
         <button type="button" class="tag-chip${activeTags.has(t) ? " active" : ""}" data-tag="${escapeHtml(t)}">
-          #${escapeHtml(t)} <span class="tc-count">(${tagCounts[t]})</span>
-        </button>`).join("") : `<span class="tag-empty-hint">還沒有標籤，可在新增／編輯書籍時加上標籤（用逗號分隔）</span>`;
+          #${escapeHtml(t)} <span class="tc-count">(${tagCounts[t] || 0})</span>
+        </button>`).join("") : `<span class="tag-empty-hint">還沒有標籤，可在新增／編輯書籍時加上標籤（用逗號分隔），或到「書單管理」先建立標籤</span>`;
 
       tagChipList.querySelectorAll(".tag-chip").forEach((chip) => {
         chip.addEventListener("click", () => {
@@ -1492,69 +1584,223 @@
     });
 
     // ================= 書單管理／標籤管理 =================
-    function renderManageCategoryList(categoriesSorted, categoryCounts) {
-      const el = $("manage-category-list");
-      if (!categoriesSorted.length) { el.innerHTML = `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有任何書單，新增書籍並填寫分類後會自動出現在這裡。</p>`; return; }
-      el.innerHTML = categoriesSorted.map((c) => `
-        <div class="manage-row" data-category="${escapeHtml(c)}">
-          <input type="text" value="${escapeHtml(c)}">
-          <span class="manage-row-count">${categoryCounts[c]} 本</span>
-          <button class="icon-btn manage-rename" title="重新命名"><i class="ti ti-check"></i></button>
-          <button class="icon-btn manage-delete" title="刪除此書單（書籍將歸為未分類）"><i class="ti ti-trash"></i></button>
-        </div>`).join("");
+    // 產生一列「Notion 風格」圓角膠囊：預設顯示圓角文字徽章，點筆狀圖示才切換成輸入框編輯；
+    // 左側握把可上下拖曳排序。isTag 只影響顏色與刪除書籍時的欄位。
+    function renderManagePillRow(name, count, isTag) {
+      const esc = escapeHtml(name);
+      return `
+        <div class="manage-pill" data-name="${esc}">
+          <span class="manage-drag-handle" title="拖曳排序"><i class="ti ti-grip-vertical"></i></span>
+          <span class="manage-pill-badge${isTag ? " is-tag" : ""}">${esc}</span>
+          <input type="text" class="manage-pill-input" value="${esc}" hidden>
+          <span class="manage-row-count">${count} 本</span>
+          <div class="manage-pill-actions view-actions">
+            <button type="button" class="icon-btn manage-edit" title="編輯"><i class="ti ti-pencil"></i></button>
+            <button type="button" class="icon-btn manage-delete" title="刪除"><i class="ti ti-trash"></i></button>
+          </div>
+          <div class="manage-pill-actions edit-actions" hidden>
+            <button type="button" class="icon-btn manage-confirm" title="確認"><i class="ti ti-check"></i></button>
+            <button type="button" class="icon-btn manage-cancel" title="取消"><i class="ti ti-x"></i></button>
+          </div>
+        </div>`;
+    }
 
-      el.querySelectorAll(".manage-row").forEach((row) => {
-        const original = row.dataset.category;
-        const input = row.querySelector("input");
-        row.querySelector(".manage-rename").addEventListener("click", async () => {
-          const next = input.value.trim();
-          if (!next || next === original) return;
-          const affected = allBooks.filter((b) => getCategory(b) === original);
-          for (const b of affected) { await setDoc(doc(db, "books", b.id), { category: next }, { merge: true }); }
-        });
-        row.querySelector(".manage-delete").addEventListener("click", async () => {
-          if (!confirm(`確定要刪除書單「${original}」嗎？相關書籍會改為「未分類」，書籍本身不會被刪除。`)) return;
-          const affected = allBooks.filter((b) => getCategory(b) === original);
-          for (const b of affected) { await setDoc(doc(db, "books", b.id), { category: "未分類" }, { merge: true }); }
-          if (activeCategory === original) activeCategory = "all";
+    function wireManagePillRow(row, { onRename, onDelete }) {
+      const original = row.dataset.name;
+      const badge = row.querySelector(".manage-pill-badge");
+      const input = row.querySelector(".manage-pill-input");
+      const viewActions = row.querySelector(".view-actions");
+      const editActions = row.querySelector(".edit-actions");
+
+      function enterEdit() {
+        badge.hidden = true; input.hidden = false;
+        viewActions.hidden = true; editActions.hidden = false;
+        input.value = original; input.focus(); input.select();
+      }
+      function exitEdit() {
+        badge.hidden = false; input.hidden = true;
+        viewActions.hidden = false; editActions.hidden = true;
+      }
+      async function confirmRename() {
+        const next = input.value.trim();
+        if (!next || next === original) { exitEdit(); return; }
+        await onRename(original, next);
+      }
+
+      row.querySelector(".manage-edit").addEventListener("click", enterEdit);
+      row.querySelector(".manage-cancel").addEventListener("click", exitEdit);
+      row.querySelector(".manage-confirm").addEventListener("click", confirmRename);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); confirmRename(); }
+        else if (e.key === "Escape") { exitEdit(); }
+      });
+      row.querySelector(".manage-delete").addEventListener("click", () => onDelete(original));
+    }
+
+    // 用指標事件（滑鼠／觸控皆可）實作握把拖曳排序：拖曳中即時搬動 DOM 順序，
+    // 放開後把目前排序寫回 Firestore 的 meta 文件。
+    function enablePointerReorder(container, onReorderCommit) {
+      container.querySelectorAll(".manage-drag-handle").forEach((handle) => {
+        handle.addEventListener("pointerdown", (e) => {
+          const pill = handle.closest(".manage-pill");
+          if (!pill) return;
+          e.preventDefault();
+          const pointerId = e.pointerId;
+          try { pill.setPointerCapture(pointerId); } catch (err) {}
+          pill.classList.add("dragging");
+
+          function findDropTarget(y) {
+            const siblings = [...container.querySelectorAll(".manage-pill")].filter((el) => el !== pill);
+            let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+            for (const child of siblings) {
+              const box = child.getBoundingClientRect();
+              const offset = y - box.top - box.height / 2;
+              if (offset < 0 && offset > closest.offset) closest = { offset, element: child };
+            }
+            return closest.element;
+          }
+          function onMove(ev) {
+            const after = findDropTarget(ev.clientY);
+            if (after == null) container.appendChild(pill);
+            else container.insertBefore(pill, after);
+          }
+          function onUp() {
+            pill.classList.remove("dragging");
+            try { pill.releasePointerCapture(pointerId); } catch (err) {}
+            pill.removeEventListener("pointermove", onMove);
+            pill.removeEventListener("pointerup", onUp);
+            pill.removeEventListener("pointercancel", onUp);
+            const order = [...container.querySelectorAll(".manage-pill")].map((p) => p.dataset.name);
+            onReorderCommit(order);
+          }
+          pill.addEventListener("pointermove", onMove);
+          pill.addEventListener("pointerup", onUp);
+          pill.addEventListener("pointercancel", onUp);
         });
       });
+    }
+
+    async function renameCategory(oldName, newName) {
+      const affected = allBooks.filter((b) => getCategory(b) === oldName);
+      for (const b of affected) { await setDoc(doc(db, "books", b.id), { category: newName }, { merge: true }); }
+      const manualCategories = listMeta.manualCategories.filter((c) => c !== oldName);
+      if (affected.length === 0) manualCategories.push(newName); // 純手動、尚無書籍的書單：改名後仍要保留
+      const categoryOrder = listMeta.categoryOrder.map((c) => (c === oldName ? newName : c));
+      if (!categoryOrder.includes(newName)) categoryOrder.push(newName);
+      if (activeCategory === oldName) activeCategory = newName;
+      await saveMeta({ manualCategories, categoryOrder });
+    }
+
+    async function deleteCategory(name) {
+      const affected = allBooks.filter((b) => getCategory(b) === name);
+      const msg = affected.length
+        ? `確定要刪除書單「${name}」嗎？相關書籍會改為「未分類」，書籍本身不會被刪除。`
+        : `確定要刪除書單「${name}」嗎？`;
+      if (!confirm(msg)) return;
+      for (const b of affected) { await setDoc(doc(db, "books", b.id), { category: "未分類" }, { merge: true }); }
+      const manualCategories = listMeta.manualCategories.filter((c) => c !== name);
+      const categoryOrder = listMeta.categoryOrder.filter((c) => c !== name);
+      if (activeCategory === name) activeCategory = "all";
+      await saveMeta({ manualCategories, categoryOrder });
+    }
+
+    async function renameTag(oldName, newName) {
+      const affected = allBooks.filter((b) => getTags(b).includes(oldName));
+      for (const b of affected) {
+        const tags = getTags(b).map((t) => (t === oldName ? newName : t));
+        await setDoc(doc(db, "books", b.id), { tags }, { merge: true });
+      }
+      const manualTags = listMeta.manualTags.filter((t) => t !== oldName);
+      if (affected.length === 0) manualTags.push(newName); // 純手動、尚無書籍的標籤：改名後仍要保留
+      const tagOrder = listMeta.tagOrder.map((t) => (t === oldName ? newName : t));
+      if (!tagOrder.includes(newName)) tagOrder.push(newName);
+      if (activeTags.has(oldName)) { activeTags.delete(oldName); activeTags.add(newName); }
+      await saveMeta({ manualTags, tagOrder });
+    }
+
+    async function deleteTag(name) {
+      const affected = allBooks.filter((b) => getTags(b).includes(name));
+      if (!confirm(`確定要刪除標籤「${name}」嗎？`)) return;
+      for (const b of affected) {
+        const tags = getTags(b).filter((t) => t !== name);
+        await setDoc(doc(db, "books", b.id), { tags }, { merge: true });
+      }
+      const manualTags = listMeta.manualTags.filter((t) => t !== name);
+      const tagOrder = listMeta.tagOrder.filter((t) => t !== name);
+      activeTags.delete(name);
+      await saveMeta({ manualTags, tagOrder });
+    }
+
+    function renderManageCategoryList(categoriesSorted, categoryCounts) {
+      const el = $("manage-category-list");
+      if (!categoriesSorted.length) { el.innerHTML = `<p class="manage-empty-hint">還沒有任何書單，可按上方「新增書單」先建立，或新增書籍並填寫分類後自動出現在這裡。</p>`; return; }
+      el.className = "manage-pill-list";
+      el.innerHTML = categoriesSorted.map((c) => renderManagePillRow(c, categoryCounts[c] || 0, false)).join("");
+      el.querySelectorAll(".manage-pill").forEach((row) => {
+        wireManagePillRow(row, { onRename: renameCategory, onDelete: deleteCategory });
+      });
+      enablePointerReorder(el, (order) => saveMeta({ categoryOrder: order }));
     }
 
     function renderManageTagList(tagsSorted, tagCounts) {
       const el = $("manage-tag-list");
-      if (!tagsSorted.length) { el.innerHTML = `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有任何標籤，新增書籍時可在「標籤」欄位輸入（用逗號分隔多個標籤）。</p>`; return; }
-      el.innerHTML = tagsSorted.map((t) => `
-        <div class="manage-row" data-tag="${escapeHtml(t)}">
-          <input type="text" value="${escapeHtml(t)}">
-          <span class="manage-row-count">${tagCounts[t]} 本</span>
-          <button class="icon-btn manage-rename" title="重新命名"><i class="ti ti-check"></i></button>
-          <button class="icon-btn manage-delete" title="刪除此標籤"><i class="ti ti-trash"></i></button>
-        </div>`).join("");
+      if (!tagsSorted.length) { el.innerHTML = `<p class="manage-empty-hint">還沒有任何標籤，可按上方「新增標籤」先建立，或新增書籍時在「標籤」欄位輸入（用逗號分隔多個標籤）。</p>`; return; }
+      el.className = "manage-pill-list";
+      el.innerHTML = tagsSorted.map((t) => renderManagePillRow(t, tagCounts[t] || 0, true)).join("");
+      el.querySelectorAll(".manage-pill").forEach((row) => {
+        wireManagePillRow(row, { onRename: renameTag, onDelete: deleteTag });
+      });
+      enablePointerReorder(el, (order) => saveMeta({ tagOrder: order }));
+    }
 
-      el.querySelectorAll(".manage-row").forEach((row) => {
-        const original = row.dataset.tag;
-        const input = row.querySelector("input");
-        row.querySelector(".manage-rename").addEventListener("click", async () => {
-          const next = input.value.trim();
-          if (!next || next === original) return;
-          const affected = allBooks.filter((b) => getTags(b).includes(original));
-          for (const b of affected) {
-            const tags = getTags(b).map((t) => (t === original ? next : t));
-            await setDoc(doc(db, "books", b.id), { tags }, { merge: true });
-          }
-        });
-        row.querySelector(".manage-delete").addEventListener("click", async () => {
-          if (!confirm(`確定要刪除標籤「${original}」嗎？`)) return;
-          const affected = allBooks.filter((b) => getTags(b).includes(original));
-          for (const b of affected) {
-            const tags = getTags(b).filter((t) => t !== original);
-            await setDoc(doc(db, "books", b.id), { tags }, { merge: true });
-          }
-          activeTags.delete(original);
-        });
+    // ================= 新增空的書單／標籤（不需要先有書） =================
+    function setupInlineAdd({ addBtnId, formId, inputId, confirmId, cancelId, onAdd }) {
+      const addBtn = $(addBtnId), form = $(formId), input = $(inputId);
+      const confirmBtn = $(confirmId), cancelBtn = $(cancelId);
+      function open() { addBtn.hidden = true; form.hidden = false; input.value = ""; input.focus(); }
+      function close() { form.hidden = true; addBtn.hidden = false; }
+      addBtn.addEventListener("click", open);
+      cancelBtn.addEventListener("click", close);
+      async function submit() {
+        const val = input.value.trim();
+        if (!val) { input.focus(); return; }
+        await onAdd(val);
+        close();
+      }
+      confirmBtn.addEventListener("click", submit);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); submit(); }
+        else if (e.key === "Escape") { close(); }
       });
     }
+
+    setupInlineAdd({
+      addBtnId: "add-category-btn", formId: "manage-category-add-form", inputId: "new-category-input",
+      confirmId: "confirm-add-category", cancelId: "cancel-add-category",
+      onAdd: async (name) => {
+        if (lastCategoryCounts[name] != null || listMeta.manualCategories.includes(name)) {
+          alert("這個書單已經存在了。");
+          return;
+        }
+        const manualCategories = [...listMeta.manualCategories, name];
+        const categoryOrder = listMeta.categoryOrder.includes(name) ? listMeta.categoryOrder : [...listMeta.categoryOrder, name];
+        await saveMeta({ manualCategories, categoryOrder });
+      },
+    });
+
+    setupInlineAdd({
+      addBtnId: "add-tag-btn", formId: "manage-tag-add-form", inputId: "new-tag-input",
+      confirmId: "confirm-add-tag", cancelId: "cancel-add-tag",
+      onAdd: async (name) => {
+        if (lastTagCounts[name] != null || listMeta.manualTags.includes(name)) {
+          alert("這個標籤已經存在了。");
+          return;
+        }
+        const manualTags = [...listMeta.manualTags, name];
+        const tagOrder = listMeta.tagOrder.includes(name) ? listMeta.tagOrder : [...listMeta.tagOrder, name];
+        await saveMeta({ manualTags, tagOrder });
+      },
+    });
 
     // ================= 匯出資料 =================
     function downloadBlob(content, filename, type) {
