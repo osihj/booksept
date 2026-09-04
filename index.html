@@ -436,6 +436,8 @@
     content: ''; display: inline-block; width: 3px; height: 14px;
     background: var(--accent); margin-right: 8px; border-radius: 2px;
   }
+  .manage-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .manage-columns { grid-template-columns: 1fr; } }
 
   .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
   .stat-card {
@@ -508,16 +510,7 @@
   .profile-avatar { width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; margin-bottom: 12px; }
   .profile-email { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
 
-  /* ---------- Modal ---------- */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(44,42,39,0.4);
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 40px 16px; overflow-y: auto; z-index: 200;
-  }
-  .modal { background: var(--surface); border-radius: 14px; width: 100%; max-width: 560px; box-shadow: var(--shadow); }
-  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border); }
-  .modal-body { padding: 20px 22px 24px; }
-
+  /* ---------- 新增／編輯書籍表單（內嵌頁面，不使用彈跳視窗） ---------- */
   .scan-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
   .scan-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; border-radius: var(--radius); padding: 9px 14px; font-size: 13px; cursor: pointer; border: 1px solid var(--accent); }
   .scan-btn-secondary { background: var(--surface); color: var(--accent); border-color: var(--accent); }
@@ -552,8 +545,6 @@
 
   @media (max-width: 640px) {
     .field-grid { grid-template-columns: 1fr; }
-    .modal-overlay { padding: 0; }
-    .modal { max-width: 100%; min-height: 100vh; border-radius: 0; }
   }
 </style>
 </head>
@@ -632,7 +623,6 @@
             <div class="sidebar-list">
               <button class="sidebar-link" id="overview-add-btn" type="button"><i class="ti ti-plus"></i><span class="label">新增書籍</span></button>
               <button class="sidebar-link" data-page="manage"><i class="ti ti-list-details"></i><span class="label">書單管理</span></button>
-              <button class="sidebar-link" data-page="tags"><i class="ti ti-tags"></i><span class="label">標籤管理</span></button>
               <button class="sidebar-link" data-page="export"><i class="ti ti-download"></i><span class="label">匯出資料</span></button>
               <button class="sidebar-link" data-page="stats"><i class="ti ti-chart-bar"></i><span class="label">閱讀統計</span></button>
               <button class="sidebar-link" data-page="help"><i class="ti ti-help-circle"></i><span class="label">使用說明</span></button>
@@ -761,33 +751,24 @@
             </div>
           </section>
 
-          <!-- 書單管理 -->
+          <!-- 書單管理（含標籤管理） -->
           <section id="page-manage" class="page">
             <div class="shelf-header">
               <div>
                 <div class="shelf-eyebrow2">TOOLS</div>
                 <h1>書單管理</h1>
-                <p class="shelf-sub">書單會依照每本書的「分類」自動產生，可在此重新命名或刪除</p>
+                <p class="shelf-sub">書單依每本書的「分類」自動產生、標籤依「標籤」欄位自動產生，皆可在此重新命名或刪除</p>
               </div>
             </div>
-            <div class="card">
-              <div class="card-title">所有書單</div>
-              <div id="manage-category-list"></div>
-            </div>
-          </section>
-
-          <!-- 標籤管理 -->
-          <section id="page-tags" class="page">
-            <div class="shelf-header">
-              <div>
-                <div class="shelf-eyebrow2">TOOLS</div>
-                <h1>標籤管理</h1>
-                <p class="shelf-sub">標籤可在新增／編輯書籍時輸入，多個標籤請用逗號分隔</p>
+            <div class="manage-columns">
+              <div class="card">
+                <div class="card-title">所有書單</div>
+                <div id="manage-category-list"></div>
               </div>
-            </div>
-            <div class="card">
-              <div class="card-title">所有標籤</div>
-              <div id="manage-tag-list"></div>
+              <div class="card">
+                <div class="card-title">所有標籤</div>
+                <div id="manage-tag-list"></div>
+              </div>
             </div>
           </section>
 
@@ -822,15 +803,15 @@
             <div class="card">
               <div class="help-block">
                 <h3>新增與編輯書籍</h3>
-                <p>點選右上角「新增書籍」，可手動輸入書籍資料，或輸入 ISBN 後按「查詢書目」自動帶入書名、作者等資訊。點選書籍卡片即可編輯或刪除該本書。</p>
+                <p>點選左側工具列「新增書籍」，可手動輸入書籍資料，或輸入 ISBN 後按「查詢書目」自動帶入書名、作者等資訊。點選書籍卡片即可編輯或刪除該本書。</p>
               </div>
               <div class="help-block">
                 <h3>書單與標籤</h3>
-                <p>左側「書單」依照每本書的分類自動整理；「標籤」則是在編輯書籍時輸入多個以逗號分隔的關鍵字，可在書籍列表上方以 Tag 篩選，提供更彈性的分類方式。</p>
+                <p>左側「書單」依照每本書的分類自動整理；「標籤」則是在編輯書籍時輸入多個以逗號分隔的關鍵字，可在書籍列表上方以 Tag 篩選，提供更彈性的分類方式。兩者都可以到工具列的「書單管理」統一重新命名或刪除。</p>
               </div>
               <div class="help-block">
                 <h3>檢視、篩選與排序</h3>
-                <p>書籍列表右上角可切換格狀／清單檢視並選擇排序方式；頂端搜尋列右側的篩選鈕可依閱讀狀態篩選。勾選封面左上角的核取方塊可多選書籍，進行批次刪除。</p>
+                <p>書籍列表右上角可切換格狀／清單檢視並選擇排序方式；書架上方的「未讀／閱讀中／已讀完」可快速篩選閱讀狀態。勾選封面左上角的核取方塊可多選書籍，進行批次刪除。</p>
               </div>
               <div class="help-block">
                 <h3>備份資料</h3>
@@ -839,108 +820,109 @@
             </div>
           </section>
 
-        </main>
-      </div>
-    </div>
-  </div>
-
-  <!-- 新增／編輯書籍面板 -->
-  <div id="book-modal" class="modal-overlay" hidden>
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="modal-title">新增書籍</h2>
-        <button class="icon-btn" id="close-modal-btn"><i class="ti ti-x"></i></button>
-      </div>
-
-      <div class="modal-body">
-
-        <div class="scan-row" id="scan-row">
-          <button class="scan-btn scan-btn-secondary" id="isbn-lookup-btn" type="button">
-            <i class="ti ti-search"></i>
-            查詢書目
-          </button>
-          <button class="scan-btn scan-btn-secondary" id="ncl-search-btn" type="button">
-            <i class="ti ti-library"></i>
-            國圖查詢
-          </button>
-        </div>
-        <p class="source-help">直接輸入 ISBN 後按「查詢書目」，會優先嘗試 Google Books／Open Library 自動帶入書名等資料；查不到時可按「國圖查詢」到國家圖書館網站查詢。</p>
-        <p id="scan-status" class="scan-status" hidden></p>
-
-        <form id="book-form">
-
-          <div class="cover-field">
-            <div class="cover-preview" id="cover-preview">
-              <i class="ti ti-photo"></i>
-            </div>
-            <div class="cover-actions">
-              <label class="btn btn-accent-outline btn-sm">
-                上傳封面
-                <input type="file" accept="image/*" id="cover-upload-input" hidden>
-              </label>
-              <button type="button" class="btn btn-ghost btn-sm" id="remove-cover-btn" hidden>移除封面</button>
-            </div>
-          </div>
-
-          <div class="field-grid">
-            <label class="field"><span>書名 *</span><input type="text" id="field-title" required></label>
-            <label class="field"><span>作者</span><input type="text" id="field-author"></label>
-            <label class="field"><span>譯者</span><input type="text" id="field-translator" placeholder="原文書可留空"></label>
-            <label class="field"><span>出版社</span><input type="text" id="field-publisher"></label>
-            <label class="field"><span>ISBN</span><input type="text" inputmode="numeric" autocomplete="off" id="field-isbn" placeholder="可直接輸入 10 或 13 碼 ISBN"></label>
-            <label class="field"><span>購買日期</span><input type="date" id="field-purchase-date"></label>
-            <label class="field"><span>購買金額（NT$）</span><input type="number" id="field-price" min="0" step="1"></label>
-            <label class="field">
-              <span>書況</span>
-              <select id="field-condition"><option value="new">全新</option><option value="used">二手</option><option value="sold">賣出</option></select>
-            </label>
-            <label class="field">
-              <span>閱讀狀態</span>
-              <select id="field-status"><option value="unread">未讀</option><option value="reading">閱讀中</option><option value="finished">已讀完</option></select>
-            </label>
-            <label class="field">
-              <span>書籍分類</span>
-              <input type="text" id="field-category" list="category-options" placeholder="例：文學、心理學、歷史">
-              <datalist id="category-options"></datalist>
-            </label>
-            <label class="field field-wide">
-              <span>標籤（用逗號分隔，例：Sci-Fi, Physics）</span>
-              <input type="text" id="field-tags" list="tag-options" placeholder="例：Sci-Fi, Physics">
-              <datalist id="tag-options"></datalist>
-            </label>
-            <label class="field">
-              <span>評分</span>
-              <div class="star-input" id="star-input" data-value="0" role="radiogroup" aria-label="書籍評分">
-                <i class="ti ti-star" data-star="1" role="radio" aria-label="1 星"></i>
-                <i class="ti ti-star" data-star="2" role="radio" aria-label="2 星"></i>
-                <i class="ti ti-star" data-star="3" role="radio" aria-label="3 星"></i>
-                <i class="ti ti-star" data-star="4" role="radio" aria-label="4 星"></i>
-                <i class="ti ti-star" data-star="5" role="radio" aria-label="5 星"></i>
+          <!-- 新增／編輯書籍 -->
+          <section id="page-book-form" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">TOOLS</div>
+                <h1 id="modal-title">新增書籍</h1>
+                <p class="shelf-sub">手動輸入書籍資料，或輸入 ISBN 後按「查詢書目」自動帶入書名、作者等資訊</p>
               </div>
-            </label>
-            <label class="field"><span>存放位置</span><input type="text" id="field-location" placeholder="例：客廳書櫃 B 排"></label>
-          </div>
-
-          <div class="notes-section">
-            <span class="field-label">閱讀心得</span>
-            <div id="notes-list" class="notes-list"></div>
-            <div class="note-add-row">
-              <textarea id="note-input" placeholder="寫下這次讀到這裡的想法..." rows="2"></textarea>
-              <button type="button" class="btn btn-accent-outline btn-sm" id="add-note-btn">加入心得</button>
             </div>
-          </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-ghost" id="delete-book-btn" hidden>
-              <i class="ti ti-trash"></i>
-              刪除這本書
-            </button>
-            <div class="footer-spacer"></div>
-            <button type="button" class="btn btn-ghost" id="cancel-btn">取消</button>
-            <button type="submit" class="btn btn-accent">儲存</button>
-          </div>
+            <div class="card">
 
-        </form>
+              <div class="scan-row" id="scan-row">
+                <button class="scan-btn scan-btn-secondary" id="isbn-lookup-btn" type="button">
+                  <i class="ti ti-search"></i>
+                  查詢書目
+                </button>
+                <button class="scan-btn scan-btn-secondary" id="ncl-search-btn" type="button">
+                  <i class="ti ti-library"></i>
+                  國圖查詢
+                </button>
+              </div>
+              <p class="source-help">直接輸入 ISBN 後按「查詢書目」，會優先嘗試 Google Books／Open Library 自動帶入書名等資料；查不到時可按「國圖查詢」到國家圖書館網站查詢。</p>
+              <p id="scan-status" class="scan-status" hidden></p>
+
+              <form id="book-form">
+
+                <div class="cover-field">
+                  <div class="cover-preview" id="cover-preview">
+                    <i class="ti ti-photo"></i>
+                  </div>
+                  <div class="cover-actions">
+                    <label class="btn btn-accent-outline btn-sm">
+                      上傳封面
+                      <input type="file" accept="image/*" id="cover-upload-input" hidden>
+                    </label>
+                    <button type="button" class="btn btn-ghost btn-sm" id="remove-cover-btn" hidden>移除封面</button>
+                  </div>
+                </div>
+
+                <div class="field-grid">
+                  <label class="field"><span>書名 *</span><input type="text" id="field-title" required></label>
+                  <label class="field"><span>作者</span><input type="text" id="field-author"></label>
+                  <label class="field"><span>譯者</span><input type="text" id="field-translator" placeholder="原文書可留空"></label>
+                  <label class="field"><span>出版社</span><input type="text" id="field-publisher"></label>
+                  <label class="field"><span>ISBN</span><input type="text" inputmode="numeric" autocomplete="off" id="field-isbn" placeholder="可直接輸入 10 或 13 碼 ISBN"></label>
+                  <label class="field"><span>購買日期</span><input type="date" id="field-purchase-date"></label>
+                  <label class="field"><span>購買金額（NT$）</span><input type="number" id="field-price" min="0" step="1"></label>
+                  <label class="field">
+                    <span>書況</span>
+                    <select id="field-condition"><option value="new">全新</option><option value="used">二手</option><option value="sold">賣出</option></select>
+                  </label>
+                  <label class="field">
+                    <span>閱讀狀態</span>
+                    <select id="field-status"><option value="unread">未讀</option><option value="reading">閱讀中</option><option value="finished">已讀完</option></select>
+                  </label>
+                  <label class="field">
+                    <span>書籍分類</span>
+                    <input type="text" id="field-category" list="category-options" placeholder="例：文學、心理學、歷史">
+                    <datalist id="category-options"></datalist>
+                  </label>
+                  <label class="field field-wide">
+                    <span>標籤（用逗號分隔，例：Sci-Fi, Physics）</span>
+                    <input type="text" id="field-tags" list="tag-options" placeholder="例：Sci-Fi, Physics">
+                    <datalist id="tag-options"></datalist>
+                  </label>
+                  <label class="field">
+                    <span>評分</span>
+                    <div class="star-input" id="star-input" data-value="0" role="radiogroup" aria-label="書籍評分">
+                      <i class="ti ti-star" data-star="1" role="radio" aria-label="1 星"></i>
+                      <i class="ti ti-star" data-star="2" role="radio" aria-label="2 星"></i>
+                      <i class="ti ti-star" data-star="3" role="radio" aria-label="3 星"></i>
+                      <i class="ti ti-star" data-star="4" role="radio" aria-label="4 星"></i>
+                      <i class="ti ti-star" data-star="5" role="radio" aria-label="5 星"></i>
+                    </div>
+                  </label>
+                  <label class="field"><span>存放位置</span><input type="text" id="field-location" placeholder="例：客廳書櫃 B 排"></label>
+                </div>
+
+                <div class="notes-section">
+                  <span class="field-label">閱讀心得</span>
+                  <div id="notes-list" class="notes-list"></div>
+                  <div class="note-add-row">
+                    <textarea id="note-input" placeholder="寫下這次讀到這裡的想法..." rows="2"></textarea>
+                    <button type="button" class="btn btn-accent-outline btn-sm" id="add-note-btn">加入心得</button>
+                  </div>
+                </div>
+
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-ghost" id="delete-book-btn" hidden>
+                    <i class="ti ti-trash"></i>
+                    刪除這本書
+                  </button>
+                  <div class="footer-spacer"></div>
+                  <button type="button" class="btn btn-ghost" id="cancel-btn">取消</button>
+                  <button type="submit" class="btn btn-accent">儲存</button>
+                </div>
+
+              </form>
+            </div>
+          </section>
+
+        </main>
       </div>
     </div>
   </div>
@@ -1019,10 +1001,8 @@
     const bulkBar = $("bulk-bar");
     const bulkCountLabel = $("bulk-count-label");
 
-    const modal = $("book-modal");
     const modalTitle = $("modal-title");
     const bookForm = $("book-form");
-    const closeModalBtn = $("close-modal-btn");
     const cancelBtn = $("cancel-btn");
     const deleteBookBtn = $("delete-book-btn");
 
@@ -1638,15 +1618,21 @@
       });
     }
 
-    // ================= Modal open/close =================
+    // ================= 新增／編輯書籍：內嵌頁面開關 =================
     document.addEventListener("click", (e) => {
       if (e.target.closest("#empty-add-btn")) openAddModal();
     });
-    closeModalBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+    // 記住開啟表單前所在的頁面，取消／儲存／刪除後回到原本畫面
+    let formReturnPage = "shelf";
+    function rememberReturnPage() {
+      const activePage = document.querySelector(".page.active");
+      formReturnPage = activePage ? activePage.id.replace("page-", "") : "shelf";
+    }
 
     function openAddModal() {
+      rememberReturnPage();
       editingId = null;
       modalTitle.textContent = "新增書籍";
       deleteBookBtn.hidden = true;
@@ -1654,10 +1640,11 @@
       currentCoverUrl = ""; pendingCoverFile = null; currentRating = 0; currentNotes = [];
       updateCoverPreview(); updateStarDisplay(); renderNotesList();
       scanStatus.hidden = true;
-      modal.hidden = false;
+      goToPage("book-form");
     }
 
     function openEditModal(book) {
+      rememberReturnPage();
       editingId = book.id;
       modalTitle.textContent = "編輯書籍";
       deleteBookBtn.hidden = false;
@@ -1677,10 +1664,10 @@
       currentRating = book.rating || 0; currentNotes = [...(book.notes || [])];
       updateCoverPreview(); updateStarDisplay(); renderNotesList();
       scanStatus.hidden = true;
-      modal.hidden = false;
+      goToPage("book-form");
     }
 
-    function closeModal() { modal.hidden = true; }
+    function closeModal() { goToPage(formReturnPage); }
 
     // ================= Cover =================
     function updateCoverPreview() {
