@@ -246,28 +246,185 @@
   }
   .icon-btn:hover { background: var(--surface2); }
 
-  /* ---------- App shell ---------- */
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 10;
-  }
+  /* ---------- App shell (desktop: sidebar + top search bar) ---------- */
+  .app-shell { display: flex; min-height: 100vh; align-items: stretch; }
+
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand-mark {
     width: 32px; height: 32px; border-radius: 8px;
     background: var(--accent-light); color: var(--accent);
     font-family: 'Noto Serif TC', serif; font-weight: 600;
     display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
   }
-  .brand-name { font-size: 18px; }
-  .page-title { font-size: 18px; }
-  .topbar-logout { margin-left: auto; }
+  .brand-name { font-size: 17px; }
 
-  .main { max-width: 760px; margin: 0 auto; padding: 20px 20px 90px; }
+  /* Sidebar */
+  .sidebar {
+    width: 252px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    height: 100vh; position: sticky; top: 0;
+  }
+  .sidebar-brand { padding: 20px 20px 18px; border-bottom: 1px solid var(--border); }
+  .sidebar-scroll { flex: 1; overflow-y: auto; padding: 16px 12px; display: flex; flex-direction: column; gap: 20px; }
+  .sidebar-group-label {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--text3); padding: 0 8px 6px;
+  }
+  .sidebar-group-label .icon-btn { padding: 3px; font-size: 15px; }
+  .sidebar-list { display: flex; flex-direction: column; gap: 2px; }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    border: none; background: none; text-align: left; cursor: pointer;
+    padding: 8px 9px; border-radius: 8px; font-family: inherit;
+    font-size: 13.5px; color: var(--text2);
+  }
+  .sidebar-link i { font-size: 16px; color: var(--text3); flex-shrink: 0; width: 16px; }
+  .sidebar-link span.label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-link:hover { background: var(--surface2); }
+  .sidebar-link.active { background: var(--accent); color: #fff; }
+  .sidebar-link.active i { color: #fff; }
+  .sidebar-count {
+    font: 500 11px 'Roboto', sans-serif; color: var(--text3);
+    background: var(--surface2); padding: 1px 7px; border-radius: 8px; flex-shrink: 0;
+  }
+  .sidebar-link.active .sidebar-count { background: rgba(255,255,255,0.22); color: #fff; }
+  .sidebar-empty-hint { font-size: 12px; color: var(--text3); padding: 4px 9px; line-height: 1.6; }
+  .sidebar-footer { padding: 14px 20px 16px; border-top: 1px solid var(--border); }
+
+  /* Top search bar (right column) */
+  .content-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar-desktop {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 32px; display: flex; align-items: center; gap: 12px;
+  }
+  .global-search {
+    flex: 1; max-width: 620px; display: flex; align-items: center; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; height: 42px; padding: 0 14px;
+  }
+  .global-search i { color: var(--text3); font-size: 15px; }
+  .global-search input { border: none; background: none; outline: none; flex: 1; font-family: inherit; font-size: 14px; color: var(--text); }
+  .filter-toggle-wrap { position: relative; margin-left: auto; }
+  .filter-toggle-btn {
+    width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2); display: flex; align-items: center;
+    justify-content: center; cursor: pointer; font-size: 17px;
+  }
+  .filter-toggle-btn:hover { background: var(--surface2); }
+  .filter-toggle-btn.has-active { color: var(--accent2); border-color: var(--accent2); }
+  .filter-popover {
+    position: absolute; top: 50px; right: 0; z-index: 30;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 10px; min-width: 168px;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .filter-popover button {
+    text-align: left; border: none; background: none; padding: 8px 10px; border-radius: 7px;
+    font-size: 13px; font-family: inherit; color: var(--text2); cursor: pointer;
+  }
+  .filter-popover button:hover { background: var(--surface2); }
+  .filter-popover button.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+
+  .main { max-width: 1180px; padding: 26px 32px 70px; }
   .page { display: none; }
   .page.active { display: block; }
+
+  /* Shelf header: title/subtitle + stat pills */
+  .shelf-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; flex-wrap: wrap; margin-bottom: 20px; }
+  .shelf-eyebrow2 { font-size: 11px; letter-spacing: 0.1em; color: var(--text3); font-weight: 700; margin-bottom: 3px; }
+  .shelf-header h1 { font-size: 25px; margin: 0 0 4px; }
+  .shelf-header .shelf-sub { margin: 0; color: var(--text2); font-size: 13.5px; }
+  .stat-pills { display: flex; gap: 10px; }
+  .stat-pill {
+    min-width: 78px; text-align: center; background: var(--surface); cursor: pointer;
+    border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px;
+    box-shadow: var(--shadow-sm); transition: border-color .15s ease, background .15s ease;
+  }
+  .stat-pill:hover { background: var(--surface2); }
+  .stat-pill span { display: block; font: 700 22px 'Roboto', sans-serif; color: var(--text); }
+  .stat-pill small { display: block; margin-top: 2px; font-size: 11px; color: var(--text2); }
+  .stat-pill.pill-active { border-color: var(--accent2); background: var(--accent2-light); }
+  .stat-pill.pill-active span { color: var(--accent2); }
+
+  /* In-list search */
+  .inlist-search {
+    display: flex; align-items: center; gap: 8px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; padding: 0 14px; height: 44px;
+    margin-bottom: 14px;
+  }
+  .inlist-search i { color: var(--text3); }
+  .inlist-search input { border: none; background: none; outline: none; flex: 1; font-family: inherit; font-size: 13.5px; color: var(--text); }
+
+  /* Tag row */
+  .tag-row-wrap {
+    display: flex; align-items: flex-start; gap: 12px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px;
+  }
+  .tag-row-label { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; color: var(--text2); flex-shrink: 0; padding-top: 4px; }
+  .tag-chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag-chip {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text2);
+    border-radius: 16px; padding: 4px 12px; font-size: 12px; cursor: pointer;
+    display: inline-flex; gap: 5px; align-items: center; font-family: inherit;
+  }
+  .tag-chip .tc-count { color: var(--text3); }
+  .tag-chip.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .tag-chip.active .tc-count { color: rgba(255,255,255,0.82); }
+  .tag-empty-hint { font-size: 12px; color: var(--text3); padding-top: 3px; }
+
+  /* List card wrapping the book grid */
+  .list-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 20px 22px 24px; }
+  .list-card-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .list-card-head-left { display: flex; align-items: center; gap: 12px; }
+  .select-all-checkbox { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .list-card-title { font-weight: 700; font-size: 14.5px; }
+  .list-card-count { font-size: 12px; color: var(--text3); display: block; margin-top: 1px; }
+  .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .view-btn { width: 32px; height: 30px; border: none; background: var(--surface); color: var(--text3); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; }
+  .view-btn + .view-btn { border-left: 1px solid var(--border); }
+  .view-btn.active { background: var(--accent-light); color: var(--accent); }
+  .list-card-head-right { display: flex; align-items: center; gap: 8px; }
+  .list-card-head-right select { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); padding: 0 10px; height: 34px; color: var(--text); font-size: 12.5px; font-family: inherit; }
+  .sort-dir-btn { width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .sort-dir-btn:hover { background: var(--surface2); }
+
+  .bulk-bar {
+    display: flex; align-items: center; gap: 12px; background: var(--accent-light);
+    border: 1px solid var(--accent); border-radius: 10px; padding: 9px 14px; margin-bottom: 14px;
+    font-size: 13px; color: var(--accent); font-weight: 500;
+  }
+  .bulk-bar .spacer { flex: 1; }
+
+  /* Book grid: list view variant */
+  .book-grid.view-list { display: flex; flex-direction: column; gap: 8px; }
+  .book-grid.view-list .book-card { flex-direction: row; align-items: center; gap: 14px; padding: 8px 14px 8px 40px; }
+  .book-grid.view-list .book-cover { width: 42px; height: 58px; margin-bottom: 0; flex-shrink: 0; }
+  .book-grid.view-list .book-title { margin: 0; -webkit-line-clamp: 1; }
+  .book-grid.view-list .book-author { margin: 0; flex-shrink: 0; width: 130px; }
+  .book-grid.view-list .book-meta { margin-top: 0; margin-left: auto; flex-wrap: nowrap; }
+  .book-card { position: relative; }
+  .book-select {
+    position: absolute; top: 10px; left: 10px; width: 16px; height: 16px;
+    accent-color: var(--accent2); z-index: 2; cursor: pointer;
+  }
+  .book-grid.view-list .book-select { left: 14px; }
+
+  /* Management / export / help pages */
+  .manage-row { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--border); }
+  .manage-row:last-child { border-bottom: none; }
+  .manage-row input[type="text"] { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface); }
+  .manage-row-count { font-size: 12px; color: var(--text3); min-width: 56px; text-align: right; flex-shrink: 0; }
+  .help-block { margin-bottom: 18px; }
+  .help-block:last-child { margin-bottom: 0; }
+  .help-block h3 { font-size: 14.5px; margin: 0 0 6px; color: var(--accent); }
+  .help-block p, .help-block li { font-size: 13.5px; color: var(--text2); margin: 0 0 4px; }
+  .help-block ul { margin: 0; padding-left: 18px; }
+  .export-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 
   /* ---------- Cards / stats ---------- */
   .card {
@@ -348,76 +505,17 @@
   .empty-state p { margin: 0 0 20px; font-size: 14px; }
 
 
-  /* ---------- Shelf overview / category bar ---------- */
-  .shelf-overview { margin-bottom: 18px; }
-  .shelf-welcome {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 4px 2px 16px;
-  }
-  .shelf-eyebrow { font-size: 10px; letter-spacing: .16em; color: var(--text3); font-weight: 700; }
-  .shelf-welcome h2 { font-size: 22px; margin: 2px 0 3px; }
-  .shelf-welcome p { margin: 0; color: var(--text2); font-size: 13px; }
-  .shelf-welcome p strong { color: var(--accent); font-size: 16px; }
-  .shelf-mini-stats {
-    display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px;
-  }
-  .mini-stat {
-    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius);
-    padding: 10px 6px; cursor: pointer; color: var(--text); box-shadow: var(--shadow-sm);
-  }
-  .mini-stat:hover { background: var(--surface2); }
-  .mini-stat span { display:block; font:700 19px Roboto,sans-serif; color:var(--accent); }
-  .mini-stat small { display:block; margin-top:2px; color:var(--text2); font-size:11px; }
-  .recent-reading {
-    background: var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-    padding: 14px; box-shadow: var(--shadow-sm);
-  }
-  .section-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:13px; font-weight:700; }
-  .text-btn { border:0; background:none; color:var(--accent); font-size:12px; cursor:pointer; padding:3px; }
-  .recent-book-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-  .recent-book { min-width:0; cursor:pointer; }
-  .recent-book-cover { aspect-ratio:3/4; border-radius:4px; overflow:hidden; background:var(--accent-light); display:flex; align-items:center; justify-content:center; color:var(--accent); }
-  .recent-book-cover img { width:100%; height:100%; object-fit:cover; }
-  .recent-book-title { font-size:11px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .recent-book-status { font-size:10px; color:var(--text3); }
-  .category-tabs-wrap { position:relative; margin-bottom:10px; }
-  .category-tabs-label { font-size:11px; color:var(--text3); margin:0 0 5px 2px; }
-  #category-filters { margin-bottom:0; padding-bottom:2px; }
-  .category-tab { border-radius:8px; }
   .category-stat-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
   .category-stat-row:last-child { border-bottom:none; }
   .category-stat-bar { flex:1; height:6px; background:var(--surface2); border-radius:10px; overflow:hidden; }
   .category-stat-bar > span { display:block; height:100%; background:var(--accent); border-radius:10px; }
   .category-stat-count { min-width:78px; text-align:right; font:500 12px Roboto,sans-serif; color:var(--text2); white-space:nowrap; }
   .source-help { font-size:12px; color:var(--text3); margin-top:6px; }
-  @media (max-width:640px) {
-    .shelf-welcome { align-items:flex-start; }
-    .recent-book-row { grid-template-columns:repeat(4,1fr); gap:7px; }
-    .shelf-mini-stats { gap:6px; }
-  }
 
   /* ---------- Profile page ---------- */
   .profile-header { display: flex; flex-direction: column; align-items: center; padding: 24px 0 8px; }
   .profile-avatar { width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; margin-bottom: 12px; }
   .profile-email { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
-
-  /* ---------- Bottom navigation ---------- */
-  .bottom-bars {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-    display: flex; flex-direction: column;
-  }
-  nav.bottom-nav {
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-  }
-  .nav-inner { display: flex; align-items: center; justify-content: space-around; padding: 8px 0 max(8px, env(safe-area-inset-bottom)); max-width: 760px; margin: 0 auto; }
-  .nav-btn {
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-    padding: 6px 0; font-size: 11px; font-weight: 500; color: var(--text2);
-    border: none; background: none; cursor: pointer; flex: 1;
-  }
-  .nav-btn i { font-size: 19px; color: var(--text2); }
-  .nav-btn.active, .nav-btn.active i { color: var(--accent); font-weight: 600; }
 
   /* ---------- Modal ---------- */
   .modal-overlay {
@@ -522,120 +620,247 @@
     </div>
   </div>
 
-  <!-- 主畫面 -->
+  <!-- 主畫面（桌面版：左側書單／工具側欄 + 右側內容） -->
   <div id="app" hidden>
+    <div class="app-shell">
 
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-mark">冊</span>
-        <span class="brand-name page-title" id="page-title">書庫</span>
-      </div>
-      <button id="logout-top-btn" class="btn btn-ghost btn-sm topbar-logout" type="button">
-        <i class="ti ti-logout"></i>
-        登出
-      </button>
-    </header>
-
-    <main class="main">
-
-      <!-- 書架 -->
-      <section id="page-shelf" class="page active">
-        <div class="shelf-overview">
-          <div class="shelf-welcome">
-            <div>
-              <div class="shelf-eyebrow">MY LIBRARY</div>
-              <h2>我的書單</h2>
-              <p>目前收藏 <strong id="shelf-total-inline">0</strong> 本書</p>
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand">
+            <span class="brand-mark">冊</span>
+            <span class="brand-name">藏書閣</span>
+          </div>
+        </div>
+        <div class="sidebar-scroll">
+          <div>
+            <div class="sidebar-group-label"><span>書單</span></div>
+            <div class="sidebar-list" id="sidebar-shelf-list"></div>
+          </div>
+          <div>
+            <div class="sidebar-group-label"><span>工具</span></div>
+            <div class="sidebar-list">
+              <button class="sidebar-link" data-page="manage"><i class="ti ti-list-details"></i><span class="label">書單管理</span></button>
+              <button class="sidebar-link" data-page="tags"><i class="ti ti-tags"></i><span class="label">標籤管理</span></button>
+              <button class="sidebar-link" data-page="export"><i class="ti ti-download"></i><span class="label">匯出資料</span></button>
+              <button class="sidebar-link" data-page="stats"><i class="ti ti-chart-bar"></i><span class="label">閱讀統計</span></button>
+              <button class="sidebar-link" data-page="help"><i class="ti ti-help-circle"></i><span class="label">使用說明</span></button>
             </div>
-            <button class="btn btn-accent btn-sm" id="overview-add-btn"><i class="ti ti-plus"></i> 新增書籍</button>
-          </div>
-          <div class="shelf-mini-stats">
-            <button class="mini-stat" data-status-jump="unread"><span id="mini-unread">0</span><small>未讀</small></button>
-            <button class="mini-stat" data-status-jump="reading"><span id="mini-reading">0</span><small>閱讀中</small></button>
-            <button class="mini-stat" data-status-jump="finished"><span id="mini-finished">0</span><small>已讀完</small></button>
-            <button class="mini-stat" data-page-jump="stats"><span id="mini-categories">0</span><small>分類</small></button>
-          </div>
-          <div class="recent-reading" id="recent-reading">
-            <div class="section-heading"><span>最近加入</span><button class="text-btn" id="show-all-books-btn">查看全部</button></div>
-            <div class="recent-book-row" id="recent-book-row"></div>
           </div>
         </div>
-
-        <div class="toolbar">
-          <div class="search-box">
-            <i class="ti ti-search"></i>
-            <input type="text" id="search-input" placeholder="搜尋書名、作者、譯者、分類...">
-          </div>
-          <select id="sort-select" class="sort-select">
-            <option value="createdAt-desc">最新加入</option>
-            <option value="purchaseDate-desc">購買日期（新到舊）</option>
-            <option value="purchaseDate-asc">購買日期（舊到新）</option>
-            <option value="title-asc">書名（A-Z）</option>
-            <option value="rating-desc">評分（高到低）</option>
-          </select>
-        </div>
-
-        <div class="filter-tabs" id="status-filters">
-          <button class="filter-tab active" data-status="all">全部</button>
-          <button class="filter-tab" data-status="unread">未讀</button>
-          <button class="filter-tab" data-status="reading">閱讀中</button>
-          <button class="filter-tab" data-status="finished">已讀完</button>
-        </div>
-        <div class="category-tabs-wrap">
-          <div class="category-tabs-label">書籍分類</div>
-          <div class="filter-tabs" id="category-filters"></div>
-        </div>
-
-        <section id="book-grid" class="book-grid"></section>
-
-        <div id="empty-state" class="empty-state" hidden>
-          <i class="ti ti-books"></i>
-          <h3>書單還是空的</h3>
-          <p>掃描一本書的條碼，或手動輸入資料，開始建立你的書單。</p>
-          <button class="btn btn-accent" id="empty-add-btn">
-            <i class="ti ti-plus"></i>
-            新增第一本書
+        <div class="sidebar-footer">
+          <button id="logout-top-btn" class="btn btn-ghost btn-sm" type="button" style="width:100%">
+            <i class="ti ti-logout"></i> 登出
           </button>
         </div>
-      </section>
+      </aside>
 
-      <!-- 統計 -->
-      <section id="page-stats" class="page">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <span class="stat-num" id="stat-total">0</span>
-            <span class="stat-label">藏書量</span>
+      <div class="content-col">
+        <header class="topbar-desktop">
+          <div class="global-search">
+            <i class="ti ti-search"></i>
+            <input type="text" id="global-search-input" placeholder="搜尋書籍、作者、ISBN...">
           </div>
-          <div class="stat-card">
-            <span class="stat-num" id="stat-spent">$0</span>
-            <span class="stat-label">總花費</span>
+          <div class="filter-toggle-wrap">
+            <button class="filter-toggle-btn" id="filter-toggle-btn" type="button" title="依閱讀狀態篩選">
+              <i class="ti ti-adjustments-horizontal"></i>
+            </button>
+            <div class="filter-popover" id="filter-popover" hidden>
+              <button type="button" class="active" data-status="all">全部狀態</button>
+              <button type="button" data-status="unread">未讀</button>
+              <button type="button" data-status="reading">閱讀中</button>
+              <button type="button" data-status="finished">已讀完</button>
+            </div>
           </div>
-          <div class="stat-card">
-            <span class="stat-num" id="stat-finished">0</span>
-            <span class="stat-label">已讀完</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num" id="stat-year">0</span>
-            <span class="stat-label">今年購入</span>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title">依分類統計</div>
-          <div id="category-stats-list"></div>
-        </div>
-      </section>
+          <button class="btn btn-accent btn-sm" id="overview-add-btn"><i class="ti ti-plus"></i> 新增書籍</button>
+        </header>
 
+        <main class="main">
 
-    </main>
+          <!-- 書架 -->
+          <section id="page-shelf" class="page active">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">MY LIBRARY</div>
+                <h1 id="shelf-title">我的書架</h1>
+                <p class="shelf-sub" id="shelf-subtitle">目前收藏 0 本書</p>
+              </div>
+              <div class="stat-pills">
+                <button class="stat-pill" data-status-jump="unread" title="篩選未讀"><span id="mini-unread">0</span><small>未讀</small></button>
+                <button class="stat-pill" data-status-jump="reading" title="篩選閱讀中"><span id="mini-reading">0</span><small>閱讀中</small></button>
+                <button class="stat-pill" data-status-jump="finished" title="篩選已讀完"><span id="mini-finished">0</span><small>已讀完</small></button>
+              </div>
+            </div>
 
+            <div class="inlist-search">
+              <i class="ti ti-search"></i>
+              <input type="text" id="search-input" placeholder="書單內搜尋：書名、作者或您的個人筆記...">
+            </div>
 
-    <div class="bottom-bars">
-      <nav class="bottom-nav">
-        <div class="nav-inner">
-          <button class="nav-btn active" data-page="shelf"><i class="ti ti-books"></i><span>書庫</span></button>
-          <button class="nav-btn" data-page="stats"><i class="ti ti-chart-bar"></i><span>統計</span></button>
-        </div>
-      </nav>
+            <div class="tag-row-wrap">
+              <div class="tag-row-label"><i class="ti ti-tag"></i> Tag</div>
+              <div class="tag-chip-list" id="tag-chip-list"></div>
+            </div>
+
+            <div class="list-card">
+              <div class="list-card-head">
+                <div class="list-card-head-left">
+                  <input type="checkbox" class="select-all-checkbox" id="select-all-checkbox" title="全選目前顯示的書籍">
+                  <div>
+                    <span class="list-card-title">書籍列表</span>
+                    <span class="list-card-count" id="book-count-label">共 0 本書</span>
+                  </div>
+                  <div class="view-toggle">
+                    <button class="view-btn active" id="view-grid-btn" type="button" title="格狀檢視"><i class="ti ti-layout-grid"></i></button>
+                    <button class="view-btn" id="view-list-btn" type="button" title="清單檢視"><i class="ti ti-list"></i></button>
+                  </div>
+                </div>
+                <div class="list-card-head-right">
+                  <select id="sort-select" class="sort-select">
+                    <option value="createdAt-desc">加入時間</option>
+                    <option value="purchaseDate-desc">購買日期</option>
+                    <option value="title-asc">書名（A-Z）</option>
+                    <option value="rating-desc">評分</option>
+                  </select>
+                  <button class="sort-dir-btn" id="sort-dir-btn" type="button" title="切換排序方向">
+                    <i class="ti ti-sort-descending" id="sort-dir-icon"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="bulk-bar" id="bulk-bar" hidden>
+                <span id="bulk-count-label">已選取 0 本</span>
+                <div class="spacer"></div>
+                <button class="btn btn-danger btn-sm" id="bulk-delete-btn"><i class="ti ti-trash"></i> 刪除選取</button>
+                <button class="btn btn-ghost btn-sm" id="bulk-cancel-btn">取消選取</button>
+              </div>
+
+              <section id="book-grid" class="book-grid"></section>
+
+              <div id="empty-state" class="empty-state" hidden>
+                <i class="ti ti-books"></i>
+                <h3>書單還是空的</h3>
+                <p>掃描一本書的條碼，或手動輸入資料，開始建立你的書單。</p>
+                <button class="btn btn-accent" id="empty-add-btn">
+                  <i class="ti ti-plus"></i>
+                  新增第一本書
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 統計 -->
+          <section id="page-stats" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">TOOLS</div>
+                <h1>閱讀統計</h1>
+                <p class="shelf-sub">您的藏書概況</p>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-num" id="stat-total">0</span>
+                <span class="stat-label">藏書量</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-num" id="stat-spent">$0</span>
+                <span class="stat-label">總花費</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-num" id="stat-finished">0</span>
+                <span class="stat-label">已讀完</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-num" id="stat-year">0</span>
+                <span class="stat-label">今年購入</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">依分類統計</div>
+              <div id="category-stats-list"></div>
+            </div>
+          </section>
+
+          <!-- 書單管理 -->
+          <section id="page-manage" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">TOOLS</div>
+                <h1>書單管理</h1>
+                <p class="shelf-sub">書單會依照每本書的「分類」自動產生，可在此重新命名或刪除</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">所有書單</div>
+              <div id="manage-category-list"></div>
+            </div>
+          </section>
+
+          <!-- 標籤管理 -->
+          <section id="page-tags" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">TOOLS</div>
+                <h1>標籤管理</h1>
+                <p class="shelf-sub">標籤可在新增／編輯書籍時輸入，多個標籤請用逗號分隔</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">所有標籤</div>
+              <div id="manage-tag-list"></div>
+            </div>
+          </section>
+
+          <!-- 匯出資料 -->
+          <section id="page-export" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">TOOLS</div>
+                <h1>匯出資料</h1>
+                <p class="shelf-sub">將您的書單匯出成檔案備份</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">匯出格式</div>
+              <p style="color:var(--text2);font-size:13.5px;margin:0 0 4px;">共 <strong id="export-count">0</strong> 本書可匯出。</p>
+              <div class="export-btn-row">
+                <button class="btn btn-accent" id="export-json-btn"><i class="ti ti-file-type-json"></i> 匯出 JSON</button>
+                <button class="btn btn-accent-outline" id="export-csv-btn"><i class="ti ti-file-type-csv"></i> 匯出 CSV</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 使用說明 -->
+          <section id="page-help" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">TOOLS</div>
+                <h1>使用說明</h1>
+                <p class="shelf-sub">快速認識藏書閣的功能</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="help-block">
+                <h3>新增與編輯書籍</h3>
+                <p>點選右上角「新增書籍」，可手動輸入書籍資料，或輸入 ISBN 後按「查詢書目」自動帶入書名、作者等資訊。點選書籍卡片即可編輯或刪除該本書。</p>
+              </div>
+              <div class="help-block">
+                <h3>書單與標籤</h3>
+                <p>左側「書單」依照每本書的分類自動整理；「標籤」則是在編輯書籍時輸入多個以逗號分隔的關鍵字，可在書籍列表上方以 Tag 篩選，提供更彈性的分類方式。</p>
+              </div>
+              <div class="help-block">
+                <h3>檢視、篩選與排序</h3>
+                <p>書籍列表右上角可切換格狀／清單檢視並選擇排序方式；頂端搜尋列右側的篩選鈕可依閱讀狀態篩選。勾選封面左上角的核取方塊可多選書籍，進行批次刪除。</p>
+              </div>
+              <div class="help-block">
+                <h3>備份資料</h3>
+                <p>到「匯出資料」頁面，可將整份書單匯出成 JSON 或 CSV 檔案，方便備份或搬移。</p>
+              </div>
+            </div>
+          </section>
+
+        </main>
+      </div>
     </div>
   </div>
 
@@ -697,6 +922,11 @@
               <span>書籍分類</span>
               <input type="text" id="field-category" list="category-options" placeholder="例：文學、心理學、歷史">
               <datalist id="category-options"></datalist>
+            </label>
+            <label class="field field-wide">
+              <span>標籤（用逗號分隔，例：Sci-Fi, Physics）</span>
+              <input type="text" id="field-tags" list="tag-options" placeholder="例：Sci-Fi, Physics">
+              <datalist id="tag-options"></datalist>
             </label>
             <label class="field">
               <span>評分</span>
@@ -786,16 +1016,29 @@
     const forgotPasswordBtn = $("forgot-password-btn");
     const loginError = $("login-error");
     const logoutTopBtn = $("logout-top-btn");
-    const pageTitle = $("page-title");
 
     const bookGrid = $("book-grid");
     const emptyState = $("empty-state");
     const searchInput = $("search-input");
+    const globalSearchInput = $("global-search-input");
     const sortSelect = $("sort-select");
-    const statusFilters = $("status-filters");
-    const categoryFiltersEl = $("category-filters");
+    const sortDirBtn = $("sort-dir-btn");
+    const sortDirIcon = $("sort-dir-icon");
     const categoryStatsList = $("category-stats-list");
     const categoryOptions = $("category-options");
+    const tagOptions = $("tag-options");
+    const sidebarShelfList = $("sidebar-shelf-list");
+    const tagChipList = $("tag-chip-list");
+    const shelfTitle = $("shelf-title");
+    const shelfSubtitle = $("shelf-subtitle");
+    const bookCountLabel = $("book-count-label");
+    const viewGridBtn = $("view-grid-btn");
+    const viewListBtn = $("view-list-btn");
+    const selectAllCheckbox = $("select-all-checkbox");
+    const bulkBar = $("bulk-bar");
+    const bulkCountLabel = $("bulk-count-label");
+    const filterToggleBtn = $("filter-toggle-btn");
+    const filterPopover = $("filter-popover");
 
     const modal = $("book-modal");
     const modalTitle = $("modal-title");
@@ -822,43 +1065,80 @@
     let unsubscribeBooks = null;
     let activeStatus = "all";
     let activeCategory = "all";
+    let activeTags = new Set();
+    let sortDir = "desc";
+    let viewMode = "grid";
+    let selectedIds = new Set();
     let editingId = null;
     let currentCoverUrl = "";
     let pendingCoverFile = null;
     let currentRating = 0;
     let currentNotes = [];
 
-    // ================= Bottom nav / pages =================
-    const pageLabels = { shelf: "書庫", stats: "統計" };
-    document.querySelectorAll(".nav-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const target = btn.dataset.page;
-        document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
-        document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + target));
-        pageTitle.textContent = pageLabels[target];
-        window.scrollTo(0, 0);
-      });
+    // ================= Sidebar / page switching =================
+    function goToPage(target) {
+      document.querySelectorAll(".sidebar-link").forEach((b) => b.classList.toggle("active", b.dataset.page === target && !b.dataset.category));
+      document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + target));
+      $("app").querySelector(".main").scrollTo?.(0, 0);
+      window.scrollTo(0, 0);
+    }
+    document.querySelectorAll(".sidebar-link[data-page]:not([data-category])").forEach((btn) => {
+      btn.addEventListener("click", () => goToPage(btn.dataset.page));
     });
 
     $("overview-add-btn").addEventListener("click", () => openAddModal());
-    $("show-all-books-btn").addEventListener("click", () => {
-      activeStatus = "all";
-      activeCategory = "all";
-      [...statusFilters.children].forEach((c) => c.classList.toggle("active", c.dataset.status === "all"));
-      renderCategoryFilters();
-      render();
-      window.scrollTo({top: 0, behavior: "smooth"});
-    });
+
     document.querySelectorAll("[data-status-jump]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        activeStatus = btn.dataset.statusJump;
-        [...statusFilters.children].forEach((c) => c.classList.toggle("active", c.dataset.status === activeStatus));
+        activeStatus = activeStatus === btn.dataset.statusJump ? "all" : btn.dataset.statusJump;
+        syncStatusUI();
         render();
-        window.scrollTo({top: 0, behavior: "smooth"});
       });
     });
-    document.querySelectorAll("[data-page-jump]").forEach((btn) => {
-      btn.addEventListener("click", () => document.querySelector('.nav-btn[data-page="' + btn.dataset.pageJump + '"]').click());
+
+    // 頂部搜尋列：篩選狀態彈出選單
+    filterToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      filterPopover.hidden = !filterPopover.hidden;
+    });
+    document.addEventListener("click", (e) => {
+      if (!filterPopover.hidden && !filterPopover.contains(e.target) && e.target !== filterToggleBtn) {
+        filterPopover.hidden = true;
+      }
+    });
+    filterPopover.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-status]");
+      if (!btn) return;
+      activeStatus = btn.dataset.status;
+      syncStatusUI();
+      render();
+      filterPopover.hidden = true;
+    });
+    function syncStatusUI() {
+      filterPopover.querySelectorAll("[data-status]").forEach((b) => b.classList.toggle("active", b.dataset.status === activeStatus));
+      filterToggleBtn.classList.toggle("has-active", activeStatus !== "all");
+      document.querySelectorAll(".stat-pill[data-status-jump]").forEach((p) => p.classList.toggle("pill-active", p.dataset.statusJump === activeStatus));
+    }
+
+    // 頂部全域搜尋列與書單內搜尋雙向同步
+    globalSearchInput.addEventListener("input", () => { searchInput.value = globalSearchInput.value; render(); });
+    searchInput.addEventListener("input", () => { globalSearchInput.value = searchInput.value; render(); });
+
+    // 格狀／清單檢視切換
+    viewGridBtn.addEventListener("click", () => setViewMode("grid"));
+    viewListBtn.addEventListener("click", () => setViewMode("list"));
+    function setViewMode(mode) {
+      viewMode = mode;
+      viewGridBtn.classList.toggle("active", mode === "grid");
+      viewListBtn.classList.toggle("active", mode === "list");
+      bookGrid.classList.toggle("view-list", mode === "list");
+    }
+
+    // 排序方向切換
+    sortDirBtn.addEventListener("click", () => {
+      sortDir = sortDir === "desc" ? "asc" : "desc";
+      sortDirIcon.className = "ti " + (sortDir === "desc" ? "ti-sort-descending" : "ti-sort-ascending");
+      render();
     });
 
     // ================= Auth =================
@@ -1000,25 +1280,34 @@
       const q = query(collection(db, "books"), where("uid", "==", uid));
       unsubscribeBooks = onSnapshot(q, (snap) => {
         allBooks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        renderCategoryFilters();
-         render();
+        selectedIds.clear();
+        renderSidebarShelves();
+        render();
       }, (err) => console.error(err));
+    }
+
+    // ---------- helpers ----------
+    function getCategory(b) { return (b.category || "未分類").trim() || "未分類"; }
+    function getTags(b) { return Array.isArray(b.tags) ? b.tags.filter(Boolean) : []; }
+    function parseTagsInput(value) {
+      return String(value || "").split(",").map((t) => t.trim()).filter(Boolean);
     }
 
     // ================= Render: shelf =================
     function render() {
       let books = [...allBooks];
       if (activeStatus !== "all") books = books.filter((b) => b.status === activeStatus);
-      if (activeCategory !== "all") books = books.filter((b) => (b.category || "未分類") === activeCategory);
+      if (activeCategory !== "all") books = books.filter((b) => getCategory(b) === activeCategory);
+      if (activeTags.size) books = books.filter((b) => getTags(b).some((t) => activeTags.has(t)));
       const term = searchInput.value.trim().toLowerCase();
       if (term) {
         books = books.filter((b) => {
-          const hay = [b.title, b.author, b.translator, b.category].join(" ").toLowerCase();
+          const hay = [b.title, b.author, b.translator, b.category, getTags(b).join(" ")].join(" ").toLowerCase();
           return hay.includes(term);
         });
       }
 
-      const [sortField, sortDir] = sortSelect.value.split("-");
+      const sortField = sortSelect.value;
       books.sort((a, b) => {
         let av = a[sortField], bv = b[sortField];
         if (sortField === "createdAt") { av = a.createdAt?.seconds || 0; bv = b.createdAt?.seconds || 0; }
@@ -1035,19 +1324,34 @@
       emptyState.hidden = books.length > 0 || allBooks.length === 0;
       if (allBooks.length > 0 && books.length === 0) {
         emptyState.hidden = false;
-        emptyState.innerHTML = `<i class="ti ti-filter-off"></i><h3>沒有符合條件的書</h3><p>請調整搜尋、閱讀狀態或分類篩選。</p>`;
+        emptyState.innerHTML = `<i class="ti ti-filter-off"></i><h3>沒有符合條件的書</h3><p>請調整搜尋、閱讀狀態、書單或標籤篩選。</p>`;
       } else if (allBooks.length === 0) {
         emptyState.innerHTML = `<i class="ti ti-books"></i><h3>書單還是空的</h3><p>掃描一本書的條碼，或手動輸入資料，開始建立你的書單。</p><button class="btn btn-accent" id="empty-add-btn"><i class="ti ti-plus"></i>新增第一本書</button>`;
         $("empty-add-btn").onclick = () => openAddModal();
       }
       books.forEach((b) => bookGrid.appendChild(renderCard(b)));
+      bookCountLabel.textContent = "共 " + books.length + " 本書";
+      selectAllCheckbox.checked = books.length > 0 && books.every((b) => selectedIds.has(b.id));
+      updateShelfHeading(books.length);
       renderStats();
-      renderShelfOverview();
+      renderTagChips();
+      renderBulkBar();
+    }
+
+    function updateShelfHeading(visibleCount) {
+      if (activeCategory === "all") {
+        shelfTitle.textContent = "我的書架";
+        shelfSubtitle.textContent = "目前收藏 " + allBooks.length + " 本書";
+      } else {
+        shelfTitle.textContent = activeCategory;
+        shelfSubtitle.textContent = "此書單共 " + visibleCount + " 本書";
+      }
     }
 
     function renderCard(b) {
       const card = document.createElement("div");
       card.className = "book-card";
+      card.dataset.bookId = b.id;
       card.addEventListener("click", () => openEditModal(b));
       const statusLabel = { unread: "未讀", reading: "閱讀中", finished: "已讀完" }[b.status] || "未讀";
       const conditionLabel = { new: "全新", used: "二手", sold: "賣出" }[b.condition] || "全新";
@@ -1055,6 +1359,7 @@
       let stars = "";
       for (let i = 1; i <= 5; i++) stars += `<i class="ti ti-star${i <= rating ? "" : " empty"}"></i>`;
       card.innerHTML = `
+        <input type="checkbox" class="book-select" ${selectedIds.has(b.id) ? "checked" : ""}>
         <div class="book-cover">${b.coverUrl ? `<img src="${escapeHtml(b.coverUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
         <p class="book-title">${escapeHtml(b.title || "未命名")}</p>
         <p class="book-author">${escapeHtml(b.author || "")}</p>
@@ -1063,6 +1368,13 @@
           <span class="status-badge ${b.condition === "sold" ? "sold" : ""}">${conditionLabel}</span>
           <span class="book-rating">${stars}</span>
         </div>`;
+      const checkbox = card.querySelector(".book-select");
+      checkbox.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (checkbox.checked) selectedIds.add(b.id); else selectedIds.delete(b.id);
+        renderBulkBar();
+        selectAllCheckbox.checked = [...bookGrid.querySelectorAll(".book-select")].every((c) => c.checked);
+      });
       return card;
     }
 
@@ -1074,11 +1386,13 @@
       const thisYear = String(new Date().getFullYear());
       $("stat-year").textContent = allBooks.filter((b) => (b.purchaseDate || "").startsWith(thisYear)).length;
 
+      $("mini-unread").textContent = allBooks.filter((b) => b.status === "unread").length;
+      $("mini-reading").textContent = allBooks.filter((b) => b.status === "reading").length;
+      $("mini-finished").textContent = allBooks.filter((b) => b.status === "finished").length;
+      $("export-count").textContent = allBooks.length;
+
       const categoryCounts = {};
-      allBooks.forEach((b) => {
-        const category = (b.category || "未分類").trim() || "未分類";
-        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-      });
+      allBooks.forEach((b) => { const c = getCategory(b); categoryCounts[c] = (categoryCounts[c] || 0) + 1; });
       const categoryEntries = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
       const maxCategory = categoryEntries[0]?.[1] || 1;
       const totalForPercent = allBooks.length || 1;
@@ -1090,75 +1404,178 @@
               <span class="category-stat-count">${count} 本 · ${Math.round(count / totalForPercent * 100)}%</span>
             </div>`).join("")
         : `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有分類資料</p>`;
-
     }
 
-    function renderShelfOverview() {
-      $("shelf-total-inline").textContent = allBooks.length;
-      $("mini-unread").textContent = allBooks.filter((b) => b.status === "unread").length;
-      $("mini-reading").textContent = allBooks.filter((b) => b.status === "reading").length;
-      $("mini-finished").textContent = allBooks.filter((b) => b.status === "finished").length;
+    // ================= 左側「書單」清單（依分類自動產生） =================
+    function renderSidebarShelves() {
+      const categoryCounts = {};
+      allBooks.forEach((b) => { const c = getCategory(b); categoryCounts[c] = (categoryCounts[c] || 0) + 1; });
+      const categoriesSorted = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, "zh-Hant"));
 
-      const categories = new Set(allBooks.map(b => (b.category || "未分類").trim() || "未分類"));
-      $("mini-categories").textContent = allBooks.length ? categories.size : 0;
+      let html = `<button class="sidebar-link${activeCategory === "all" ? " active" : ""}" data-page="shelf" data-category="all">
+          <i class="ti ti-bookshelf"></i><span class="label">我的書架</span><span class="sidebar-count">${allBooks.length}</span>
+        </button>`;
+      html += categoriesSorted.map((c) => `
+        <button class="sidebar-link${activeCategory === c ? " active" : ""}" data-page="shelf" data-category="${escapeHtml(c)}">
+          <i class="ti ti-list"></i><span class="label">${escapeHtml(c)}</span><span class="sidebar-count">${categoryCounts[c]}</span>
+        </button>`).join("");
+      sidebarShelfList.innerHTML = html;
 
-      const recent = [...allBooks].sort((a,b) => {
-        const av = a.createdAt?.seconds || 0, bv = b.createdAt?.seconds || 0;
-        return bv - av;
-      }).slice(0, 4);
-      const row = $("recent-book-row");
-      row.innerHTML = recent.length ? recent.map(b => `
-        <div class="recent-book" data-book-id="${escapeHtml(b.id)}">
-          <div class="recent-book-cover">${b.coverUrl ? `<img src="${escapeHtml(b.coverUrl)}" alt="">` : `<i class="ti ti-book"></i>`}</div>
-          <div class="recent-book-title">${escapeHtml(b.title || "未命名")}</div>
-          <div class="recent-book-status">${escapeHtml({unread:"未讀",reading:"閱讀中",finished:"已讀完"}[b.status] || "未讀")}</div>
-        </div>`).join("") :
-        `<div style="grid-column:1/-1;color:var(--text3);font-size:12px;padding:8px 0;">新增書籍後，最近加入的書會顯示在這裡。</div>`;
-
-      row.querySelectorAll(".recent-book").forEach(el => {
-        el.addEventListener("click", () => {
-          const book = allBooks.find(b => b.id === el.dataset.bookId);
-          if (book) openEditModal(book);
+      sidebarShelfList.querySelectorAll(".sidebar-link").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          activeCategory = btn.dataset.category;
+          goToPage("shelf");
+          renderSidebarShelves();
+          render();
         });
       });
 
-      const categoriesSorted = [...categories].sort((a,b) => a.localeCompare(b, "zh-Hant"));
-      categoryOptions.innerHTML = categoriesSorted.map(c => `<option value="${escapeHtml(c)}"></option>`).join("");
+      // 分類 datalist（供新增／編輯書籍時自動完成）
+      categoryOptions.innerHTML = categoriesSorted.map((c) => `<option value="${escapeHtml(c)}"></option>`).join("");
+      renderManageCategoryList(categoriesSorted, categoryCounts);
     }
 
-    function renderCategoryFilters() {
-      const categories = new Set();
-      allBooks.forEach((b) => categories.add((b.category || "未分類").trim() || "未分類"));
-      const list = ["all", ...[...categories].sort((a,b) => a.localeCompare(b, "zh-Hant"))];
+    // ================= Tag chips（書單內容區） =================
+    function renderTagChips() {
+      const tagCounts = {};
+      allBooks.forEach((b) => getTags(b).forEach((t) => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
+      const tagsSorted = Object.keys(tagCounts).sort((a, b) => a.localeCompare(b, "zh-Hant"));
 
-      const buildChips = (container) => {
-        container.innerHTML = "";
-        list.forEach((category) => {
-          const chip = document.createElement("button");
-          chip.className = "filter-tab category-tab" + (activeCategory === category ? " active" : "");
-          chip.textContent = category === "all" ? "全部分類" : category;
-          chip.addEventListener("click", () => {
-            activeCategory = category;
-            renderCategoryFilters();
-            render();
-          });
-          container.appendChild(chip);
+      tagChipList.innerHTML = tagsSorted.length ? tagsSorted.map((t) => `
+        <button type="button" class="tag-chip${activeTags.has(t) ? " active" : ""}" data-tag="${escapeHtml(t)}">
+          #${escapeHtml(t)} <span class="tc-count">(${tagCounts[t]})</span>
+        </button>`).join("") : `<span class="tag-empty-hint">還沒有標籤，可在新增／編輯書籍時加上標籤（用逗號分隔）</span>`;
+
+      tagChipList.querySelectorAll(".tag-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const t = chip.dataset.tag;
+          if (activeTags.has(t)) activeTags.delete(t); else activeTags.add(t);
+          render();
         });
-      };
+      });
 
-      // 只保留書庫內容區上方的書籍分類篩選
-      buildChips(categoryFiltersEl);
+      tagOptions.innerHTML = tagsSorted.map((t) => `<option value="${escapeHtml(t)}"></option>`).join("");
+      renderManageTagList(tagsSorted, tagCounts);
     }
 
-    statusFilters.addEventListener("click", (e) => {
-      const btn = e.target.closest(".filter-tab");
-      if (!btn) return;
-      activeStatus = btn.dataset.status;
-      [...statusFilters.children].forEach((c) => c.classList.toggle("active", c === btn));
+    // ================= 批次選取 =================
+    selectAllCheckbox.addEventListener("change", () => {
+      const checked = selectAllCheckbox.checked;
+      bookGrid.querySelectorAll(".book-card").forEach((card) => {
+        const cb = card.querySelector(".book-select");
+        cb.checked = checked;
+        const id = card.dataset.bookId;
+        if (checked) selectedIds.add(id); else selectedIds.delete(id);
+      });
+      renderBulkBar();
+    });
+
+    function renderBulkBar() {
+      bulkBar.hidden = selectedIds.size === 0;
+      bulkCountLabel.textContent = "已選取 " + selectedIds.size + " 本";
+    }
+    $("bulk-cancel-btn").addEventListener("click", () => {
+      selectedIds.clear();
       render();
     });
-    searchInput.addEventListener("input", render);
+    $("bulk-delete-btn").addEventListener("click", async () => {
+      if (!selectedIds.size) return;
+      if (!confirm("確定要刪除選取的 " + selectedIds.size + " 本書嗎？此動作無法復原。")) return;
+      const ids = [...selectedIds];
+      selectedIds.clear();
+      for (const id of ids) { await deleteDoc(doc(db, "books", id)); }
+    });
+
+    // ================= 書單管理／標籤管理 =================
+    function renderManageCategoryList(categoriesSorted, categoryCounts) {
+      const el = $("manage-category-list");
+      if (!categoriesSorted.length) { el.innerHTML = `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有任何書單，新增書籍並填寫分類後會自動出現在這裡。</p>`; return; }
+      el.innerHTML = categoriesSorted.map((c) => `
+        <div class="manage-row" data-category="${escapeHtml(c)}">
+          <input type="text" value="${escapeHtml(c)}">
+          <span class="manage-row-count">${categoryCounts[c]} 本</span>
+          <button class="icon-btn manage-rename" title="重新命名"><i class="ti ti-check"></i></button>
+          <button class="icon-btn manage-delete" title="刪除此書單（書籍將歸為未分類）"><i class="ti ti-trash"></i></button>
+        </div>`).join("");
+
+      el.querySelectorAll(".manage-row").forEach((row) => {
+        const original = row.dataset.category;
+        const input = row.querySelector("input");
+        row.querySelector(".manage-rename").addEventListener("click", async () => {
+          const next = input.value.trim();
+          if (!next || next === original) return;
+          const affected = allBooks.filter((b) => getCategory(b) === original);
+          for (const b of affected) { await setDoc(doc(db, "books", b.id), { category: next }, { merge: true }); }
+        });
+        row.querySelector(".manage-delete").addEventListener("click", async () => {
+          if (!confirm(`確定要刪除書單「${original}」嗎？相關書籍會改為「未分類」，書籍本身不會被刪除。`)) return;
+          const affected = allBooks.filter((b) => getCategory(b) === original);
+          for (const b of affected) { await setDoc(doc(db, "books", b.id), { category: "未分類" }, { merge: true }); }
+          if (activeCategory === original) activeCategory = "all";
+        });
+      });
+    }
+
+    function renderManageTagList(tagsSorted, tagCounts) {
+      const el = $("manage-tag-list");
+      if (!tagsSorted.length) { el.innerHTML = `<p style="color:var(--text3);font-size:13px;margin:0;">還沒有任何標籤，新增書籍時可在「標籤」欄位輸入（用逗號分隔多個標籤）。</p>`; return; }
+      el.innerHTML = tagsSorted.map((t) => `
+        <div class="manage-row" data-tag="${escapeHtml(t)}">
+          <input type="text" value="${escapeHtml(t)}">
+          <span class="manage-row-count">${tagCounts[t]} 本</span>
+          <button class="icon-btn manage-rename" title="重新命名"><i class="ti ti-check"></i></button>
+          <button class="icon-btn manage-delete" title="刪除此標籤"><i class="ti ti-trash"></i></button>
+        </div>`).join("");
+
+      el.querySelectorAll(".manage-row").forEach((row) => {
+        const original = row.dataset.tag;
+        const input = row.querySelector("input");
+        row.querySelector(".manage-rename").addEventListener("click", async () => {
+          const next = input.value.trim();
+          if (!next || next === original) return;
+          const affected = allBooks.filter((b) => getTags(b).includes(original));
+          for (const b of affected) {
+            const tags = getTags(b).map((t) => (t === original ? next : t));
+            await setDoc(doc(db, "books", b.id), { tags }, { merge: true });
+          }
+        });
+        row.querySelector(".manage-delete").addEventListener("click", async () => {
+          if (!confirm(`確定要刪除標籤「${original}」嗎？`)) return;
+          const affected = allBooks.filter((b) => getTags(b).includes(original));
+          for (const b of affected) {
+            const tags = getTags(b).filter((t) => t !== original);
+            await setDoc(doc(db, "books", b.id), { tags }, { merge: true });
+          }
+          activeTags.delete(original);
+        });
+      });
+    }
+
+    // ================= 匯出資料 =================
+    function downloadBlob(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+    $("export-json-btn").addEventListener("click", () => {
+      const data = allBooks.map(({ id, uid, ...rest }) => ({ id, ...rest }));
+      downloadBlob(JSON.stringify(data, null, 2), "藏書閣書單.json", "application/json");
+    });
+    $("export-csv-btn").addEventListener("click", () => {
+      const cols = ["title", "author", "translator", "publisher", "isbn", "category", "tags", "status", "condition", "rating", "purchaseDate", "price", "location"];
+      const header = ["書名", "作者", "譯者", "出版社", "ISBN", "分類", "標籤", "閱讀狀態", "書況", "評分", "購買日期", "購買金額", "存放位置"];
+      const escCsv = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const rows = allBooks.map((b) => cols.map((c) => escCsv(c === "tags" ? getTags(b).join("、") : b[c])).join(","));
+      const csv = "\uFEFF" + header.map(escCsv).join(",") + "\n" + rows.join("\n");
+      downloadBlob(csv, "藏書閣書單.csv", "text/csv;charset=utf-8");
+    });
+
     sortSelect.addEventListener("change", render);
+    syncStatusUI();
+    setViewMode("grid");
 
     function escapeHtml(str) {
       const div = document.createElement("div");
@@ -1221,6 +1638,7 @@
       $("field-condition").value = book.condition || "new";
       $("field-status").value = book.status || "unread";
       $("field-category").value = book.category || "";
+      $("field-tags").value = getTags(book).join(", ");
       $("field-location").value = book.location || "";
       currentCoverUrl = book.coverUrl || ""; pendingCoverFile = null;
       currentRating = book.rating || 0; currentNotes = [...(book.notes || [])];
@@ -1442,6 +1860,7 @@
           condition: $("field-condition").value || "new",
           status: $("field-status").value || "unread",
           category: $("field-category").value.trim() || "未分類",
+          tags: parseTagsInput($("field-tags").value),
           location: $("field-location").value.trim(),
           rating: Number(currentRating) || 0,
           notes: Array.isArray(currentNotes) ? currentNotes : [],
