@@ -265,7 +265,7 @@
   .page-title { font-size: 18px; }
   .topbar-logout { margin-left: auto; }
 
-  .main { max-width: 760px; margin: 0 auto; padding: 20px 20px 175px; }
+  .main { max-width: 760px; margin: 0 auto; padding: 20px 20px 90px; }
   .page { display: none; }
   .page.active { display: block; }
 
@@ -401,36 +401,11 @@
   .profile-avatar { width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; margin-bottom: 12px; }
   .profile-email { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
 
-  /* ---------- FAB ---------- */
-  .fab {
-    position: fixed; right: 20px; bottom: 144px; z-index: 90;
-    width: 52px; height: 52px; border-radius: 50%;
-    background: var(--accent2); color: #fff; border: none;
-    box-shadow: 0 6px 16px rgba(184,98,29,0.35);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; cursor: pointer;
-  }
-  .fab:active { transform: scale(0.95); }
-
-  /* ---------- Bottom bars (category dock + bottom nav) ---------- */
+  /* ---------- Bottom navigation ---------- */
   .bottom-bars {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
     display: flex; flex-direction: column;
   }
-  .category-dock {
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-  }
-  .category-dock.hidden { display: none; }
-  .category-dock-inner {
-    display: flex; align-items: center; gap: 8px;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    padding: 10px 14px; max-width: 760px; margin: 0 auto;
-    scrollbar-width: none;
-  }
-  .category-dock-inner::-webkit-scrollbar { display: none; }
-  .category-dock-inner .filter-tab { flex-shrink: 0; }
-
   nav.bottom-nav {
     background: var(--surface);
     border-top: 1px solid var(--border);
@@ -650,27 +625,15 @@
         </div>
       </section>
 
-      <!-- 我的 -->
-      <section id="page-profile" class="page">
-        <div class="profile-header">
-          <img id="profile-avatar" class="profile-avatar" src="" alt="使用者頭像">
-          <p id="profile-email" class="profile-email"></p>
-        </div>
-      </section>
 
     </main>
 
-    <button id="fab-add" class="fab"><i class="ti ti-plus"></i></button>
 
     <div class="bottom-bars">
-      <div class="category-dock" id="category-dock">
-        <div class="category-dock-inner" id="category-dock-filters"></div>
-      </div>
       <nav class="bottom-nav">
         <div class="nav-inner">
           <button class="nav-btn active" data-page="shelf"><i class="ti ti-books"></i><span>書庫</span></button>
           <button class="nav-btn" data-page="stats"><i class="ti ti-chart-bar"></i><span>統計</span></button>
-          <button class="nav-btn" data-page="profile"><i class="ti ti-user"></i><span>我的</span></button>
         </div>
       </nav>
     </div>
@@ -823,8 +786,6 @@
     const forgotPasswordBtn = $("forgot-password-btn");
     const loginError = $("login-error");
     const logoutTopBtn = $("logout-top-btn");
-    const profileAvatar = $("profile-avatar");
-    const profileEmail = $("profile-email");
     const pageTitle = $("page-title");
 
     const bookGrid = $("book-grid");
@@ -833,8 +794,6 @@
     const sortSelect = $("sort-select");
     const statusFilters = $("status-filters");
     const categoryFiltersEl = $("category-filters");
-    const categoryDockEl = $("category-dock");
-    const categoryDockFiltersEl = $("category-dock-filters");
     const categoryStatsList = $("category-stats-list");
     const categoryOptions = $("category-options");
 
@@ -870,14 +829,13 @@
     let currentNotes = [];
 
     // ================= Bottom nav / pages =================
-    const pageLabels = { shelf: "書庫", stats: "統計", profile: "我的" };
+    const pageLabels = { shelf: "書庫", stats: "統計" };
     document.querySelectorAll(".nav-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const target = btn.dataset.page;
         document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
         document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + target));
         pageTitle.textContent = pageLabels[target];
-        categoryDockEl.classList.toggle("hidden", target !== "shelf");
         window.scrollTo(0, 0);
       });
     });
@@ -1025,8 +983,6 @@
       if (user) {
         loginScreen.hidden = true;
         appRoot.hidden = false;
-        profileAvatar.src = user.photoURL || "";
-        profileEmail.textContent = user.email || "";
         subscribeBooks(user.uid);
       } else {
         loginScreen.hidden = false;
@@ -1190,9 +1146,8 @@
         });
       };
 
-      // 清單上方與底部固定的分類 Bar，內容與選取狀態互相同步
+      // 只保留書庫內容區上方的書籍分類篩選
       buildChips(categoryFiltersEl);
-      buildChips(categoryDockFiltersEl);
     }
 
     statusFilters.addEventListener("click", (e) => {
@@ -1234,7 +1189,6 @@
     }
 
     // ================= Modal open/close =================
-    $("fab-add").addEventListener("click", () => openAddModal());
     document.addEventListener("click", (e) => {
       if (e.target.closest("#empty-add-btn")) openAddModal();
     });
