@@ -320,26 +320,6 @@
   }
   .global-search i { color: var(--text3); font-size: 15px; }
   .global-search input { border: none; background: none; outline: none; flex: 1; font-family: inherit; font-size: 14px; color: var(--text); }
-  .filter-toggle-wrap { position: relative; margin-left: auto; }
-  .filter-toggle-btn {
-    width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--border);
-    background: var(--surface); color: var(--text2); display: flex; align-items: center;
-    justify-content: center; cursor: pointer; font-size: 17px;
-  }
-  .filter-toggle-btn:hover { background: var(--surface2); }
-  .filter-toggle-btn.has-active { color: var(--accent2); border-color: var(--accent2); }
-  .filter-popover {
-    position: absolute; top: 50px; right: 0; z-index: 30;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    box-shadow: var(--shadow); padding: 10px; min-width: 168px;
-    display: flex; flex-direction: column; gap: 3px;
-  }
-  .filter-popover button {
-    text-align: left; border: none; background: none; padding: 8px 10px; border-radius: 7px;
-    font-size: 13px; font-family: inherit; color: var(--text2); cursor: pointer;
-  }
-  .filter-popover button:hover { background: var(--surface2); }
-  .filter-popover button.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
 
   .main { max-width: 1180px; padding: 26px 32px 70px; }
   .page { display: none; }
@@ -650,6 +630,7 @@
           <div>
             <div class="sidebar-group-label"><span>工具</span></div>
             <div class="sidebar-list">
+              <button class="sidebar-link" id="overview-add-btn" type="button"><i class="ti ti-plus"></i><span class="label">新增書籍</span></button>
               <button class="sidebar-link" data-page="manage"><i class="ti ti-list-details"></i><span class="label">書單管理</span></button>
               <button class="sidebar-link" data-page="tags"><i class="ti ti-tags"></i><span class="label">標籤管理</span></button>
               <button class="sidebar-link" data-page="export"><i class="ti ti-download"></i><span class="label">匯出資料</span></button>
@@ -671,18 +652,6 @@
             <i class="ti ti-search"></i>
             <input type="text" id="global-search-input" placeholder="搜尋書籍、作者、ISBN...">
           </div>
-          <div class="filter-toggle-wrap">
-            <button class="filter-toggle-btn" id="filter-toggle-btn" type="button" title="依閱讀狀態篩選">
-              <i class="ti ti-adjustments-horizontal"></i>
-            </button>
-            <div class="filter-popover" id="filter-popover" hidden>
-              <button type="button" class="active" data-status="all">全部狀態</button>
-              <button type="button" data-status="unread">未讀</button>
-              <button type="button" data-status="reading">閱讀中</button>
-              <button type="button" data-status="finished">已讀完</button>
-            </div>
-          </div>
-          <button class="btn btn-accent btn-sm" id="overview-add-btn"><i class="ti ti-plus"></i> 新增書籍</button>
         </header>
 
         <main class="main">
@@ -1049,8 +1018,6 @@
     const selectAllCheckbox = $("select-all-checkbox");
     const bulkBar = $("bulk-bar");
     const bulkCountLabel = $("bulk-count-label");
-    const filterToggleBtn = $("filter-toggle-btn");
-    const filterPopover = $("filter-popover");
 
     const modal = $("book-modal");
     const modalTitle = $("modal-title");
@@ -1174,28 +1141,7 @@
         render();
       });
     });
-
-    // 頂部搜尋列：篩選狀態彈出選單
-    filterToggleBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      filterPopover.hidden = !filterPopover.hidden;
-    });
-    document.addEventListener("click", (e) => {
-      if (!filterPopover.hidden && !filterPopover.contains(e.target) && e.target !== filterToggleBtn) {
-        filterPopover.hidden = true;
-      }
-    });
-    filterPopover.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-status]");
-      if (!btn) return;
-      activeStatus = btn.dataset.status;
-      syncStatusUI();
-      render();
-      filterPopover.hidden = true;
-    });
     function syncStatusUI() {
-      filterPopover.querySelectorAll("[data-status]").forEach((b) => b.classList.toggle("active", b.dataset.status === activeStatus));
-      filterToggleBtn.classList.toggle("has-active", activeStatus !== "all");
       document.querySelectorAll(".stat-pill[data-status-jump]").forEach((p) => p.classList.toggle("pill-active", p.dataset.statusJump === activeStatus));
     }
 
@@ -1386,7 +1332,7 @@
         });
       }
 
-      const sortField = sortSelect.value;
+      const sortField = sortSelect.value.split("-")[0];
       books.sort((a, b) => {
         let av = a[sortField], bv = b[sortField];
         if (sortField === "createdAt") { av = a.createdAt?.seconds || 0; bv = b.createdAt?.seconds || 0; }
@@ -1492,11 +1438,11 @@
       const categoriesSorted = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b, "zh-Hant"));
 
       let html = `<button class="sidebar-link${activeCategory === "all" ? " active" : ""}" data-page="shelf" data-category="all">
-          <i class="ti ti-bookshelf"></i><span class="label">我的書架</span><span class="sidebar-count">${allBooks.length}</span>
+          <i class="ti ti-bookshelf"></i><span class="label">我的書架</span>
         </button>`;
       html += categoriesSorted.map((c) => `
         <button class="sidebar-link${activeCategory === c ? " active" : ""}" data-page="shelf" data-category="${escapeHtml(c)}">
-          <i class="ti ti-list"></i><span class="label">${escapeHtml(c)}</span><span class="sidebar-count">${categoryCounts[c]}</span>
+          <i class="ti ti-list"></i><span class="label">${escapeHtml(c)}</span>
         </button>`).join("");
       sidebarShelfList.innerHTML = html;
 
@@ -1652,7 +1598,15 @@
       downloadBlob(csv, "藏書閣書單.csv", "text/csv;charset=utf-8");
     });
 
-    sortSelect.addEventListener("change", render);
+    sortSelect.addEventListener("change", () => {
+      // 換排序欄位時，套用該選項預設的排序方向（例如「書名（A-Z）」預設為由小到大），
+      // 使用者之後仍可按方向鈕自行切換。
+      const parts = sortSelect.value.split("-");
+      const defaultDir = parts[1] === "asc" ? "asc" : "desc";
+      sortDir = defaultDir;
+      sortDirIcon.className = "ti " + (sortDir === "desc" ? "ti-sort-descending" : "ti-sort-ascending");
+      render();
+    });
     syncStatusUI();
     setViewMode("grid");
 
