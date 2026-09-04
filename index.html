@@ -1706,7 +1706,7 @@
     // setPointerCapture 抓住的節點，會讓瀏覽器直接把 pointer capture 弄丟，
     // 導致拖到一半整個手勢就斷掉、動不了。真正的 DOM 重新排序只在放開手指/
     // 滑鼠那一刻做一次，並在那之後才把新順序寫回 Firestore。
-    function enablePointerReorder(container, onReorderCommit) {
+    function enablePointerReorder(container, onReorderCommit, onRevert) {
       container.querySelectorAll(".manage-drag-handle").forEach((handle) => {
         handle.addEventListener("pointerdown", (e) => {
           const pill = handle.closest(".manage-pill");
@@ -1768,10 +1768,20 @@
           }
           function onUp() {
             const finalNames = finishDrag();
-            const changed = finalNames.some((name, i) => name !== items.map((it) => it.dataset.name)[i]) || lastCount !== otherIdx.filter((i) => originalCenters[i] < originalCenters[dragIndex]).length;
+            // 先「樂觀」地把畫面排好，實際寫入 Firestore 是非同步的；
+            // 如果寫入失敗，畫面上的順序會跟真正存到 Firestore 的 listMeta 不一致
+            // （這就是排序完跟左側工具欄看起來不同步的原因），所以失敗時要呼叫
+            // onRevert 用目前真正的 listMeta 重新畫一次，把畫面還原成存檔前的樣子。
             Promise.resolve(onReorderCommit(finalNames)).catch((err) => {
               console.error("排序儲存失敗：", err);
-              alert("排序儲存失敗，請稍後再試。\n" + (err?.message || err));
+              let message = "排序儲存失敗，已還原成儲存前的順序，請稍後再試。";
+              if (err?.code === "permission-denied") {
+                message = "排序儲存失敗（permission-denied），已還原成儲存前的順序。\n請到 Firebase Console → Firestore Database → Rules，確認 meta 集合允許目前登入使用者讀寫自己的資料（文件 ID 需等於使用者的 uid）。";
+              } else if (err?.message) {
+                message += "\n" + err.message;
+              }
+              alert(message);
+              if (typeof onRevert === "function") onRevert();
             });
           }
           function onCancel() { finishDrag(); }
@@ -1842,7 +1852,7 @@
       el.querySelectorAll(".manage-pill").forEach((row) => {
         wireManagePillRow(row, { onRename: renameCategory, onDelete: deleteCategory });
       });
-      enablePointerReorder(el, (order) => saveMeta({ categoryOrder: order }));
+      enablePointerReorder(el, (order) => saveMeta({ categoryOrder: order }), renderSidebarShelves);
     }
 
     function renderManageTagList(tagsSorted, tagCounts) {
@@ -1853,7 +1863,7 @@
       el.querySelectorAll(".manage-pill").forEach((row) => {
         wireManagePillRow(row, { onRename: renameTag, onDelete: deleteTag });
       });
-      enablePointerReorder(el, (order) => saveMeta({ tagOrder: order }));
+      enablePointerReorder(el, (order) => saveMeta({ tagOrder: order }), renderTagChips);
     }
 
     // ================= 新增空的書單／標籤（不需要先有書） =================
