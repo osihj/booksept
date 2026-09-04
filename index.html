@@ -1611,6 +1611,7 @@
       const input = row.querySelector(".manage-pill-input");
       const viewActions = row.querySelector(".view-actions");
       const editActions = row.querySelector(".edit-actions");
+      const confirmBtn = row.querySelector(".manage-confirm");
 
       function enterEdit() {
         badge.hidden = true; input.hidden = false;
@@ -1624,21 +1625,42 @@
       async function confirmRename() {
         const next = input.value.trim();
         if (!next || next === original) { exitEdit(); return; }
-        await onRename(original, next);
+        confirmBtn.disabled = true;
+        try {
+          await onRename(original, next);
+          // 成功的話，Firestore 的即時更新會觸發整個清單重新渲染，
+          // 這裡先手動退出編輯模式，避免在重新渲染送達前畫面卡在輸入框。
+          exitEdit();
+        } catch (err) {
+          console.error("重新命名失敗：", err);
+          alert("重新命名失敗，請稍後再試。\n" + (err?.message || err));
+        } finally {
+          confirmBtn.disabled = false;
+        }
       }
 
       row.querySelector(".manage-edit").addEventListener("click", enterEdit);
       row.querySelector(".manage-cancel").addEventListener("click", exitEdit);
-      row.querySelector(".manage-confirm").addEventListener("click", confirmRename);
+      confirmBtn.addEventListener("click", confirmRename);
       input.addEventListener("keydown", (e) => {
         if (e.key === "Enter") { e.preventDefault(); confirmRename(); }
         else if (e.key === "Escape") { exitEdit(); }
       });
-      row.querySelector(".manage-delete").addEventListener("click", () => onDelete(original));
+      row.querySelector(".manage-delete").addEventListener("click", async () => {
+        try {
+          await onDelete(original);
+        } catch (err) {
+          console.error("刪除失敗：", err);
+          alert("刪除失敗，請稍後再試。\n" + (err?.message || err));
+        }
+      });
     }
 
-    // 用指標事件（滑鼠／觸控皆可）實作握把拖曳排序：拖曳中即時搬動 DOM 順序，
-    // 放開後把目前排序寫回 Firestore 的 meta 文件。
+    // 用指標事件（滑鼠／觸控皆可）實作握把拖曳排序。拖曳過程中只用 CSS transform
+    // 做「視覺上」的位移，完全不搬動真正的 DOM 節點；因為在拖曳中途搬動被
+    // setPointerCapture 抓住的節點，會讓瀏覽器直接把 pointer capture 弄丟，
+    // 導致拖到一半整個手勢就斷掉、動不了。真正的 DOM 重新排序只在放開手指/
+    // 滑鼠那一刻做一次，並在那之後才把新順序寫回 Firestore。
     function enablePointerReorder(container, onReorderCommit) {
       container.querySelectorAll(".manage-drag-handle").forEach((handle) => {
         handle.addEventListener("pointerdown", (e) => {
@@ -1646,36 +1668,72 @@
           if (!pill) return;
           e.preventDefault();
           const pointerId = e.pointerId;
-          try { pill.setPointerCapture(pointerId); } catch (err) {}
+          try { handle.setPointerCapture(pointerId); } catch (err) {}
+
+          const items = [...container.querySelectorAll(".manage-pill")];
+          const dragIndex = items.indexOf(pill);
+          if (dragIndex === -1) return;
+          const originalTops = items.map((el) => el.getBoundingClientRect().top);
+          const originalCenters = items.map((el) => {
+            const r = el.getBoundingClientRect();
+            return r.top + r.height / 2;
+          });
+          const startY = e.clientY;
+          const otherIdx = items.map((_, i) => i).filter((i) => i !== dragIndex);
+          let lastCount = otherIdx.filter((i) => originalCenters[i] < originalCenters[dragIndex]).length;
+
           pill.classList.add("dragging");
 
-          function findDropTarget(y) {
-            const siblings = [...container.querySelectorAll(".manage-pill")].filter((el) => el !== pill);
-            let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
-            for (const child of siblings) {
-              const box = child.getBoundingClientRect();
-              const offset = y - box.top - box.height / 2;
-              if (offset < 0 && offset > closest.offset) closest = { offset, element: child };
-            }
-            return closest.element;
+          function applyVisual(count) {
+            const finalOrderIdx = [...otherIdx.slice(0, count), dragIndex, ...otherIdx.slice(count)];
+            finalOrderIdx.forEach((origIdx, slot) => {
+              if (origIdx === dragIndex) return;
+              const shift = originalTops[slot] - originalTops[origIdx];
+              items[origIdx].style.transform = shift ? `translateY(${shift}px)` : "";
+            });
           }
+
           function onMove(ev) {
-            const after = findDropTarget(ev.clientY);
-            if (after == null) container.appendChild(pill);
-            else container.insertBefore(pill, after);
+            const deltaY = ev.clientY - startY;
+            pill.style.transform = `translateY(${deltaY}px)`;
+            const dragCenterY = originalCenters[dragIndex] + deltaY;
+            let count = 0;
+            for (const i of otherIdx) { if (originalCenters[i] < dragCenterY) count++; }
+            lastCount = count;
+            applyVisual(count);
+          }
+
+          function finishDrag() {
+            try { handle.releasePointerCapture(pointerId); } catch (err) {}
+            handle.removeEventListener("pointermove", onMove);
+            handle.removeEventListener("pointerup", onUp);
+            handle.removeEventListener("pointercancel", onCancel);
+
+            const otherNames = otherIdx.map((i) => items[i].dataset.name);
+            const draggedName = items[dragIndex].dataset.name;
+            const finalNames = [...otherNames.slice(0, lastCount), draggedName, ...otherNames.slice(lastCount)];
+
+            items.forEach((el) => { el.style.transform = ""; });
+            pill.classList.remove("dragging");
+            finalNames.forEach((name) => {
+              const el = items.find((it) => it.dataset.name === name);
+              if (el) container.appendChild(el);
+            });
+            return finalNames;
           }
           function onUp() {
-            pill.classList.remove("dragging");
-            try { pill.releasePointerCapture(pointerId); } catch (err) {}
-            pill.removeEventListener("pointermove", onMove);
-            pill.removeEventListener("pointerup", onUp);
-            pill.removeEventListener("pointercancel", onUp);
-            const order = [...container.querySelectorAll(".manage-pill")].map((p) => p.dataset.name);
-            onReorderCommit(order);
+            const finalNames = finishDrag();
+            const changed = finalNames.some((name, i) => name !== items.map((it) => it.dataset.name)[i]) || lastCount !== otherIdx.filter((i) => originalCenters[i] < originalCenters[dragIndex]).length;
+            Promise.resolve(onReorderCommit(finalNames)).catch((err) => {
+              console.error("排序儲存失敗：", err);
+              alert("排序儲存失敗，請稍後再試。\n" + (err?.message || err));
+            });
           }
-          pill.addEventListener("pointermove", onMove);
-          pill.addEventListener("pointerup", onUp);
-          pill.addEventListener("pointercancel", onUp);
+          function onCancel() { finishDrag(); }
+
+          handle.addEventListener("pointermove", onMove);
+          handle.addEventListener("pointerup", onUp);
+          handle.addEventListener("pointercancel", onCancel);
         });
       });
     }
