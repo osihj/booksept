@@ -677,33 +677,134 @@
   .dynamic-row-actions .icon-btn:disabled { opacity: 0.3; cursor: default; }
   .dynamic-row-actions .icon-btn:disabled:hover { background: transparent; }
 
-  /* 食譜詳情頁：唯讀瀏覽用，點列表卡片、或新增/編輯儲存後會進到這裡 */
-  .detail-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
-  .recipe-detail-top { display: flex; gap: 22px; margin-bottom: 20px; flex-wrap: wrap; }
-  .recipe-detail-cover { width: 220px; height: 165px; flex-shrink: 0; font-size: 30px; }
-  .recipe-detail-meta { display: flex; flex-direction: column; gap: 10px; justify-content: center; flex: 1; min-width: 220px; }
-  .detail-meta-item { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text); }
-  .detail-meta-label { color: var(--text3); width: 112px; flex-shrink: 0; }
-  .detail-stars { display: inline-flex; gap: 2px; color: var(--accent2); font-size: 15px; }
-  .detail-stars i.empty { color: var(--border); }
-  .detail-ingredient-list, .detail-step-list { margin: 0; }
-  .detail-ingredient-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-  .detail-ingredient-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 12px; background: var(--surface2); border-radius: var(--radius); font-size: 13.5px; }
-  .detail-ing-amount { color: var(--text3); flex-shrink: 0; }
-  .detail-step-list { list-style: decimal; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
-  .detail-step-list li { font-size: 13.5px; line-height: 1.7; color: var(--text); }
-  .detail-empty-hint { list-style: none; color: var(--text3); font-size: 13px; padding: 4px 0; }
-  .detail-source, .detail-notes { font-size: 13.5px; line-height: 1.7; color: var(--text2); white-space: pre-wrap; margin: 0; }
-  .detail-source a { color: var(--accent); }
-  @media (max-width: 640px) {
-    .recipe-detail-top { flex-direction: column; }
-    .recipe-detail-cover { width: 100%; height: auto; }
-  }
-
   /* 三組獨立星等（製作快樂度／用腦費工程度／成品評分）排在同一列，手機自動換行 */
   .field textarea {
     border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px;
     color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px; resize: vertical;
   }
+  .field-hint { font-size: 12.5px; color: var(--text3); margin: -4px 0 8px; line-height: 1.5; }
+
+  /* ============================================================
+     食材群組編輯器（可分組：內餡／外皮／醬汁…，或完全不分組）
+     ============================================================ */
+  .ingredient-groups { display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
+  .ingredient-group {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; background: var(--surface2);
+  }
+  .ingredient-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .ingredient-group-name-input {
+    flex: 1; min-width: 0; border: none; border-bottom: 1px dashed var(--border); background: transparent;
+    padding: 4px 2px 6px; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .ingredient-group-name-input:focus { outline: none; border-bottom-color: var(--accent2); }
+  .ingredient-group-name-input::placeholder { font-weight: 400; color: var(--text3); }
+  .ingredient-item-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .ingredient-item-row { display: flex; align-items: center; gap: 8px; }
+  .ingredient-item-row input[type="text"] {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; height: 38px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px; min-width: 0;
+  }
+  .ingredient-autocomplete-wrap { position: relative; flex: 1.6; min-width: 0; }
+  .ingredient-autocomplete-wrap .ing-name { width: 100%; }
+  .ingredient-item-row .ing-amount { flex: 0.8; min-width: 0; }
+  .ingredient-item-row .ing-unit { flex: 0.7; min-width: 0; }
+  .ingredient-autocomplete-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); max-height: 220px; overflow-y: auto; padding: 4px;
+  }
+  .ingredient-autocomplete-item, .ingredient-autocomplete-addnew {
+    width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 9px; border: none; background: transparent; border-radius: 6px; cursor: pointer;
+    font-family: inherit; font-size: 13.5px; color: var(--text); text-align: left;
+  }
+  .ingredient-autocomplete-item:hover, .ingredient-autocomplete-item.active,
+  .ingredient-autocomplete-addnew:hover, .ingredient-autocomplete-addnew.active { background: var(--accent-light); }
+  .ingredient-autocomplete-addnew { color: var(--accent); font-weight: 600; gap: 6px; justify-content: flex-start; }
+  .ac-tag { font-size: 11px; color: var(--text3); background: var(--surface2); padding: 2px 6px; border-radius: 999px; flex-shrink: 0; }
+  .ingredient-autocomplete-empty { padding: 8px 9px; font-size: 13px; color: var(--text3); margin: 0; }
+
+  /* ============================================================
+     做法編輯器（Notion 風格區塊：步驟／小標題／注意事項／一般文字）
+     ============================================================ */
+  .step-blocks { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .step-block { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; }
+  .step-block-marker {
+    flex-shrink: 0; width: 26px; height: 38px; display: flex; align-items: center; justify-content: center;
+    color: var(--text3);
+  }
+  .step-block-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--accent-light); color: var(--accent);
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .step-block-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }  .step-type-select {
+    align-self: flex-start; border: none; background: transparent; color: var(--text3); font-family: inherit;
+    font-size: 11.5px; padding: 0 2px; cursor: pointer;
+  }
+  .step-type-select:focus { outline: none; color: var(--accent); }
+  .step-content {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px; resize: none;
+    overflow: hidden; line-height: 1.6;
+  }
+  .step-content:focus { outline: none; border-color: var(--accent2); }
+  .step-block-heading .step-content { font-weight: 700; font-size: 15px; border-style: dashed; }
+  .step-block-note .step-content { background: var(--red-light); border-color: #edd7d3; }
+  .step-block-note .step-block-marker { color: var(--red); }
+  .step-block-text .step-content { background: var(--surface2); }
+  .step-add-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; position: relative; }
+  .step-add-type-wrap { position: relative; }
+  .step-type-menu {
+    position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 20; min-width: 150px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 4px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .step-type-menu button {
+    display: flex; align-items: center; gap: 8px; padding: 8px 9px; border: none; background: transparent;
+    border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13.5px; color: var(--text); text-align: left;
+  }
+  .step-type-menu button:hover { background: var(--accent-light); }
+
+  /* ============================================================
+     食譜詳情頁（唯讀瀏覽）
+     ============================================================ */
+  .detail-header-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: flex-start; }
+  .recipe-detail-card { display: flex; flex-direction: column; gap: 4px; }
+  .recipe-detail-top { display: flex; gap: 20px; margin-bottom: 8px; flex-wrap: wrap; }
+  .recipe-detail-cover { flex-shrink: 0; width: 200px; height: 150px; }
+  .recipe-detail-meta { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+  .detail-meta-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+  .detail-meta-label { color: var(--text3); flex-shrink: 0; }
+  .detail-stars { display: inline-flex; gap: 2px; font-size: 15px; color: #d8d8d8; }
+  .detail-stars i.filled, .detail-stars i:not(.empty) { color: var(--accent2); }
+
+  .detail-ingredient-groups { display: flex; flex-direction: column; gap: 14px; }
+  .detail-ingredient-group-name { font-weight: 700; font-size: 13.5px; color: var(--text); margin-bottom: 6px; }
+  .detail-ing-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+  .detail-ing-list li {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+    font-size: 14px; padding-bottom: 7px; border-bottom: 1px dashed var(--border);
+  }
+  .detail-ing-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .detail-ing-name { color: var(--text); }
+  .detail-ing-amount { color: var(--text3); flex-shrink: 0; white-space: nowrap; }
+
+  .detail-step-list { display: flex; flex-direction: column; gap: 10px; }
+  .detail-step-block { display: flex; align-items: flex-start; gap: 10px; }
+  .detail-step-block p { margin: 0; line-height: 1.7; white-space: pre-wrap; }
+  .detail-step-num {
+    flex-shrink: 0; width: 22px; height: 22px; margin-top: 2px; border-radius: 50%;
+    background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .detail-step-heading { font-size: 15px; font-weight: 700; margin: 6px 0 0; }
+  .detail-step-block-note {
+    background: var(--red-light); border-radius: var(--radius); padding: 10px 12px; color: var(--red);
+  }
+  .detail-step-block-note i { flex-shrink: 0; margin-top: 2px; }
+  .detail-step-text { margin: 0; line-height: 1.7; white-space: pre-wrap; color: var(--text2); }
+  .detail-source { margin: 0; line-height: 1.7; word-break: break-all; }
+  .detail-notes { margin: 0; line-height: 1.7; white-space: pre-wrap; }
+  .detail-empty-hint { color: var(--text3); font-size: 13px; margin: 0; }
   .module-placeholder h2 { font-size: 20px; color: var(--text); }
   .module-placeholder p { max-width: 420px; font-size: 14px; line-height: 1.7; margin: 0; }
