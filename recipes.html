@@ -167,6 +167,8 @@
                     <datalist id="recipe-category-options"></datalist>
                   </label>
                   <label class="field"><span>建立日期</span><input type="date" id="recipe-field-created-date" readonly></label>
+                  <label class="field"><span>份量</span><input type="text" id="recipe-field-servings" placeholder="例：4 人份"></label>
+                  <label class="field"><span>製作時間</span><input type="text" id="recipe-field-make-time" placeholder="例：1 小時 30 分"></label>
                   <label class="field"><span>最後製作日期</span><input type="date" id="recipe-field-last-made"></label>
                 </div>
 
@@ -279,7 +281,8 @@
                 <div class="cover-preview recipe-cover recipe-detail-cover" id="recipe-detail-cover"><i class="ti ti-photo"></i></div>
                 <div class="recipe-detail-stats">
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">建立日期</span><span class="recipe-detail-stat-value" id="recipe-detail-created">—</span></div>
-                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">最後製作</span><span class="recipe-detail-stat-value" id="recipe-detail-last-made">尚未製作</span></div>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">份量</span><span class="recipe-detail-stat-value" id="recipe-detail-servings">—</span></div>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">製作時間</span><span class="recipe-detail-stat-value" id="recipe-detail-make-time">—</span></div>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">製作快樂度</span><span class="detail-stars" id="recipe-detail-star-joy"></span></div>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">用腦／費工程度</span><span class="detail-stars" id="recipe-detail-star-effort"></span></div>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">成品評分</span><span class="detail-stars" id="recipe-detail-star-result"></span></div>
@@ -716,7 +719,8 @@
       $("recipe-detail-category").textContent = getRecipeCategory(r);
       $("recipe-detail-cover").innerHTML = r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`;
       $("recipe-detail-created").textContent = r.createdDate || "—";
-      $("recipe-detail-last-made").textContent = r.lastMadeAt || "尚未製作";
+      $("recipe-detail-servings").textContent = r.servings || "—";
+      $("recipe-detail-make-time").textContent = r.makeTime || "—";
       $("recipe-detail-star-joy").innerHTML = starsHtml(r.ratingJoy || 0);
       $("recipe-detail-star-effort").innerHTML = starsHtml(r.ratingEffort || 0);
       $("recipe-detail-star-result").innerHTML = starsHtml(r.ratingResult || 0);
@@ -1182,6 +1186,8 @@
       recipeRatings = { joy: 0, effort: 0, result: 0 };
       applyRatingsToForm();
       $("recipe-field-created-date").value = new Date().toISOString().slice(0, 10);
+      $("recipe-field-servings").value = "";
+      $("recipe-field-make-time").value = "";
       $("recipe-field-last-made").value = "";
       goToPage("recipe-form");
     }
@@ -1204,6 +1210,8 @@
       $("recipe-field-source-url").value = r.sourceUrl || "";
       $("recipe-field-notes").value = r.notes || "";
       $("recipe-field-created-date").value = r.createdDate || "";
+      $("recipe-field-servings").value = r.servings || "";
+      $("recipe-field-make-time").value = r.makeTime || "";
       $("recipe-field-last-made").value = r.lastMadeAt || "";
       goToPage("recipe-form");
     }
@@ -1257,6 +1265,8 @@
           uid: currentUser.uid,
           name,
           category: $("recipe-field-category").value.trim() || "未分類",
+          servings: $("recipe-field-servings").value.trim(),
+          makeTime: $("recipe-field-make-time").value.trim(),
           photoUrl: photoUrl || "",
           ingredients: currentIngredientGroups
             .map((g) => ({
