@@ -721,15 +721,34 @@
       $("recipe-detail-star-effort").innerHTML = starsHtml(r.ratingEffort || 0);
       $("recipe-detail-star-result").innerHTML = starsHtml(r.ratingResult || 0);
 
-      const ingredients = Array.isArray(r.ingredients) ? r.ingredients : [];
-      $("recipe-detail-ingredients").innerHTML = ingredients.length
-        ? ingredients.map((i) => `<li><span class="detail-ing-name">${escapeHtml(i.name || "")}</span>${i.amount ? `<span class="detail-ing-amount">${escapeHtml(i.amount)}</span>` : ""}</li>`).join("")
-        : `<li class="detail-empty-hint">尚未填寫食材</li>`;
+      const ingredientGroups = toDisplayIngredientGroups(r.ingredients);
+      $("recipe-detail-ingredients").innerHTML = ingredientGroups.length
+        ? ingredientGroups.map((g) => `
+            <div class="detail-ingredient-group">
+              ${g.groupName ? `<div class="detail-ingredient-group-name">${escapeHtml(g.groupName)}</div>` : ""}
+              <ul class="detail-ing-list">
+                ${g.items.map((it) => `
+                  <li>
+                    <span class="detail-ing-name">${escapeHtml(it.name || "")}</span>
+                    ${(it.amount || it.unit) ? `<span class="detail-ing-amount">${escapeHtml([it.amount, it.unit].filter(Boolean).join(" "))}</span>` : ""}
+                  </li>`).join("")}
+              </ul>
+            </div>`).join("")
+        : `<p class="detail-empty-hint">尚未填寫食材</p>`;
 
-      const steps = Array.isArray(r.steps) ? r.steps : [];
-      $("recipe-detail-steps").innerHTML = steps.length
-        ? steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")
-        : `<li class="detail-empty-hint">尚未填寫做法</li>`;
+      const stepBlocks = toDisplayStepBlocks(r.steps);
+      let stepCounter = 0;
+      $("recipe-detail-steps").innerHTML = stepBlocks.length
+        ? `<div class="detail-step-list">${stepBlocks.map((b) => {
+            if (b.type === "step") {
+              stepCounter++;
+              return `<div class="detail-step-block detail-step-block-step"><span class="detail-step-num">${stepCounter}</span><p>${escapeHtml(b.content)}</p></div>`;
+            }
+            if (b.type === "heading") return `<h4 class="detail-step-heading">${escapeHtml(b.content)}</h4>`;
+            if (b.type === "note") return `<div class="detail-step-block detail-step-block-note"><i class="ti ti-alert-triangle"></i><p>${escapeHtml(b.content)}</p></div>`;
+            return `<p class="detail-step-text">${escapeHtml(b.content)}</p>`;
+          }).join("")}</div>`
+        : `<p class="detail-empty-hint">尚未填寫做法</p>`;
 
       const sourceParts = [r.sourceName, r.sourcePlatform].filter((v) => (v || "").trim()).map(escapeHtml);
       let sourceHtml = sourceParts.join(" · ");
@@ -1157,8 +1176,9 @@
       $("recipe-form").reset();
       currentRecipePhotoUrl = ""; pendingRecipePhotoFile = null;
       updateRecipeCoverPreview();
-      currentIngredients = []; currentSteps = [];
-      renderIngredientList(); renderStepList();
+      currentIngredientGroups = normalizeIngredientGroups([]);
+      currentStepBlocks = normalizeStepBlocks([]);
+      renderIngredientGroups(); renderStepBlocks();
       recipeRatings = { joy: 0, effort: 0, result: 0 };
       applyRatingsToForm();
       $("recipe-field-created-date").value = new Date().toISOString().slice(0, 10);
@@ -1174,9 +1194,9 @@
       $("recipe-field-category").value = r.category || "";
       currentRecipePhotoUrl = r.photoUrl || ""; pendingRecipePhotoFile = null;
       updateRecipeCoverPreview();
-      currentIngredients = Array.isArray(r.ingredients) ? r.ingredients.map((i) => ({ ...i })) : [];
-      currentSteps = Array.isArray(r.steps) ? [...r.steps] : [];
-      renderIngredientList(); renderStepList();
+      currentIngredientGroups = normalizeIngredientGroups(r.ingredients);
+      currentStepBlocks = normalizeStepBlocks(r.steps);
+      renderIngredientGroups(); renderStepBlocks();
       recipeRatings = { joy: r.ratingJoy || 0, effort: r.ratingEffort || 0, result: r.ratingResult || 0 };
       applyRatingsToForm();
       $("recipe-field-source-name").value = r.sourceName || "";
@@ -1238,10 +1258,17 @@
           name,
           category: $("recipe-field-category").value.trim() || "未分類",
           photoUrl: photoUrl || "",
-          ingredients: currentIngredients
-            .filter((i) => (i.name || "").trim() || (i.amount || "").trim())
-            .map((i) => ({ name: (i.name || "").trim(), amount: (i.amount || "").trim() })),
-          steps: currentSteps.map((s) => (s || "").trim()).filter(Boolean),
+          ingredients: currentIngredientGroups
+            .map((g) => ({
+              groupName: (g.groupName || "").trim(),
+              items: g.items
+                .filter((it) => (it.name || "").trim() || (it.amount || "").trim())
+                .map((it) => ({ name: (it.name || "").trim(), amount: (it.amount || "").trim(), unit: (it.unit || "").trim() }))
+            }))
+            .filter((g) => g.items.length),
+          steps: currentStepBlocks
+            .filter((b) => (b.content || "").trim())
+            .map((b) => ({ type: STEP_BLOCK_TYPES.includes(b.type) ? b.type : "step", content: b.content.trim() })),
           ratingJoy: Number(recipeRatings.joy) || 0,
           ratingEffort: Number(recipeRatings.effort) || 0,
           ratingResult: Number(recipeRatings.result) || 0,
