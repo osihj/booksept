@@ -277,12 +277,12 @@
             <div class="card recipe-detail-card">
               <div class="recipe-detail-top">
                 <div class="cover-preview recipe-cover recipe-detail-cover" id="recipe-detail-cover"><i class="ti ti-photo"></i></div>
-                <div class="recipe-detail-meta">
-                  <div class="detail-meta-item"><span class="detail-meta-label">建立日期</span><span id="recipe-detail-created">—</span></div>
-                  <div class="detail-meta-item"><span class="detail-meta-label">最後製作</span><span id="recipe-detail-last-made">尚未製作</span></div>
-                  <div class="detail-meta-item"><span class="detail-meta-label">製作快樂度</span><span class="detail-stars" id="recipe-detail-star-joy"></span></div>
-                  <div class="detail-meta-item"><span class="detail-meta-label">用腦／費工程度</span><span class="detail-stars" id="recipe-detail-star-effort"></span></div>
-                  <div class="detail-meta-item"><span class="detail-meta-label">成品評分</span><span class="detail-stars" id="recipe-detail-star-result"></span></div>
+                <div class="recipe-detail-stats">
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">建立日期</span><span class="recipe-detail-stat-value" id="recipe-detail-created">—</span></div>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">最後製作</span><span class="recipe-detail-stat-value" id="recipe-detail-last-made">尚未製作</span></div>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">製作快樂度</span><span class="detail-stars" id="recipe-detail-star-joy"></span></div>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">用腦／費工程度</span><span class="detail-stars" id="recipe-detail-star-effort"></span></div>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">成品評分</span><span class="detail-stars" id="recipe-detail-star-result"></span></div>
                 </div>
               </div>
 
@@ -726,13 +726,13 @@
         ? ingredientGroups.map((g) => `
             <div class="detail-ingredient-group">
               ${g.groupName ? `<div class="detail-ingredient-group-name">${escapeHtml(g.groupName)}</div>` : ""}
-              <ul class="detail-ing-list">
+              <div class="detail-ing-list">
                 ${g.items.map((it) => `
-                  <li>
+                  <div class="detail-ing-row">
                     <span class="detail-ing-name">${escapeHtml(it.name || "")}</span>
                     ${(it.amount || it.unit) ? `<span class="detail-ing-amount">${escapeHtml([it.amount, it.unit].filter(Boolean).join(" "))}</span>` : ""}
-                  </li>`).join("")}
-              </ul>
+                  </div>`).join("")}
+              </div>
             </div>`).join("")
         : `<p class="detail-empty-hint">尚未填寫食材</p>`;
 
