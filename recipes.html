@@ -172,18 +172,34 @@
 
                 <div class="notes-section">
                   <span class="field-label">食材</span>
-                  <div id="recipe-ingredient-list" class="dynamic-list"></div>
-                  <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-add-ingredient-btn">
-                    <i class="ti ti-plus"></i> 新增食材
+                  <p class="field-hint">可以不分組直接列清單，也可以按下方「新增食材群組」建立像「內餡」「外皮」「醬汁」這樣的分類（名稱自己輸入，不限數量）。</p>
+                  <div id="recipe-ingredient-groups" class="ingredient-groups"></div>
+                  <datalist id="recipe-unit-options"></datalist>
+                  <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-add-group-btn">
+                    <i class="ti ti-plus"></i> 新增食材群組
                   </button>
                 </div>
 
                 <div class="notes-section">
                   <span class="field-label">做法</span>
-                  <div id="recipe-step-list" class="dynamic-list"></div>
-                  <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-add-step-btn">
-                    <i class="ti ti-plus"></i> 新增步驟
-                  </button>
+                  <p class="field-hint">輸入內容後按 Enter 會自動新增下一個步驟（Shift+Enter 換行不新增）；也可以用「新增內容」插入小標題、注意事項或一般文字。</p>
+                  <div id="recipe-step-blocks" class="step-blocks"></div>
+                  <div class="step-add-row">
+                    <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-add-step-btn">
+                      <i class="ti ti-plus"></i> 新增步驟
+                    </button>
+                    <div class="step-add-type-wrap">
+                      <button type="button" class="btn btn-ghost btn-sm" id="recipe-add-content-btn">
+                        <i class="ti ti-plus"></i> 新增內容 <i class="ti ti-chevron-down"></i>
+                      </button>
+                      <div class="step-type-menu" id="recipe-add-content-menu" hidden>
+                        <button type="button" data-type="step"><i class="ti ti-list-numbers"></i> 步驟</button>
+                        <button type="button" data-type="heading"><i class="ti ti-heading"></i> 小標題</button>
+                        <button type="button" data-type="note"><i class="ti ti-alert-triangle"></i> 注意事項</button>
+                        <button type="button" data-type="text"><i class="ti ti-align-left"></i> 一般文字</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="field-grid">
@@ -272,12 +288,12 @@
 
               <div class="notes-section">
                 <span class="field-label">食材</span>
-                <ul class="detail-ingredient-list" id="recipe-detail-ingredients"></ul>
+                <div class="detail-ingredient-groups" id="recipe-detail-ingredients"></div>
               </div>
 
               <div class="notes-section">
                 <span class="field-label">做法</span>
-                <ol class="detail-step-list" id="recipe-detail-steps"></ol>
+                <div class="detail-step-list" id="recipe-detail-steps"></div>
               </div>
 
               <div class="notes-section" id="recipe-detail-source-section" hidden>
@@ -336,8 +352,112 @@
     let recipeDetailReturnPage = "recipes";
     let currentRecipePhotoUrl = "";
     let pendingRecipePhotoFile = null;
-    let currentIngredients = []; // [{name, amount}]
-    let currentSteps = []; // ["步驟文字", ...]
+    // ---------- 小工具：產生穩定 id（食材群組／食材／做法區塊都要用） ----------
+    function genId(prefix) {
+      if (window.crypto?.randomUUID) return prefix + "_" + window.crypto.randomUUID().slice(0, 8);
+      return prefix + "_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+    }
+
+    // ---------- 常用食材／常用單位資料庫（先存在瀏覽器 localStorage，還沒接 Firestore） ----------
+    // 之後如果要多裝置同步、或做後台管理頁，再把這幾個 load/save 函式換成讀寫 Firestore 就好，
+    // 資料結構（{id, name, defaultUnit}）現在就是照 Firestore 文件的形狀設計的。
+    const COMMON_INGREDIENTS_KEY = "recipeApp:commonIngredients";
+    const COMMON_UNITS_KEY = "recipeApp:commonUnits";
+    const RECENT_INGREDIENTS_KEY = "recipeApp:recentIngredientIds";
+    const DEFAULT_COMMON_INGREDIENTS = [
+      { id: "ci_chicken_breast", name: "雞胸肉", defaultUnit: "克" },
+      { id: "ci_chicken_thigh", name: "雞腿肉", defaultUnit: "克" },
+      { id: "ci_pork_mince", name: "豬絞肉", defaultUnit: "克" },
+      { id: "ci_cabbage", name: "高麗菜", defaultUnit: "顆" },
+      { id: "ci_onion", name: "洋蔥", defaultUnit: "顆" },
+      { id: "ci_garlic", name: "蒜頭", defaultUnit: "瓣" },
+      { id: "ci_soy_sauce", name: "醬油", defaultUnit: "大匙" },
+      { id: "ci_rice_wine", name: "米酒", defaultUnit: "大匙" },
+      { id: "ci_sugar", name: "糖", defaultUnit: "小匙" },
+      { id: "ci_salt", name: "鹽", defaultUnit: "少許" }
+    ];
+    const DEFAULT_COMMON_UNITS = ["克", "公斤", "ml", "cc", "大匙", "小匙", "顆", "條", "片", "瓣", "包", "盒", "少許", "適量"];
+    function loadCommonIngredients() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(COMMON_INGREDIENTS_KEY) || "null");
+        return Array.isArray(parsed) && parsed.length ? parsed : [...DEFAULT_COMMON_INGREDIENTS];
+      } catch { return [...DEFAULT_COMMON_INGREDIENTS]; }
+    }
+    function saveCommonIngredients(list) {
+      try { localStorage.setItem(COMMON_INGREDIENTS_KEY, JSON.stringify(list)); } catch { /* 存不進去就算了，不影響食譜本身 */ }
+    }
+    function loadCommonUnits() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(COMMON_UNITS_KEY) || "null");
+        return Array.isArray(parsed) && parsed.length ? parsed : [...DEFAULT_COMMON_UNITS];
+      } catch { return [...DEFAULT_COMMON_UNITS]; }
+    }
+    function loadRecentIngredientIds() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(RECENT_INGREDIENTS_KEY) || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch { return []; }
+    }
+    function pushRecentIngredientId(id) {
+      if (!id) return;
+      const list = [id, ...loadRecentIngredientIds().filter((x) => x !== id)].slice(0, 20);
+      try { localStorage.setItem(RECENT_INGREDIENTS_KEY, JSON.stringify(list)); } catch { /* 忽略 */ }
+    }
+    let commonIngredients = loadCommonIngredients();
+    let commonUnits = loadCommonUnits();
+
+    // ---------- 食材群組／做法區塊：新舊資料格式互轉 ----------
+    // 食材舊格式：ingredients: [{name, amount}]（單層清單）
+    // 食材新格式：ingredients: [{id, groupName, items:[{id, ingredientId, name, amount, unit}]}]
+    function normalizeIngredientGroups(raw) {
+      if (!Array.isArray(raw) || !raw.length) return [{ id: genId("grp"), groupName: "", items: [] }];
+      const looksGrouped = raw.every((g) => g && typeof g === "object" && Array.isArray(g.items));
+      if (looksGrouped) {
+        return raw.map((g) => ({
+          id: g.id || genId("grp"),
+          groupName: g.groupName || "",
+          items: (Array.isArray(g.items) ? g.items : []).map((it) => ({
+            id: it.id || genId("ing"),
+            ingredientId: it.ingredientId || null,
+            name: it.name || "",
+            amount: it.amount || "",
+            unit: it.unit || ""
+          }))
+        }));
+      }
+      return [{
+        id: genId("grp"),
+        groupName: "",
+        items: raw.map((it) => ({ id: genId("ing"), ingredientId: null, name: it.name || "", amount: it.amount || "", unit: it.unit || "" }))
+      }];
+    }
+    // 做法舊格式：steps: string[]
+    // 做法新格式：steps: [{id, type: "step"|"heading"|"note"|"text", content}]
+    const STEP_BLOCK_TYPES = ["step", "heading", "note", "text"];
+    function normalizeStepBlocks(raw) {
+      if (!Array.isArray(raw) || !raw.length) return [{ id: genId("blk"), type: "step", content: "" }];
+      const looksTyped = raw.every((s) => s && typeof s === "object" && "type" in s);
+      if (looksTyped) {
+        return raw.map((s) => ({ id: s.id || genId("blk"), type: STEP_BLOCK_TYPES.includes(s.type) ? s.type : "step", content: s.content || "" }));
+      }
+      return raw.map((s) => ({ id: genId("blk"), type: "step", content: typeof s === "string" ? s : "" }));
+    }
+    // 唯讀詳情頁用：跟上面幾乎一樣，但完全沒資料時回傳空陣列（顯示「尚未填寫」），而不是塞一個空白項目
+    function toDisplayIngredientGroups(raw) {
+      if (!Array.isArray(raw) || !raw.length) return [];
+      const looksGrouped = raw.every((g) => g && typeof g === "object" && Array.isArray(g.items));
+      const groups = looksGrouped ? raw : [{ groupName: "", items: raw }];
+      return groups.filter((g) => Array.isArray(g.items) && g.items.length);
+    }
+    function toDisplayStepBlocks(raw) {
+      if (!Array.isArray(raw) || !raw.length) return [];
+      const looksTyped = raw.every((s) => s && typeof s === "object" && "type" in s);
+      const blocks = looksTyped ? raw : raw.map((s) => ({ type: "step", content: typeof s === "string" ? s : "" }));
+      return blocks.filter((b) => (b.content || "").trim()).map((b) => ({ type: STEP_BLOCK_TYPES.includes(b.type) ? b.type : "step", content: b.content || "" }));
+    }
+
+    let currentIngredientGroups = [];
+    let currentStepBlocks = [];
     let recipeRatings = { joy: 0, effort: 0, result: 0 };
 
     // ---------- 頁面切換（跟書庫同一套邏輯：純粹切換 .page/.sidebar-link 的 active class） ----------
@@ -681,82 +801,351 @@
       updateStarDisplay($("recipe-star-result"), recipeRatings.result);
     }
 
-    // ---------- 食材清單（新增／刪除／上移／下移） ----------
-    function renderIngredientList() {
-      const el = $("recipe-ingredient-list");
-      if (!currentIngredients.length) {
-        el.innerHTML = `<p class="manage-empty-hint">還沒有食材，按下方「新增食材」開始輸入。</p>`;
-        return;
-      }
-      el.innerHTML = currentIngredients.map((ing, i) => `
-        <div class="dynamic-row" data-index="${i}">
-          <span class="dynamic-row-num">${i + 1}</span>
-          <input type="text" class="ing-name" placeholder="食材名稱" value="${escapeHtml(ing.name || "")}">
-          <input type="text" class="ing-amount" placeholder="份量" value="${escapeHtml(ing.amount || "")}">
+    // ================= 食材編輯器（可自由分組：內餡／外皮／醬汁...，或完全不分組） =================
+    const ingredientGroupsEl = $("recipe-ingredient-groups");
+    let acState = null; // 目前開啟中的食材自動完成下拉：{ groupIndex, itemIndex, query, matches, highlighted, addNewIdx }
+
+    function refreshUnitOptions() {
+      $("recipe-unit-options").innerHTML = commonUnits.map((u) => `<option value="${escapeHtml(u)}"></option>`).join("");
+    }
+    function ingredientItemRowHtml(it, gi, ii, total) {
+      return `
+        <div class="ingredient-item-row" data-group-index="${gi}" data-item-index="${ii}">
+          <span class="dynamic-row-num">${ii + 1}</span>
+          <div class="ingredient-autocomplete-wrap">
+            <input type="text" class="ing-name" placeholder="食材名稱" value="${escapeHtml(it.name || "")}" autocomplete="off">
+            <div class="ingredient-autocomplete-list" hidden></div>
+          </div>
+          <input type="text" class="ing-amount" placeholder="份量" value="${escapeHtml(it.amount || "")}">
+          <input type="text" class="ing-unit" placeholder="單位" value="${escapeHtml(it.unit || "")}" list="recipe-unit-options">
           <div class="dynamic-row-actions">
-            <button type="button" class="icon-btn ing-up" title="上移" ${i === 0 ? "disabled" : ""}><i class="ti ti-chevron-up"></i></button>
-            <button type="button" class="icon-btn ing-down" title="下移" ${i === currentIngredients.length - 1 ? "disabled" : ""}><i class="ti ti-chevron-down"></i></button>
+            <button type="button" class="icon-btn ing-up" title="上移" ${ii === 0 ? "disabled" : ""}><i class="ti ti-chevron-up"></i></button>
+            <button type="button" class="icon-btn ing-down" title="下移" ${ii === total - 1 ? "disabled" : ""}><i class="ti ti-chevron-down"></i></button>
             <button type="button" class="icon-btn ing-delete" title="刪除"><i class="ti ti-trash"></i></button>
           </div>
-        </div>`).join("");
-      el.querySelectorAll(".dynamic-row").forEach((row) => {
-        const idx = Number(row.dataset.index);
-        row.querySelector(".ing-name").addEventListener("input", (e) => { currentIngredients[idx].name = e.target.value; });
-        row.querySelector(".ing-amount").addEventListener("input", (e) => { currentIngredients[idx].amount = e.target.value; });
-        row.querySelector(".ing-up").addEventListener("click", () => moveIngredient(idx, -1));
-        row.querySelector(".ing-down").addEventListener("click", () => moveIngredient(idx, 1));
-        row.querySelector(".ing-delete").addEventListener("click", () => { currentIngredients.splice(idx, 1); renderIngredientList(); });
-      });
+        </div>`;
     }
-    function moveIngredient(idx, dir) {
-      const target = idx + dir;
-      if (target < 0 || target >= currentIngredients.length) return;
-      [currentIngredients[idx], currentIngredients[target]] = [currentIngredients[target], currentIngredients[idx]];
-      renderIngredientList();
+    function ingredientGroupHtml(g, gi) {
+      const itemsHtml = g.items.length
+        ? g.items.map((it, ii) => ingredientItemRowHtml(it, gi, ii, g.items.length)).join("")
+        : `<p class="manage-empty-hint">還沒有食材，按下方「新增食材」開始輸入。</p>`;
+      return `
+        <div class="ingredient-group" data-group-index="${gi}">
+          <div class="ingredient-group-head">
+            <input type="text" class="ingredient-group-name-input" placeholder="群組名稱（留空＝未分組食材，例如：內餡、外皮、醬汁）" value="${escapeHtml(g.groupName || "")}">
+            <div class="dynamic-row-actions">
+              <button type="button" class="icon-btn grp-up" title="上移群組" ${gi === 0 ? "disabled" : ""}><i class="ti ti-chevron-up"></i></button>
+              <button type="button" class="icon-btn grp-down" title="下移群組" ${gi === currentIngredientGroups.length - 1 ? "disabled" : ""}><i class="ti ti-chevron-down"></i></button>
+              <button type="button" class="icon-btn grp-delete" title="刪除群組" ${currentIngredientGroups.length <= 1 ? "disabled" : ""}><i class="ti ti-trash"></i></button>
+            </div>
+          </div>
+          <div class="ingredient-item-list">${itemsHtml}</div>
+          <button type="button" class="btn btn-ghost btn-sm ingredient-add-item-btn" data-group-index="${gi}"><i class="ti ti-plus"></i> 新增食材</button>
+        </div>`;
     }
-    $("recipe-add-ingredient-btn").addEventListener("click", () => {
-      currentIngredients.push({ name: "", amount: "" });
-      renderIngredientList();
-      const inputs = $("recipe-ingredient-list").querySelectorAll(".ing-name");
+    function renderIngredientGroups() {
+      ingredientGroupsEl.innerHTML = currentIngredientGroups.map((g, gi) => ingredientGroupHtml(g, gi)).join("");
+      refreshUnitOptions();
+    }
+    function addIngredientItem(gi) {
+      currentIngredientGroups[gi].items.push({ id: genId("ing"), ingredientId: null, name: "", amount: "", unit: "" });
+      renderIngredientGroups();
+      const rows = ingredientGroupsEl.querySelectorAll(`.ingredient-item-row[data-group-index="${gi}"] .ing-name`);
+      rows[rows.length - 1]?.focus();
+    }
+    function moveIngredientGroup(gi, dir) {
+      const target = gi + dir;
+      if (target < 0 || target >= currentIngredientGroups.length) return;
+      [currentIngredientGroups[gi], currentIngredientGroups[target]] = [currentIngredientGroups[target], currentIngredientGroups[gi]];
+      renderIngredientGroups();
+    }
+    function moveIngredientItem(gi, ii, dir) {
+      const items = currentIngredientGroups[gi].items;
+      const target = ii + dir;
+      if (target < 0 || target >= items.length) return;
+      [items[ii], items[target]] = [items[target], items[ii]];
+      renderIngredientGroups();
+    }
+    $("recipe-add-group-btn").addEventListener("click", () => {
+      currentIngredientGroups.push({ id: genId("grp"), groupName: "", items: [] });
+      renderIngredientGroups();
+      const inputs = ingredientGroupsEl.querySelectorAll(".ingredient-group-name-input");
       inputs[inputs.length - 1]?.focus();
     });
 
-    // ---------- 做法清單（新增／刪除／上移／下移） ----------
-    function renderStepList() {
-      const el = $("recipe-step-list");
-      if (!currentSteps.length) {
-        el.innerHTML = `<p class="manage-empty-hint">還沒有做法，按下方「新增步驟」開始輸入。</p>`;
+    // ---------- 常用食材 autocomplete：搜尋、鍵盤操作、選擇、找不到時可直接新增 ----------
+    function computeIngredientMatches(query) {
+      const q = query.trim().toLowerCase();
+      if (!q) return [];
+      const recentIds = loadRecentIngredientIds();
+      return commonIngredients
+        .filter((ci) => ci.name.toLowerCase().includes(q))
+        .sort((a, b) => {
+          const ra = recentIds.indexOf(a.id), rb = recentIds.indexOf(b.id);
+          if (ra !== -1 && rb !== -1) return ra - rb;
+          if (ra !== -1) return -1;
+          if (rb !== -1) return 1;
+          return a.name.localeCompare(b.name, "zh-Hant");
+        });
+    }
+    function renderAutocompleteDropdown(dropdownEl, query, groupIndex, itemIndex) {
+      const q = query.trim();
+      if (!q) { dropdownEl.hidden = true; dropdownEl.innerHTML = ""; acState = null; return; }
+      const recentIds = loadRecentIngredientIds();
+      const matches = computeIngredientMatches(q).slice(0, 8);
+      let html = matches.length
+        ? matches.map((m, idx) => `
+            <button type="button" class="ingredient-autocomplete-item" data-idx="${idx}">
+              <span>${escapeHtml(m.name)}</span>
+              ${recentIds.includes(m.id) ? `<span class="ac-tag">最近使用</span>` : ""}
+            </button>`).join("")
+        : `<p class="ingredient-autocomplete-empty">找不到符合的常用食材</p>`;
+      html += `<button type="button" class="ingredient-autocomplete-addnew" data-idx="${matches.length}"><i class="ti ti-plus"></i> 使用「${escapeHtml(q)}」</button>`;
+      dropdownEl.innerHTML = html;
+      dropdownEl.hidden = false;
+      acState = { groupIndex, itemIndex, query: q, matches, highlighted: -1, addNewIdx: matches.length };
+    }
+    function updateAutocompleteHighlight(dropdownEl) {
+      [...dropdownEl.children].forEach((el, idx) => el.classList.toggle("active", idx === acState.highlighted));
+    }
+    function selectAutocompleteMatch(gi, ii, matchIdx) {
+      if (!acState) return;
+      const row = ingredientGroupsEl.querySelector(`.ingredient-item-row[data-group-index="${gi}"][data-item-index="${ii}"]`);
+      const nameInput = row.querySelector(".ing-name");
+      const unitInput = row.querySelector(".ing-unit");
+      const dropdownEl = row.querySelector(".ingredient-autocomplete-list");
+      const item = currentIngredientGroups[gi].items[ii];
+      if (matchIdx >= acState.matches.length) {
+        const name = acState.query;
+        item.name = name;
+        nameInput.value = name;
+        const existing = commonIngredients.find((c) => c.name === name);
+        if (existing) {
+          item.ingredientId = existing.id;
+          pushRecentIngredientId(existing.id);
+        } else {
+          const newCi = { id: genId("ci"), name, defaultUnit: unitInput.value.trim() || "" };
+          commonIngredients = [...commonIngredients, newCi];
+          saveCommonIngredients(commonIngredients);
+          item.ingredientId = newCi.id;
+          pushRecentIngredientId(newCi.id);
+        }
+      } else {
+        const m = acState.matches[matchIdx];
+        item.name = m.name;
+        item.ingredientId = m.id;
+        nameInput.value = m.name;
+        if (m.defaultUnit && !item.unit) { item.unit = m.defaultUnit; unitInput.value = m.defaultUnit; }
+        pushRecentIngredientId(m.id);
+      }
+      dropdownEl.hidden = true; dropdownEl.innerHTML = "";
+      acState = null;
+      refreshUnitOptions();
+    }
+
+    ingredientGroupsEl.addEventListener("mousedown", (e) => {
+      // 防止點選自動完成清單時，輸入框先觸發 blur 把清單收起來
+      if (e.target.closest(".ingredient-autocomplete-list")) e.preventDefault();
+    });
+    ingredientGroupsEl.addEventListener("input", (e) => {
+      if (e.target.classList.contains("ingredient-group-name-input")) {
+        currentIngredientGroups[Number(e.target.closest(".ingredient-group").dataset.groupIndex)].groupName = e.target.value;
         return;
       }
-      el.innerHTML = currentSteps.map((step, i) => `
-        <div class="dynamic-row" data-index="${i}">
-          <span class="dynamic-row-num">${i + 1}</span>
-          <textarea class="step-text" rows="2" placeholder="做法內容">${escapeHtml(step || "")}</textarea>
-          <div class="dynamic-row-actions">
-            <button type="button" class="icon-btn step-up" title="上移" ${i === 0 ? "disabled" : ""}><i class="ti ti-chevron-up"></i></button>
-            <button type="button" class="icon-btn step-down" title="下移" ${i === currentSteps.length - 1 ? "disabled" : ""}><i class="ti ti-chevron-down"></i></button>
-            <button type="button" class="icon-btn step-delete" title="刪除"><i class="ti ti-trash"></i></button>
+      const row = e.target.closest(".ingredient-item-row");
+      if (!row) return;
+      const gi = Number(row.dataset.groupIndex), ii = Number(row.dataset.itemIndex);
+      const item = currentIngredientGroups[gi].items[ii];
+      if (e.target.classList.contains("ing-name")) {
+        item.name = e.target.value;
+        item.ingredientId = null;
+        renderAutocompleteDropdown(row.querySelector(".ingredient-autocomplete-list"), e.target.value, gi, ii);
+      } else if (e.target.classList.contains("ing-amount")) {
+        item.amount = e.target.value;
+      } else if (e.target.classList.contains("ing-unit")) {
+        item.unit = e.target.value;
+      }
+    });
+    ingredientGroupsEl.addEventListener("keydown", (e) => {
+      const row = e.target.closest(".ingredient-item-row");
+      if (!row) return;
+      const gi = Number(row.dataset.groupIndex), ii = Number(row.dataset.itemIndex);
+      if (e.target.classList.contains("ing-name")) {
+        const dropdownEl = row.querySelector(".ingredient-autocomplete-list");
+        if (e.key === "ArrowDown" && acState && !dropdownEl.hidden) {
+          e.preventDefault();
+          const total = acState.matches.length + 1;
+          acState.highlighted = (acState.highlighted + 1) % total;
+          updateAutocompleteHighlight(dropdownEl);
+        } else if (e.key === "ArrowUp" && acState && !dropdownEl.hidden) {
+          e.preventDefault();
+          const total = acState.matches.length + 1;
+          acState.highlighted = (acState.highlighted - 1 + total) % total;
+          updateAutocompleteHighlight(dropdownEl);
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          if (acState && !dropdownEl.hidden && acState.highlighted >= 0) {
+            selectAutocompleteMatch(gi, ii, acState.highlighted);
+          } else {
+            dropdownEl.hidden = true; acState = null;
+            addIngredientItem(gi);
+          }
+        } else if (e.key === "Escape") {
+          dropdownEl.hidden = true; dropdownEl.innerHTML = ""; acState = null;
+        }
+      } else if (e.key === "Enter" && (e.target.classList.contains("ing-amount") || e.target.classList.contains("ing-unit"))) {
+        e.preventDefault();
+        addIngredientItem(gi);
+      }
+    });
+    ingredientGroupsEl.addEventListener("focusout", (e) => {
+      if (!e.target.classList.contains("ing-name")) return;
+      const row = e.target.closest(".ingredient-item-row");
+      setTimeout(() => {
+        if (document.activeElement === e.target) return;
+        const dropdownEl = row.querySelector(".ingredient-autocomplete-list");
+        if (dropdownEl) { dropdownEl.hidden = true; dropdownEl.innerHTML = ""; }
+        acState = null;
+      }, 120);
+    });
+    ingredientGroupsEl.addEventListener("click", (e) => {
+      const addItemBtn = e.target.closest(".ingredient-add-item-btn");
+      if (addItemBtn) { addIngredientItem(Number(addItemBtn.dataset.groupIndex)); return; }
+
+      const acItem = e.target.closest(".ingredient-autocomplete-item, .ingredient-autocomplete-addnew");
+      if (acItem) {
+        const row = acItem.closest(".ingredient-item-row");
+        selectAutocompleteMatch(Number(row.dataset.groupIndex), Number(row.dataset.itemIndex), Number(acItem.dataset.idx));
+        return;
+      }
+
+      const grpUp = e.target.closest(".grp-up");
+      if (grpUp) { moveIngredientGroup(Number(grpUp.closest(".ingredient-group").dataset.groupIndex), -1); return; }
+      const grpDown = e.target.closest(".grp-down");
+      if (grpDown) { moveIngredientGroup(Number(grpDown.closest(".ingredient-group").dataset.groupIndex), 1); return; }
+      const grpDel = e.target.closest(".grp-delete");
+      if (grpDel) {
+        const gi = Number(grpDel.closest(".ingredient-group").dataset.groupIndex);
+        if (currentIngredientGroups.length > 1) { currentIngredientGroups.splice(gi, 1); renderIngredientGroups(); }
+        return;
+      }
+      const ingUp = e.target.closest(".ing-up");
+      if (ingUp) { const row = ingUp.closest(".ingredient-item-row"); moveIngredientItem(Number(row.dataset.groupIndex), Number(row.dataset.itemIndex), -1); return; }
+      const ingDown = e.target.closest(".ing-down");
+      if (ingDown) { const row = ingDown.closest(".ingredient-item-row"); moveIngredientItem(Number(row.dataset.groupIndex), Number(row.dataset.itemIndex), 1); return; }
+      const ingDel = e.target.closest(".ing-delete");
+      if (ingDel) {
+        const row = ingDel.closest(".ingredient-item-row");
+        const gi = Number(row.dataset.groupIndex), ii = Number(row.dataset.itemIndex);
+        currentIngredientGroups[gi].items.splice(ii, 1);
+        renderIngredientGroups();
+      }
+    });
+
+    // ================= 做法編輯器（Notion 風格：Enter 新增下一步，支援步驟／小標題／注意事項／一般文字） =================
+    const stepBlocksEl = $("recipe-step-blocks");
+    function autoGrowTextarea(el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+    function stepBlockHtml(block, idx, stepNumber, total) {
+      const placeholderMap = { step: "輸入這個步驟…", heading: "輸入小標題…", note: "輸入注意事項…", text: "輸入文字…" };
+      const markerHtml = block.type === "step"
+        ? `<span class="step-block-num">${stepNumber}</span>`
+        : `<i class="ti ${block.type === "heading" ? "ti-heading" : block.type === "note" ? "ti-alert-triangle" : "ti-align-left"} step-block-icon"></i>`;
+      return `
+        <div class="step-block step-block-${block.type}" data-index="${idx}">
+          <div class="step-block-marker">${markerHtml}</div>
+          <div class="step-block-body">
+            <select class="step-type-select" title="切換類型">
+              <option value="step" ${block.type === "step" ? "selected" : ""}>步驟</option>
+              <option value="heading" ${block.type === "heading" ? "selected" : ""}>小標題</option>
+              <option value="note" ${block.type === "note" ? "selected" : ""}>注意事項</option>
+              <option value="text" ${block.type === "text" ? "selected" : ""}>一般文字</option>
+            </select>
+            <textarea class="step-content" rows="1" placeholder="${placeholderMap[block.type]}">${escapeHtml(block.content || "")}</textarea>
           </div>
-        </div>`).join("");
-      el.querySelectorAll(".dynamic-row").forEach((row) => {
-        const idx = Number(row.dataset.index);
-        row.querySelector(".step-text").addEventListener("input", (e) => { currentSteps[idx] = e.target.value; });
-        row.querySelector(".step-up").addEventListener("click", () => moveStep(idx, -1));
-        row.querySelector(".step-down").addEventListener("click", () => moveStep(idx, 1));
-        row.querySelector(".step-delete").addEventListener("click", () => { currentSteps.splice(idx, 1); renderStepList(); });
-      });
+          <div class="dynamic-row-actions">
+            <button type="button" class="icon-btn blk-up" title="上移" ${idx === 0 ? "disabled" : ""}><i class="ti ti-chevron-up"></i></button>
+            <button type="button" class="icon-btn blk-down" title="下移" ${idx === total - 1 ? "disabled" : ""}><i class="ti ti-chevron-down"></i></button>
+            <button type="button" class="icon-btn blk-delete" title="刪除"><i class="ti ti-trash"></i></button>
+          </div>
+        </div>`;
     }
-    function moveStep(idx, dir) {
+    function renderStepBlocks() {
+      let stepCounter = 0;
+      stepBlocksEl.innerHTML = currentStepBlocks.map((b, idx) => {
+        if (b.type === "step") stepCounter++;
+        return stepBlockHtml(b, idx, stepCounter, currentStepBlocks.length);
+      }).join("");
+      stepBlocksEl.querySelectorAll(".step-content").forEach(autoGrowTextarea);
+    }
+    function moveStepBlock(idx, dir) {
       const target = idx + dir;
-      if (target < 0 || target >= currentSteps.length) return;
-      [currentSteps[idx], currentSteps[target]] = [currentSteps[target], currentSteps[idx]];
-      renderStepList();
+      if (target < 0 || target >= currentStepBlocks.length) return;
+      [currentStepBlocks[idx], currentStepBlocks[target]] = [currentStepBlocks[target], currentStepBlocks[idx]];
+      renderStepBlocks();
     }
-    $("recipe-add-step-btn").addEventListener("click", () => {
-      currentSteps.push("");
-      renderStepList();
-      const areas = $("recipe-step-list").querySelectorAll(".step-text");
-      areas[areas.length - 1]?.focus();
+    function addStepBlock(type) {
+      currentStepBlocks.push({ id: genId("blk"), type, content: "" });
+      renderStepBlocks();
+      const textareas = stepBlocksEl.querySelectorAll(".step-content");
+      textareas[textareas.length - 1]?.focus();
+    }
+    stepBlocksEl.addEventListener("input", (e) => {
+      if (!e.target.classList.contains("step-content")) return;
+      const idx = Number(e.target.closest(".step-block").dataset.index);
+      currentStepBlocks[idx].content = e.target.value;
+      autoGrowTextarea(e.target);
+    });
+    stepBlocksEl.addEventListener("change", (e) => {
+      if (!e.target.classList.contains("step-type-select")) return;
+      const idx = Number(e.target.closest(".step-block").dataset.index);
+      currentStepBlocks[idx].type = e.target.value;
+      renderStepBlocks();
+      stepBlocksEl.querySelectorAll(".step-content")[idx]?.focus();
+    });
+    stepBlocksEl.addEventListener("keydown", (e) => {
+      if (!e.target.classList.contains("step-content")) return;
+      const idx = Number(e.target.closest(".step-block").dataset.index);
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        currentStepBlocks.splice(idx + 1, 0, { id: genId("blk"), type: "step", content: "" });
+        renderStepBlocks();
+        stepBlocksEl.querySelectorAll(".step-content")[idx + 1]?.focus();
+      } else if (e.key === "Backspace" && e.target.value === "" && currentStepBlocks.length > 1) {
+        e.preventDefault();
+        currentStepBlocks.splice(idx, 1);
+        renderStepBlocks();
+        const focusIdx = Math.max(0, idx - 1);
+        const ta = stepBlocksEl.querySelectorAll(".step-content")[focusIdx];
+        if (ta) { ta.focus(); const len = ta.value.length; ta.setSelectionRange(len, len); }
+      }
+    });
+    stepBlocksEl.addEventListener("click", (e) => {
+      const upBtn = e.target.closest(".blk-up");
+      if (upBtn) { moveStepBlock(Number(upBtn.closest(".step-block").dataset.index), -1); return; }
+      const downBtn = e.target.closest(".blk-down");
+      if (downBtn) { moveStepBlock(Number(downBtn.closest(".step-block").dataset.index), 1); return; }
+      const delBtn = e.target.closest(".blk-delete");
+      if (delBtn) {
+        const idx = Number(delBtn.closest(".step-block").dataset.index);
+        if (currentStepBlocks.length > 1) { currentStepBlocks.splice(idx, 1); renderStepBlocks(); }
+        else { currentStepBlocks[0].content = ""; renderStepBlocks(); }
+      }
+    });
+    $("recipe-add-step-btn").addEventListener("click", () => addStepBlock("step"));
+    $("recipe-add-content-btn").addEventListener("click", () => {
+      $("recipe-add-content-menu").hidden = !$("recipe-add-content-menu").hidden;
+    });
+    $("recipe-add-content-menu").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-type]");
+      if (!btn) return;
+      $("recipe-add-content-menu").hidden = true;
+      addStepBlock(btn.dataset.type);
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".step-add-type-wrap")) $("recipe-add-content-menu").hidden = true;
     });
 
     // ---------- 開啟新增／編輯 ----------
