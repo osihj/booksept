@@ -216,9 +216,22 @@
                   <p class="field-hint">可以不分組直接列清單，也可以按下方「新增食材群組」建立像「內餡」「外皮」「醬汁」這樣的分類（名稱自己輸入，不限數量）。</p>
                   <div id="recipe-ingredient-groups" class="ingredient-groups"></div>
                   <datalist id="recipe-unit-options"></datalist>
-                  <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-add-group-btn">
-                    <i class="ti ti-plus"></i> 新增食材群組
-                  </button>
+                  <div class="import-row">
+                    <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-add-group-btn">
+                      <i class="ti ti-plus"></i> 新增食材群組
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" id="recipe-import-ingredients-btn">
+                      <i class="ti ti-list"></i> 貼上食材清單匯入
+                    </button>
+                  </div>
+                  <div class="import-panel" id="recipe-import-ingredients-panel" hidden>
+                    <p class="field-hint">每行一項食材，例如「雞胸肉 300克」。貼上後按「解析並帶入」，會加到目前食材清單最後面（加到最後一個群組），帶入後請自行核對份量與單位是否正確。</p>
+                    <textarea id="recipe-import-ingredients-input" class="import-textarea" rows="6" placeholder="雞胸肉 300克&#10;洋蔥 1顆&#10;醬油 2大匙&#10;鹽 少許"></textarea>
+                    <div class="import-panel-actions">
+                      <button type="button" class="btn btn-ghost btn-sm" id="recipe-import-ingredients-cancel">取消</button>
+                      <button type="button" class="btn btn-accent btn-sm" id="recipe-import-ingredients-confirm">解析並帶入</button>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="notes-section">
@@ -239,6 +252,17 @@
                         <button type="button" data-type="note"><i class="ti ti-alert-triangle"></i> 注意事項</button>
                         <button type="button" data-type="text"><i class="ti ti-align-left"></i> 一般文字</button>
                       </div>
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="recipe-import-steps-btn">
+                      <i class="ti ti-list-numbers"></i> 貼上做法匯入
+                    </button>
+                  </div>
+                  <div class="import-panel" id="recipe-import-steps-panel" hidden>
+                    <p class="field-hint">每行（或每個編號）算一個步驟，例如「1. 雞胸肉切塊」。貼上後按「解析並帶入」，會加到目前步驟清單最後面，帶入後請自行核對順序與內容是否正確。</p>
+                    <textarea id="recipe-import-steps-input" class="import-textarea" rows="6" placeholder="1. 雞胸肉切塊，醃15分鐘&#10;2. 洋蔥切絲爆香&#10;3. 下雞肉拌炒至熟"></textarea>
+                    <div class="import-panel-actions">
+                      <button type="button" class="btn btn-ghost btn-sm" id="recipe-import-steps-cancel">取消</button>
+                      <button type="button" class="btn btn-accent btn-sm" id="recipe-import-steps-confirm">解析並帶入</button>
                     </div>
                   </div>
                 </div>
@@ -1156,6 +1180,47 @@
       inputs[inputs.length - 1]?.focus();
     });
 
+    // ---------- 貼上食材清單快速匯入（每行一項，抓「名稱＋數字＋單位」，抓不到就整行當名稱） ----------
+    const IMPORT_INGREDIENT_UNIT_PATTERN = "克|公克|公斤|kg|毫克|ml|cc|毫升|公升|l|大匙|小匙|湯匙|茶匙|杯|顆|粒|條|片|瓣|包|盒|罐|支|把|勺|滴|少許|適量|人份";
+    function parseImportedIngredients(text) {
+      if (!text || !text.trim()) return [];
+      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      const withAmountRe = new RegExp("^(.*?)[\\s:：]+([\\d./]+)\\s*(" + IMPORT_INGREDIENT_UNIT_PATTERN + ")?\\s*$");
+      const noAmountRe = new RegExp("^(.*?)[\\s:：]+(" + IMPORT_INGREDIENT_UNIT_PATTERN + ")\\s*$");
+      return lines.map((rawLine) => {
+        const line = rawLine.replace(/^[-*・‧•]\s*/, "").trim();
+        let m = line.match(withAmountRe);
+        if (m && m[1].trim()) return { name: m[1].trim(), amount: m[2].trim(), unit: (m[3] || "").trim() };
+        m = line.match(noAmountRe);
+        if (m && m[1].trim()) return { name: m[1].trim(), amount: "", unit: m[2].trim() };
+        return { name: line, amount: "", unit: "" };
+      }).filter((it) => it.name);
+    }
+    function importIngredientsFromText(text) {
+      const parsed = parseImportedIngredients(text);
+      if (!parsed.length) { alert("沒有偵測到可匯入的食材內容，請確認每行一項食材。"); return; }
+      if (!currentIngredientGroups.length) currentIngredientGroups.push({ id: genId("grp"), groupName: "", items: [] });
+      const lastGroup = currentIngredientGroups[currentIngredientGroups.length - 1];
+      // 先把最後一個群組裡完全空白的項目移除，避免匯入後留下多餘的空白列
+      lastGroup.items = lastGroup.items.filter((it) => (it.name || "").trim() || (it.amount || "").trim());
+      parsed.forEach((p) => lastGroup.items.push({ id: genId("ing"), ingredientId: null, name: p.name, amount: p.amount, unit: p.unit }));
+      renderIngredientGroups();
+    }
+    function setupImportPanel({ btnId, panelId, textareaId, confirmId, cancelId, onImport }) {
+      const btn = $(btnId), panel = $(panelId), textarea = $(textareaId);
+      const confirmBtn = $(confirmId), cancelBtn = $(cancelId);
+      function open() { panel.hidden = false; btn.hidden = true; textarea.value = ""; textarea.focus(); }
+      function close() { panel.hidden = true; btn.hidden = false; textarea.value = ""; }
+      btn.addEventListener("click", open);
+      cancelBtn.addEventListener("click", close);
+      confirmBtn.addEventListener("click", () => { onImport(textarea.value); close(); });
+    }
+    setupImportPanel({
+      btnId: "recipe-import-ingredients-btn", panelId: "recipe-import-ingredients-panel",
+      textareaId: "recipe-import-ingredients-input", confirmId: "recipe-import-ingredients-confirm",
+      cancelId: "recipe-import-ingredients-cancel", onImport: importIngredientsFromText
+    });
+
     // ---------- 常用食材 autocomplete：搜尋、鍵盤操作、選擇、找不到時可直接新增 ----------
     function computeIngredientMatches(query) {
       const q = query.trim().toLowerCase();
@@ -1433,6 +1498,32 @@
     });
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".step-add-type-wrap")) $("recipe-add-content-menu").hidden = true;
+    });
+
+    // ---------- 貼上做法快速匯入（每行/每個編號算一個步驟，去掉常見編號符號） ----------
+    function parseImportedSteps(text) {
+      if (!text || !text.trim()) return [];
+      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      return lines
+        .map((line) => line
+          .replace(/^(?:step\s*)?(\d+|[一二三四五六七八九十]+)[.、)）：:]\s*/i, "")
+          .replace(/^[①②③④⑤⑥⑦⑧⑨⑩]\s*/, "")
+          .replace(/^[-*・‧•]\s*/, "")
+          .trim())
+        .filter(Boolean);
+    }
+    function importStepsFromText(text) {
+      const parsed = parseImportedSteps(text);
+      if (!parsed.length) { alert("沒有偵測到可匯入的做法內容，請確認每行一個步驟。"); return; }
+      // 先把目前完全空白的步驟移除，避免匯入後留下空白項目
+      currentStepBlocks = currentStepBlocks.filter((b) => (b.content || "").trim());
+      parsed.forEach((content) => currentStepBlocks.push({ id: genId("blk"), type: "step", content }));
+      renderStepBlocks();
+    }
+    setupImportPanel({
+      btnId: "recipe-import-steps-btn", panelId: "recipe-import-steps-panel",
+      textareaId: "recipe-import-steps-input", confirmId: "recipe-import-steps-confirm",
+      cancelId: "recipe-import-steps-cancel", onImport: importStepsFromText
     });
 
     // ---------- 開啟新增／編輯 ----------
