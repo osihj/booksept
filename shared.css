@@ -770,22 +770,42 @@
      ============================================================ */
   .detail-header-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: flex-start; }
   .recipe-detail-card { display: flex; flex-direction: column; gap: 4px; }
-  .recipe-detail-top { display: flex; gap: 20px; margin-bottom: 8px; flex-wrap: wrap; }
+  .recipe-detail-top { display: flex; gap: 20px; margin-bottom: 8px; flex-wrap: wrap; align-items: stretch; }
   .recipe-detail-cover { flex-shrink: 0; width: 200px; height: 150px; }
-  .recipe-detail-meta { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
-  .detail-meta-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13.5px; }
-  .detail-meta-label { color: var(--text3); flex-shrink: 0; }
+
+  /* 頂部資訊改成一列一列的「統計條」，仿照份量／時間卡片的緊湊排版，
+     而不是標籤跟數值分居螢幕左右兩端。 */
+  .recipe-detail-stats {
+    flex: 1; min-width: 260px; display: flex; flex-wrap: wrap;
+    border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface2);
+  }
+  .recipe-detail-stat {
+    flex: 1 1 30%; min-width: 130px; padding: 10px 14px;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px; justify-content: center;
+  }
+  .recipe-detail-stat:last-child { border-right: none; }
+  .recipe-detail-stat-label { font-size: 11.5px; color: var(--text3); }
+  .recipe-detail-stat-value { font-size: 14px; font-weight: 700; color: var(--text); }
+  .recipe-detail-stat .detail-stars { font-size: 14px; }
   .detail-stars { display: inline-flex; gap: 2px; font-size: 15px; color: #d8d8d8; }
   .detail-stars i.filled, .detail-stars i:not(.empty) { color: var(--accent2); }
 
-  .detail-ingredient-groups { display: flex; flex-direction: column; gap: 14px; }
-  .detail-ingredient-group-name { font-weight: 700; font-size: 13.5px; color: var(--text); margin-bottom: 6px; }
-  .detail-ing-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
-  .detail-ing-list li {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
-    font-size: 14px; padding-bottom: 7px; border-bottom: 1px dashed var(--border);
+  .detail-ingredient-groups { display: flex; flex-direction: column; gap: 16px; }
+  .detail-ingredient-group { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .detail-ingredient-group-name {
+    background: var(--accent2-light); color: var(--accent2); font-weight: 700; font-size: 13px;
+    padding: 8px 14px;
   }
-  .detail-ing-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .detail-ing-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0; padding: 4px 14px;
+  }
+  .detail-ingredient-group .detail-ing-list { padding: 6px 14px; }
+  .detail-ing-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+    font-size: 14px; padding: 7px 0; border-bottom: 1px dashed var(--border);
+  }
   .detail-ing-name { color: var(--text); }
   .detail-ing-amount { color: var(--text3); flex-shrink: 0; white-space: nowrap; }
 
