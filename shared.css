@@ -645,5 +645,42 @@
     width: 56px; height: 56px; color: var(--text3);
   }
   .module-placeholder .module-placeholder-emoji svg { width: 48px; height: 48px; display: block; }
+
+  /* ============================================================
+     食譜模組專用的小補充樣式。其餘全部沿用書庫既有的 .card / .field-grid /
+     .field / .book-grid / .book-card / .manage-pill 等 class，
+     這裡只新增食譜特有、書庫用不到的部分。
+     ============================================================ */
+  /* 食譜照片：跟書封的直式比例不同，用比較接近成品照片的橫式比例 */
+  .recipe-cover { aspect-ratio: 4 / 3; }
+  .cover-preview.recipe-cover { width: 130px; height: 98px; }
+
+  /* 食材／做法：可新增、刪除、上移／下移排序的清單列 */
+  .dynamic-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .dynamic-row { display: flex; align-items: flex-start; gap: 8px; }
+  .dynamic-row-num {
+    flex-shrink: 0; width: 22px; height: 38px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text3); font-weight: 600;
+  }
+  .dynamic-row input[type="text"] {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; height: 38px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px;
+  }
+  .dynamic-row .ing-name { flex: 1.4; min-width: 0; }
+  .dynamic-row .ing-amount { flex: 1; min-width: 0; }
+  .dynamic-row textarea.step-text {
+    flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 8px 10px; color: var(--text); background: var(--surface); font-family: inherit;
+    font-size: 14px; resize: vertical; min-height: 38px;
+  }
+  .dynamic-row-actions { display: flex; gap: 2px; flex-shrink: 0; padding-top: 2px; }
+  .dynamic-row-actions .icon-btn:disabled { opacity: 0.3; cursor: default; }
+  .dynamic-row-actions .icon-btn:disabled:hover { background: transparent; }
+
+  /* 三組獨立星等（製作快樂度／用腦費工程度／成品評分）排在同一列，手機自動換行 */
+  .field textarea {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px; resize: vertical;
+  }
   .module-placeholder h2 { font-size: 20px; color: var(--text); }
   .module-placeholder p { max-width: 420px; font-size: 14px; line-height: 1.7; margin: 0; }
