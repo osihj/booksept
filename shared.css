@@ -397,7 +397,7 @@
   .book-grid.view-list .book-author { margin: 0; flex-shrink: 0; width: 130px; }
   .book-grid.view-list .book-meta { margin-top: 0; margin-left: auto; flex-wrap: nowrap; }
   /* 食譜列表視圖：置中限制寬度＋分類改成貼右的色塊標籤，只作用於 #recipe-grid，不影響書庫清單 */
-  #recipe-grid.view-list { max-width: 640px; margin: 0 auto; }
+  #recipe-grid.view-list { max-width: 640px; }
   #recipe-grid.view-list .book-title { flex: 1; min-width: 0; }
   #recipe-grid.view-list .book-author {
     flex-shrink: 0; width: auto; margin: 0 0 0 auto;
