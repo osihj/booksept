@@ -788,6 +788,18 @@
   .recipe-detail-stat-label { font-size: 11.5px; color: var(--text3); }
   .recipe-detail-stat-value { font-size: 14px; font-weight: 700; color: var(--text); }
   .recipe-detail-stat .detail-stars { font-size: 14px; }
+  /* 準備時間 + 製作時間 = 總時間，中間夾著的運算符號小格子 */
+  .recipe-detail-stat-operator {
+    flex: 0 0 24px; display: flex; align-items: center; justify-content: center;
+    color: var(--text3); font-size: 13px; font-weight: 600; padding: 10px 0;
+  }
+  .recipe-detail-stat:has(+ .recipe-detail-stat-operator) { border-right: none; }
+  /* 食譜卡片上的份量／時間小標籤 */
+  .recipe-card-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; color: var(--text3);
+  }
+  .recipe-card-chip i { font-size: 12px; }
   .detail-stars { display: inline-flex; gap: 2px; font-size: 15px; color: #d8d8d8; }
   .detail-stars i.filled, .detail-stars i:not(.empty) { color: var(--accent2); }
 
