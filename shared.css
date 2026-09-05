@@ -391,6 +391,8 @@
   .book-grid.view-list { display: flex; flex-direction: column; gap: 8px; }
   .book-grid.view-list .book-card { flex-direction: row; align-items: center; gap: 14px; padding: 8px 14px 8px 40px; }
   .book-grid.view-list .book-cover { width: 42px; height: 58px; margin-bottom: 0; flex-shrink: 0; }
+  /* 食譜列表視圖：只需要名稱與分類，把圖片藏起來（只影響食譜的 .recipe-cover，不影響書庫書封） */
+  .book-grid.view-list .recipe-cover { display: none; }
   .book-grid.view-list .book-title { margin: 0; -webkit-line-clamp: 1; }
   .book-grid.view-list .book-author { margin: 0; flex-shrink: 0; width: 130px; }
   .book-grid.view-list .book-meta { margin-top: 0; margin-left: auto; flex-wrap: nowrap; }
