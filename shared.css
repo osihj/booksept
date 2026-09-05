@@ -677,6 +677,29 @@
   .dynamic-row-actions .icon-btn:disabled { opacity: 0.3; cursor: default; }
   .dynamic-row-actions .icon-btn:disabled:hover { background: transparent; }
 
+  /* 食譜詳情頁：唯讀瀏覽用，點列表卡片、或新增/編輯儲存後會進到這裡 */
+  .detail-header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .recipe-detail-top { display: flex; gap: 22px; margin-bottom: 20px; flex-wrap: wrap; }
+  .recipe-detail-cover { width: 220px; height: 165px; flex-shrink: 0; font-size: 30px; }
+  .recipe-detail-meta { display: flex; flex-direction: column; gap: 10px; justify-content: center; flex: 1; min-width: 220px; }
+  .detail-meta-item { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text); }
+  .detail-meta-label { color: var(--text3); width: 112px; flex-shrink: 0; }
+  .detail-stars { display: inline-flex; gap: 2px; color: var(--accent2); font-size: 15px; }
+  .detail-stars i.empty { color: var(--border); }
+  .detail-ingredient-list, .detail-step-list { margin: 0; }
+  .detail-ingredient-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .detail-ingredient-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 12px; background: var(--surface2); border-radius: var(--radius); font-size: 13.5px; }
+  .detail-ing-amount { color: var(--text3); flex-shrink: 0; }
+  .detail-step-list { list-style: decimal; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .detail-step-list li { font-size: 13.5px; line-height: 1.7; color: var(--text); }
+  .detail-empty-hint { list-style: none; color: var(--text3); font-size: 13px; padding: 4px 0; }
+  .detail-source, .detail-notes { font-size: 13.5px; line-height: 1.7; color: var(--text2); white-space: pre-wrap; margin: 0; }
+  .detail-source a { color: var(--accent); }
+  @media (max-width: 640px) {
+    .recipe-detail-top { flex-direction: column; }
+    .recipe-detail-cover { width: 100%; height: auto; }
+  }
+
   /* 三組獨立星等（製作快樂度／用腦費工程度／成品評分）排在同一列，手機自動換行 */
   .field textarea {
     border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px;
