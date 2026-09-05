@@ -176,11 +176,33 @@ export function watchAuth(onSignedIn, onSignedOut) {
 
 // ---------- App 切換列 ----------
 // 四個模組共用同一份清單，之後新增模組只要改這裡。
+// 圖示統一採用單色線條 SVG（stroke-width 1.8、圓角端點、無填色），
+// 跟其他頁面的 icon 風格一致，不使用彩色 emoji。
 export const APPS = [
-  { key: "books", label: "書庫", emoji: "📚", href: "index.html" },
-  { key: "recipes", label: "食譜", emoji: "🍳", href: "recipes.html" },
-  { key: "diary", label: "日記", emoji: "📖", href: "diary.html" },
-  { key: "retrospect", label: "回顧", emoji: "✨", href: "retrospect.html" }
+  {
+    key: "books",
+    label: "書庫",
+    href: "index.html",
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h4.5a2 2 0 012 2V20H6a2 2 0 01-2-2z"/><path d="M10.5 6.5H14a2 2 0 012 2V20h-3.5a2 2 0 01-2-2z"/><path d="M16.3 6.9l3 .9a1.6 1.6 0 011.1 2l-3.3 11a1.6 1.6 0 01-2 1.1l-1.3-.4"/></svg>`
+  },
+  {
+    key: "recipes",
+    label: "食譜",
+    href: "recipes.html",
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3v6"/><path d="M8.5 3v6"/><path d="M10.5 3v6"/><path d="M8.5 9v12"/><path d="M16.5 3c-1.6 2-1.6 5.8 0 7.8v10.2"/></svg>`
+  },
+  {
+    key: "diary",
+    label: "日記",
+    href: "diary.html",
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="1.5"/><path d="M9 3.5v17"/><path d="M12.5 8h4"/><path d="M12.5 11.5h4"/><path d="M12.5 15h2.5"/></svg>`
+  },
+  {
+    key: "retrospect",
+    label: "回顧",
+    href: "retrospect.html",
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9a8 8 0 118 11"/><path d="M4 9v5h5"/><path d="M12 8v5l3.5 2"/></svg>`
+  }
 ];
 
 // 把切換列畫進 id="app-switcher" 的容器裡；activeKey 是目前所在的模組 key。
@@ -190,7 +212,7 @@ export function renderAppSwitcher(activeKey) {
   container.innerHTML = APPS.map(
     (a) => `
     <a class="app-switcher-btn${a.key === activeKey ? " active" : ""}" href="${a.href}" title="${a.label}">
-      <span class="app-switcher-emoji">${a.emoji}</span>
+      <span class="app-switcher-icon">${a.icon}</span>
       <span class="app-switcher-label">${a.label}</span>
     </a>`
   ).join("");
