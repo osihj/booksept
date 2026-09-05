@@ -798,13 +798,27 @@
     padding: 8px 14px;
   }
   .detail-ing-list {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 0; padding: 4px 14px;
   }
   .detail-ingredient-group .detail-ing-list { padding: 6px 14px; }
+  /* 每一欄之間用網站既有的邊框色畫一條直線分隔（取代手繪紅線），
+     欄數依螢幕寬度調整，分隔線只出現在「非該排第一欄」的位置 */
+  .detail-ing-row:not(:nth-child(4n+1)) { border-left: 1px solid var(--border); padding-left: 16px; }
+  @media (max-width: 900px) {
+    .detail-ing-list { grid-template-columns: repeat(2, 1fr); }
+    .detail-ing-row:not(:nth-child(4n+1)) { border-left: none; padding-left: 0; }
+    .detail-ing-row:not(:nth-child(2n+1)) { border-left: 1px solid var(--border); padding-left: 16px; }
+  }
+  @media (max-width: 560px) {
+    .detail-ing-list { grid-template-columns: 1fr; }
+    .detail-ing-row:not(:nth-child(2n+1)) { border-left: none; padding-left: 0; }
+  }
   .detail-ing-row {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
-    font-size: 14px; padding: 7px 0; border-bottom: 1px dashed var(--border);
+    /* 份量／單位改成緊跟在食材名稱後面（大幅往左靠），
+       不再用 space-between 把它推到跟右邊欄位太近的地方 */
+    display: flex; align-items: baseline; justify-content: flex-start; gap: 10px;
+    font-size: 14px; padding: 7px 16px 7px 0; border-bottom: 1px dashed var(--border);
   }
   .detail-ing-name { color: var(--text); }
   .detail-ing-amount { color: var(--text3); flex-shrink: 0; white-space: nowrap; }
