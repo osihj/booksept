@@ -519,15 +519,22 @@
       }];
     }
     // 做法舊格式：steps: string[]
-    // 做法新格式：steps: [{id, type: "step"|"heading"|"note"|"text", content}]
+    // 做法新格式：steps: [{id, type: "step"|"heading"|"note"|"text", content, numberStyle}]
+    // numberStyle 只對非 step 的項目有意義：none（無編號，預設）／number（1.）／letter（a.）／roman（i.）
     const STEP_BLOCK_TYPES = ["step", "heading", "note", "text"];
+    const STEP_NUMBER_STYLES = ["none", "number", "letter", "roman"];
     function normalizeStepBlocks(raw) {
       if (!Array.isArray(raw) || !raw.length) return [{ id: genId("blk"), type: "step", content: "" }];
       const looksTyped = raw.every((s) => s && typeof s === "object" && "type" in s);
       if (looksTyped) {
-        return raw.map((s) => ({ id: s.id || genId("blk"), type: STEP_BLOCK_TYPES.includes(s.type) ? s.type : "step", content: s.content || "" }));
+        return raw.map((s) => ({
+          id: s.id || genId("blk"),
+          type: STEP_BLOCK_TYPES.includes(s.type) ? s.type : "step",
+          content: s.content || "",
+          numberStyle: STEP_NUMBER_STYLES.includes(s.numberStyle) ? s.numberStyle : "none"
+        }));
       }
-      return raw.map((s) => ({ id: genId("blk"), type: "step", content: typeof s === "string" ? s : "" }));
+      return raw.map((s) => ({ id: genId("blk"), type: "step", content: typeof s === "string" ? s : "", numberStyle: "none" }));
     }
     // 唯讀詳情頁用：跟上面幾乎一樣，但完全沒資料時回傳空陣列（顯示「尚未填寫」），而不是塞一個空白項目
     function toDisplayIngredientGroups(raw) {
@@ -540,7 +547,13 @@
       if (!Array.isArray(raw) || !raw.length) return [];
       const looksTyped = raw.every((s) => s && typeof s === "object" && "type" in s);
       const blocks = looksTyped ? raw : raw.map((s) => ({ type: "step", content: typeof s === "string" ? s : "" }));
-      return blocks.filter((b) => (b.content || "").trim()).map((b) => ({ type: STEP_BLOCK_TYPES.includes(b.type) ? b.type : "step", content: b.content || "" }));
+      return blocks
+        .filter((b) => (b.content || "").trim())
+        .map((b) => ({
+          type: STEP_BLOCK_TYPES.includes(b.type) ? b.type : "step",
+          content: b.content || "",
+          numberStyle: STEP_NUMBER_STYLES.includes(b.numberStyle) ? b.numberStyle : "none"
+        }));
     }
 
     let currentIngredientGroups = [];
@@ -1004,6 +1017,21 @@
     function closeRecipeDetail() { goToPage(recipeDetailReturnPage); }
     // 做法：主步驟維持數字編號；緊接在某個步驟後面的「小標題／注意事項／一般文字」
     // 會變成該步驟底下的字母子項目（a. b. c...），呈現方式參考 Notion 的巢狀編號清單。
+    // 羅馬數字轉換（給「羅馬數字」編號樣式用）
+    function toRomanNumeral(num) {
+      const map = [[1000, "m"], [900, "cm"], [500, "d"], [400, "cd"], [100, "c"], [90, "xc"], [50, "l"], [40, "xl"], [10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]];
+      let n = num, out = "";
+      for (const [val, sym] of map) { while (n >= val) { out += sym; n -= val; } }
+      return out;
+    }
+    // 依照使用者選擇的編號樣式（無編號／數字／字母／羅馬數字）產生這一項前面的符號，
+    // 每種樣式各自累計自己的計數，彼此不互相干擾。
+    function buildSubstepMarker(numberStyle, counters) {
+      if (numberStyle === "number") { counters.number = (counters.number || 0) + 1; return counters.number + "."; }
+      if (numberStyle === "letter") { counters.letter = (counters.letter || 0) + 1; return String.fromCharCode(96 + counters.letter) + "."; }
+      if (numberStyle === "roman") { counters.roman = (counters.roman || 0) + 1; return toRomanNumeral(counters.roman) + "."; }
+      return "";
+    }
     function renderDetailStepGroups(stepBlocks) {
       const groups = [];
       let current = null;
@@ -1027,16 +1055,18 @@
           return `<p class="detail-step-text">${escapeHtml(b.content)}</p>`;
         }
         stepCounter++;
+        const counters = {};
         const subsHtml = g.subs.length
-          ? `<div class="detail-substep-list">${g.subs.map((sb, i) => {
-              const letter = String.fromCharCode(97 + i) + ".";
+          ? `<div class="detail-substep-list">${g.subs.map((sb) => {
+              const marker = buildSubstepMarker(sb.numberStyle || "none", counters);
+              const markerHtml = `<span class="detail-substep-letter">${escapeHtml(marker)}</span>`;
               if (sb.type === "note") {
-                return `<div class="detail-substep-row detail-substep-note"><span class="detail-substep-letter">${letter}</span><i class="ti ti-alert-triangle"></i><p>${escapeHtml(sb.content)}</p></div>`;
+                return `<div class="detail-substep-row detail-substep-note">${markerHtml}<i class="ti ti-alert-triangle"></i><p>${escapeHtml(sb.content)}</p></div>`;
               }
               if (sb.type === "heading") {
-                return `<div class="detail-substep-row detail-substep-heading"><span class="detail-substep-letter">${letter}</span><p>${escapeHtml(sb.content)}</p></div>`;
+                return `<div class="detail-substep-row detail-substep-heading">${markerHtml}<p>${escapeHtml(sb.content)}</p></div>`;
               }
-              return `<div class="detail-substep-row"><span class="detail-substep-letter">${letter}</span><p>${escapeHtml(sb.content)}</p></div>`;
+              return `<div class="detail-substep-row">${markerHtml}<p>${escapeHtml(sb.content)}</p></div>`;
             }).join("")}</div>`
           : "";
         return `<div class="detail-step-block detail-step-block-step"><span class="detail-step-num">${stepCounter}</span><div class="detail-step-body"><p>${escapeHtml(g.step.content)}</p>${subsHtml}</div></div>`;
@@ -1447,16 +1477,25 @@
       const markerHtml = block.type === "step"
         ? `<span class="step-block-num">${stepNumber}</span>`
         : `<i class="ti ${block.type === "heading" ? "ti-heading" : block.type === "note" ? "ti-alert-triangle" : "ti-align-left"} step-block-icon"></i>`;
+      const numberStyleSelectHtml = block.type !== "step" ? `
+            <select class="step-number-style-select" title="這一項前面要不要顯示編號">
+              <option value="none" ${(!block.numberStyle || block.numberStyle === "none") ? "selected" : ""}>無編號</option>
+              <option value="number" ${block.numberStyle === "number" ? "selected" : ""}>數字（1.）</option>
+              <option value="letter" ${block.numberStyle === "letter" ? "selected" : ""}>字母（a.）</option>
+              <option value="roman" ${block.numberStyle === "roman" ? "selected" : ""}>羅馬數字（i.）</option>
+            </select>` : "";
       return `
         <div class="step-block step-block-${block.type}" data-index="${idx}">
           <div class="step-block-marker">${markerHtml}</div>
           <div class="step-block-body">
-            <select class="step-type-select" title="切換類型">
-              <option value="step" ${block.type === "step" ? "selected" : ""}>步驟</option>
-              <option value="heading" ${block.type === "heading" ? "selected" : ""}>小標題</option>
-              <option value="note" ${block.type === "note" ? "selected" : ""}>注意事項</option>
-              <option value="text" ${block.type === "text" ? "selected" : ""}>一般文字</option>
-            </select>
+            <div class="step-block-selects">
+              <select class="step-type-select" title="切換類型">
+                <option value="step" ${block.type === "step" ? "selected" : ""}>步驟</option>
+                <option value="heading" ${block.type === "heading" ? "selected" : ""}>小標題</option>
+                <option value="note" ${block.type === "note" ? "selected" : ""}>注意事項</option>
+                <option value="text" ${block.type === "text" ? "selected" : ""}>一般文字</option>
+              </select>${numberStyleSelectHtml}
+            </div>
             <textarea class="step-content" rows="1" placeholder="${placeholderMap[block.type]}">${escapeHtml(block.content || "")}</textarea>
           </div>
           <div class="dynamic-row-actions">
@@ -1481,7 +1520,7 @@
       renderStepBlocks();
     }
     function addStepBlock(type) {
-      currentStepBlocks.push({ id: genId("blk"), type, content: "" });
+      currentStepBlocks.push({ id: genId("blk"), type, numberStyle: "none", content: "" });
       renderStepBlocks();
       const textareas = stepBlocksEl.querySelectorAll(".step-content");
       textareas[textareas.length - 1]?.focus();
@@ -1493,18 +1532,23 @@
       autoGrowTextarea(e.target);
     });
     stepBlocksEl.addEventListener("change", (e) => {
-      if (!e.target.classList.contains("step-type-select")) return;
-      const idx = Number(e.target.closest(".step-block").dataset.index);
-      currentStepBlocks[idx].type = e.target.value;
-      renderStepBlocks();
-      stepBlocksEl.querySelectorAll(".step-content")[idx]?.focus();
+      const idx = Number(e.target.closest(".step-block")?.dataset.index);
+      if (Number.isNaN(idx)) return;
+      if (e.target.classList.contains("step-type-select")) {
+        currentStepBlocks[idx].type = e.target.value;
+        if (e.target.value !== "step" && !currentStepBlocks[idx].numberStyle) currentStepBlocks[idx].numberStyle = "none";
+        renderStepBlocks();
+        stepBlocksEl.querySelectorAll(".step-content")[idx]?.focus();
+      } else if (e.target.classList.contains("step-number-style-select")) {
+        currentStepBlocks[idx].numberStyle = e.target.value;
+      }
     });
     stepBlocksEl.addEventListener("keydown", (e) => {
       if (!e.target.classList.contains("step-content")) return;
       const idx = Number(e.target.closest(".step-block").dataset.index);
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        currentStepBlocks.splice(idx + 1, 0, { id: genId("blk"), type: "step", content: "" });
+        currentStepBlocks.splice(idx + 1, 0, { id: genId("blk"), type: "step", numberStyle: "none", content: "" });
         renderStepBlocks();
         stepBlocksEl.querySelectorAll(".step-content")[idx + 1]?.focus();
       } else if (e.key === "Backspace" && e.target.value === "" && currentStepBlocks.length > 1) {
@@ -1682,7 +1726,11 @@
             .filter((g) => g.items.length),
           steps: currentStepBlocks
             .filter((b) => (b.content || "").trim())
-            .map((b) => ({ type: STEP_BLOCK_TYPES.includes(b.type) ? b.type : "step", content: b.content.trim() })),
+            .map((b) => ({
+              type: STEP_BLOCK_TYPES.includes(b.type) ? b.type : "step",
+              content: b.content.trim(),
+              numberStyle: b.type !== "step" ? (STEP_NUMBER_STYLES.includes(b.numberStyle) ? b.numberStyle : "none") : "none"
+            })),
           ratingJoy: Number(recipeRatings.joy) || 0,
           ratingEffort: Number(recipeRatings.effort) || 0,
           ratingResult: Number(recipeRatings.result) || 0,
