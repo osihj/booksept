@@ -887,3 +887,17 @@
     font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface);
   }
   .tag-picker-add input[type="text"]:focus { outline: none; border-color: var(--accent2); }
+
+  /* 食材／做法：貼上文字快速匯入面板 */
+  .import-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .import-panel {
+    margin-top: 10px; padding: 12px 14px; border: 1px dashed var(--border); border-radius: var(--radius);
+    background: var(--surface2);
+  }
+  .import-textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 13.5px;
+    resize: vertical; line-height: 1.6; margin-top: 6px;
+  }
+  .import-textarea:focus { outline: none; border-color: var(--accent2); }
+  .import-panel-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
