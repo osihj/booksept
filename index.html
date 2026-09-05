@@ -548,6 +548,41 @@
   .scan-btn-secondary { background: var(--surface); color: var(--accent); border-color: var(--accent); }
   .scan-status { font-size: 13px; color: var(--text2); margin: 0 0 14px; }
 
+  /* ============================================================
+     App 切換列（4 個模組共用：📚書庫／🍳食譜／📖日記／✨回顧）
+     這裡的 class 名稱跟 shared.css（給食譜/日記/回顧頁面用）保持一致，
+     這樣四個頁面切換時視覺不會有落差。
+     ============================================================ */
+  .app-switcher {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 64px;
+    flex: 0 0 64px;
+    padding: 18px 0;
+    background: var(--surface2);
+    border-right: 1px solid var(--border);
+  }
+  .app-switcher-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 52px;
+    padding: 8px 4px 6px;
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text3);
+    font-size: 11px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .app-switcher-btn:hover { background: var(--accent-light); color: var(--text); }
+  .app-switcher-btn.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
+  .app-switcher-emoji { font-size: 21px; line-height: 1; }
+  .app-switcher-label { line-height: 1.2; }
+
   /* ---------- ISBN camera scanner overlay ---------- */
   .isbn-scanner-overlay {
     position: fixed; inset: 0; z-index: 1000;
@@ -654,6 +689,9 @@
   <!-- 主畫面（桌面版：左側書單／工具側欄 + 右側內容） -->
   <div id="app" hidden>
     <div class="app-shell">
+
+      <!-- App 切換列（4 模組共用：📚書庫／🍳食譜／📖日記／✨回顧），內容由下方 script 動態畫出 -->
+      <nav class="app-switcher" id="app-switcher"></nav>
 
       <aside class="sidebar">
         <div class="sidebar-brand">
@@ -1055,6 +1093,29 @@
 
     // ---------- DOM refs ----------
     const $ = (id) => document.getElementById(id);
+
+    // App 切換列（4 個模組共用清單，之後新增模組只要改這裡）。
+    // index.html 目前是獨立內嵌一份，跟 shared.js 裡的 APPS 保持一致；
+    // 之後如果把 index.html 也改成載入 shared.js，可以拿掉這段改用共用的。
+    const APPS = [
+      { key: "books", label: "書庫", emoji: "📚", href: "index.html" },
+      { key: "recipes", label: "食譜", emoji: "🍳", href: "recipes.html" },
+      { key: "diary", label: "日記", emoji: "📖", href: "diary.html" },
+      { key: "retrospect", label: "回顧", emoji: "✨", href: "retrospect.html" }
+    ];
+    function renderAppSwitcher(activeKey) {
+      const container = $("app-switcher");
+      if (!container) return;
+      container.innerHTML = APPS.map(
+        (a) => `
+        <a class="app-switcher-btn${a.key === activeKey ? " active" : ""}" href="${a.href}" title="${a.label}">
+          <span class="app-switcher-emoji">${a.emoji}</span>
+          <span class="app-switcher-label">${a.label}</span>
+        </a>`
+      ).join("");
+    }
+    renderAppSwitcher("books");
+
     const loginScreen = $("login-screen");
     const appRoot = $("app");
     const loginBtn = $("google-login-btn");
