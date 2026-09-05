@@ -972,16 +972,10 @@
       card.className = "book-card";
       card.dataset.recipeId = r.id;
       card.addEventListener("click", () => openRecipeDetail(r));
-      const totalMin = timeStringToMinutes(r.prepTime) + timeStringToMinutes(r.makeTime);
-      const metaChips = [
-        r.servings ? `<span class="recipe-card-chip"><i class="ti ti-users"></i>${escapeHtml(r.servings)}</span>` : "",
-        totalMin ? `<span class="recipe-card-chip"><i class="ti ti-clock"></i>${escapeHtml(formatMinutesAsDuration(totalMin))}</span>` : ""
-      ].filter(Boolean).join("");
       card.innerHTML = `
         <div class="book-cover recipe-cover">${r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
         <p class="book-title">${escapeHtml(r.name || "未命名食譜")}</p>
-        <p class="book-author">${escapeHtml(getRecipeCategory(r))}</p>
-        ${metaChips ? `<div class="book-meta recipe-card-meta">${metaChips}</div>` : ""}`;
+        <p class="book-author">${escapeHtml(getRecipeCategory(r))}</p>`;
       return card;
     }
 
