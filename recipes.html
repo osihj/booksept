@@ -1062,7 +1062,7 @@
         const subsHtml = g.subs.length
           ? `<div class="detail-substep-list">${g.subs.map((sb) => {
               const marker = buildSubstepMarker(sb.numberStyle || "none", counters);
-              const markerHtml = `<span class="detail-substep-letter">${escapeHtml(marker)}</span>`;
+              const markerHtml = marker ? `<span class="detail-substep-letter">${escapeHtml(marker)}</span>` : "";
               if (sb.type === "note") {
                 return `<div class="detail-substep-row detail-substep-note">${markerHtml}<div class="detail-substep-note-box"><i class="ti ti-alert-triangle"></i><p>${escapeHtml(sb.content)}</p></div></div>`;
               }
