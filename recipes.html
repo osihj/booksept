@@ -1047,12 +1047,15 @@
       });
 
       let stepCounter = 0;
+      const leadingCounters = {}; // 出現在第一個「步驟」之前的小標題／注意事項／一般文字，自己單獨算一組編號
       return groups.map((g) => {
         if (!g.step) {
           const b = g.leading;
-          if (b.type === "heading") return `<h4 class="detail-step-heading">${escapeHtml(b.content)}</h4>`;
-          if (b.type === "note") return `<div class="detail-step-block detail-step-block-note"><i class="ti ti-alert-triangle"></i><p>${escapeHtml(b.content)}</p></div>`;
-          return `<p class="detail-step-text">${escapeHtml(b.content)}</p>`;
+          const marker = buildSubstepMarker(b.numberStyle || "none", leadingCounters);
+          const markerHtml = marker ? `<span class="detail-leading-marker">${escapeHtml(marker)}</span>` : "";
+          if (b.type === "heading") return `<h4 class="detail-step-heading">${markerHtml}${escapeHtml(b.content)}</h4>`;
+          if (b.type === "note") return `<div class="detail-step-block detail-step-block-note">${markerHtml}<i class="ti ti-alert-triangle"></i><p>${escapeHtml(b.content)}</p></div>`;
+          return `<p class="detail-step-text">${markerHtml}${escapeHtml(b.content)}</p>`;
         }
         stepCounter++;
         const counters = {};
