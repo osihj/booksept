@@ -244,6 +244,61 @@
             </div>
           </section>
 
+          <!-- 食譜詳情（唯讀瀏覽用；點列表卡片、或新增/編輯儲存後都會進到這裡，要修改請按「編輯」） -->
+          <section id="page-recipe-detail" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">RECIPE</div>
+                <h1 id="recipe-detail-name">食譜名稱</h1>
+                <p class="shelf-sub" id="recipe-detail-category">未分類</p>
+              </div>
+              <div class="detail-header-actions">
+                <button type="button" class="btn btn-ghost btn-sm" id="recipe-detail-back-btn"><i class="ti ti-arrow-left"></i> 返回列表</button>
+                <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-detail-edit-btn"><i class="ti ti-edit"></i> 編輯</button>
+              </div>
+            </div>
+
+            <div class="card recipe-detail-card">
+              <div class="recipe-detail-top">
+                <div class="cover-preview recipe-cover recipe-detail-cover" id="recipe-detail-cover"><i class="ti ti-photo"></i></div>
+                <div class="recipe-detail-meta">
+                  <div class="detail-meta-item"><span class="detail-meta-label">建立日期</span><span id="recipe-detail-created">—</span></div>
+                  <div class="detail-meta-item"><span class="detail-meta-label">最後製作</span><span id="recipe-detail-last-made">尚未製作</span></div>
+                  <div class="detail-meta-item"><span class="detail-meta-label">製作快樂度</span><span class="detail-stars" id="recipe-detail-star-joy"></span></div>
+                  <div class="detail-meta-item"><span class="detail-meta-label">用腦／費工程度</span><span class="detail-stars" id="recipe-detail-star-effort"></span></div>
+                  <div class="detail-meta-item"><span class="detail-meta-label">成品評分</span><span class="detail-stars" id="recipe-detail-star-result"></span></div>
+                </div>
+              </div>
+
+              <div class="notes-section">
+                <span class="field-label">食材</span>
+                <ul class="detail-ingredient-list" id="recipe-detail-ingredients"></ul>
+              </div>
+
+              <div class="notes-section">
+                <span class="field-label">做法</span>
+                <ol class="detail-step-list" id="recipe-detail-steps"></ol>
+              </div>
+
+              <div class="notes-section" id="recipe-detail-source-section" hidden>
+                <span class="field-label">參考來源</span>
+                <p class="detail-source" id="recipe-detail-source"></p>
+              </div>
+
+              <div class="notes-section" id="recipe-detail-notes-section" hidden>
+                <span class="field-label">我的心得／改版紀錄</span>
+                <p class="detail-notes" id="recipe-detail-notes"></p>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" id="recipe-detail-delete-btn">
+                  <i class="ti ti-trash"></i>
+                  刪除這道食譜
+                </button>
+              </div>
+            </div>
+          </section>
+
         </main>
       </div>
 
@@ -277,6 +332,8 @@
     let activeCategory = "all";
     let editingRecipeId = null;
     let recipeFormReturnPage = "recipes";
+    let currentDetailRecipe = null;
+    let recipeDetailReturnPage = "recipes";
     let currentRecipePhotoUrl = "";
     let pendingRecipePhotoFile = null;
     let currentIngredients = []; // [{name, amount}]
@@ -504,7 +561,7 @@
       const card = document.createElement("div");
       card.className = "book-card";
       card.dataset.recipeId = r.id;
-      card.addEventListener("click", () => openEditRecipe(r));
+      card.addEventListener("click", () => openRecipeDetail(r));
       card.innerHTML = `
         <div class="book-cover recipe-cover">${r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
         <p class="book-title">${escapeHtml(r.name || "未命名食譜")}</p>
@@ -525,6 +582,67 @@
       if (activePage && activePage.id !== "page-recipe-form") recipeFormReturnPage = activePage.id.replace("page-", "");
     }
     function closeRecipeForm() { goToPage(recipeFormReturnPage); }
+
+    // ================= 食譜詳情（唯讀瀏覽） =================
+    function rememberRecipeDetailReturnPage() {
+      const activePage = document.querySelector(".page.active");
+      if (activePage && activePage.id !== "page-recipe-detail" && activePage.id !== "page-recipe-form") {
+        recipeDetailReturnPage = activePage.id.replace("page-", "");
+      }
+    }
+    function closeRecipeDetail() { goToPage(recipeDetailReturnPage); }
+    function renderRecipeDetail(r) {
+      $("recipe-detail-name").textContent = r.name || "未命名食譜";
+      $("recipe-detail-category").textContent = getRecipeCategory(r);
+      $("recipe-detail-cover").innerHTML = r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`;
+      $("recipe-detail-created").textContent = r.createdDate || "—";
+      $("recipe-detail-last-made").textContent = r.lastMadeAt || "尚未製作";
+      $("recipe-detail-star-joy").innerHTML = starsHtml(r.ratingJoy || 0);
+      $("recipe-detail-star-effort").innerHTML = starsHtml(r.ratingEffort || 0);
+      $("recipe-detail-star-result").innerHTML = starsHtml(r.ratingResult || 0);
+
+      const ingredients = Array.isArray(r.ingredients) ? r.ingredients : [];
+      $("recipe-detail-ingredients").innerHTML = ingredients.length
+        ? ingredients.map((i) => `<li><span class="detail-ing-name">${escapeHtml(i.name || "")}</span>${i.amount ? `<span class="detail-ing-amount">${escapeHtml(i.amount)}</span>` : ""}</li>`).join("")
+        : `<li class="detail-empty-hint">尚未填寫食材</li>`;
+
+      const steps = Array.isArray(r.steps) ? r.steps : [];
+      $("recipe-detail-steps").innerHTML = steps.length
+        ? steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")
+        : `<li class="detail-empty-hint">尚未填寫做法</li>`;
+
+      const sourceParts = [r.sourceName, r.sourcePlatform].filter((v) => (v || "").trim()).map(escapeHtml);
+      let sourceHtml = sourceParts.join(" · ");
+      if ((r.sourceUrl || "").trim()) {
+        sourceHtml += (sourceHtml ? " · " : "") + `<a href="${escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(r.sourceUrl)}</a>`;
+      }
+      $("recipe-detail-source-section").hidden = !sourceHtml;
+      $("recipe-detail-source").innerHTML = sourceHtml;
+
+      $("recipe-detail-notes-section").hidden = !(r.notes || "").trim();
+      $("recipe-detail-notes").textContent = r.notes || "";
+    }
+    function showRecipeDetail(r) {
+      currentDetailRecipe = r;
+      renderRecipeDetail(r);
+      goToPage("recipe-detail");
+    }
+    function openRecipeDetail(r) {
+      rememberRecipeDetailReturnPage();
+      showRecipeDetail(r);
+    }
+    async function deleteRecipeById(id) {
+      await deleteDoc(doc(db, "recipes", id));
+      try { await deleteObject(storageRef(storage, `recipe-photos/${currentUser.uid}/${id}.jpg`)); } catch (err) { /* 可能本來就沒有照片，忽略即可 */ }
+    }
+    $("recipe-detail-back-btn").addEventListener("click", closeRecipeDetail);
+    $("recipe-detail-edit-btn").addEventListener("click", () => { if (currentDetailRecipe) openEditRecipe(currentDetailRecipe); });
+    $("recipe-detail-delete-btn").addEventListener("click", async () => {
+      if (!currentDetailRecipe) return;
+      if (!confirm("確定要刪除這道食譜嗎？此動作無法復原。")) return;
+      await deleteRecipeById(currentDetailRecipe.id);
+      closeRecipeDetail();
+    });
 
     function updateRecipeCoverPreview() {
       $("recipe-cover-preview").innerHTML = currentRecipePhotoUrl ? `<img src="${currentRecipePhotoUrl}" alt="">` : `<i class="ti ti-photo"></i>`;
@@ -753,7 +871,11 @@
           data.createdDate = $("recipe-field-created-date").value || new Date().toISOString().slice(0, 10);
         }
         await setDoc(doc(db, "recipes", id), data, { merge: true });
-        closeRecipeForm();
+        // 儲存完直接進到「食譜詳情」頁，讓照片、材料、做法可以直接瀏覽，
+        // 而不是停在新增/編輯表單，或回到列表還要再找一次剛新增的食譜。
+        const savedRecipe = { ...data, id, createdDate: $("recipe-field-created-date").value || "" };
+        if (recipeFormReturnPage !== "recipe-detail") recipeDetailReturnPage = recipeFormReturnPage;
+        showRecipeDetail(savedRecipe);
       } catch (err) {
         console.error("Firestore 儲存錯誤：", err);
         let message = "儲存失敗。";
@@ -776,9 +898,9 @@
     $("recipe-delete-btn").addEventListener("click", async () => {
       if (!editingRecipeId) return;
       if (!confirm("確定要刪除這道食譜嗎？此動作無法復原。")) return;
-      await deleteDoc(doc(db, "recipes", editingRecipeId));
-      try { await deleteObject(storageRef(storage, `recipe-photos/${currentUser.uid}/${editingRecipeId}.jpg`)); } catch (err) { /* 可能本來就沒有照片，忽略即可 */ }
-      closeRecipeForm();
+      await deleteRecipeById(editingRecipeId);
+      // 食譜已經刪除，詳情頁不會再有內容可看，所以直接回到列表，而不是回詳情頁
+      goToPage(recipeFormReturnPage === "recipe-detail" ? recipeDetailReturnPage : recipeFormReturnPage);
     });
   </script>
 </body>
