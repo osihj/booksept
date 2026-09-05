@@ -624,7 +624,8 @@
   }
   .app-switcher-btn:hover { background: var(--accent-light); color: var(--text); }
   .app-switcher-btn.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
-  .app-switcher-emoji { font-size: 21px; line-height: 1; }
+  .app-switcher-icon { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
+  .app-switcher-icon svg { width: 22px; height: 22px; display: block; }
   .app-switcher-label { line-height: 1.2; }
 
   /* 尚未開放的模組頁面用的空狀態版面 */
