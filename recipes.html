@@ -191,6 +191,15 @@
                   </label>
                   <label class="field"><span>份量／人</span><input type="text" id="recipe-field-servings" placeholder="例：4"></label>
                   <label class="field">
+                    <span>準備時間</span>
+                    <div class="time-picker-field">
+                      <select id="recipe-field-prep-hours" class="time-select" aria-label="準備時間（小時）"></select>
+                      <span class="time-unit">時</span>
+                      <select id="recipe-field-prep-minutes" class="time-select" aria-label="準備時間（分鐘）"></select>
+                      <span class="time-unit">分</span>
+                    </div>
+                  </label>
+                  <label class="field">
                     <span>製作時間</span>
                     <div class="time-picker-field">
                       <select id="recipe-field-make-hours" class="time-select" aria-label="製作時間（小時）"></select>
@@ -342,8 +351,12 @@
                 <div class="cover-preview recipe-cover recipe-detail-cover" id="recipe-detail-cover"><i class="ti ti-photo"></i></div>
                 <div class="recipe-detail-stats">
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">建立日期</span><span class="recipe-detail-stat-value" id="recipe-detail-created">—</span></div>
-                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">份量</span><span class="recipe-detail-stat-value" id="recipe-detail-servings">—</span></div>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">份量／人</span><span class="recipe-detail-stat-value" id="recipe-detail-servings">—</span></div>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">準備時間</span><span class="recipe-detail-stat-value" id="recipe-detail-prep-time">—</span></div>
+                  <span class="recipe-detail-stat-operator">＋</span>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">製作時間</span><span class="recipe-detail-stat-value" id="recipe-detail-make-time">—</span></div>
+                  <span class="recipe-detail-stat-operator">＝</span>
+                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">總時間</span><span class="recipe-detail-stat-value" id="recipe-detail-total-time">—</span></div>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">製作快樂度</span><span class="detail-stars" id="recipe-detail-star-joy"></span></div>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">用腦／費工程度</span><span class="detail-stars" id="recipe-detail-star-effort"></span></div>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">成品評分</span><span class="detail-stars" id="recipe-detail-star-result"></span></div>
@@ -840,12 +853,13 @@
       if (e.key === "Enter") { e.preventDefault(); addNewRecipeTagFromInput(); }
     });
 
-    // ================= 製作時間：像鬧鐘一樣選小時／分鐘，不用手打文字 =================
-    function initMakeTimeSelects() {
-      $("recipe-field-make-hours").innerHTML = Array.from({ length: 13 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
-      $("recipe-field-make-minutes").innerHTML = Array.from({ length: 12 }, (_, i) => i * 5).map((m) => `<option value="${m}">${m}</option>`).join("");
+    // ================= 準備時間／製作時間：像鬧鐘一樣選小時／分鐘，不用手打文字 =================
+    function initTimeSelects(hourId, minuteId) {
+      $(hourId).innerHTML = Array.from({ length: 13 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
+      $(minuteId).innerHTML = Array.from({ length: 12 }, (_, i) => i * 5).map((m) => `<option value="${m}">${m}</option>`).join("");
     }
-    initMakeTimeSelects();
+    initTimeSelects("recipe-field-prep-hours", "recipe-field-prep-minutes");
+    initTimeSelects("recipe-field-make-hours", "recipe-field-make-minutes");
     function parseMakeTimeToHM(raw) {
       if (!raw) return { h: 0, m: 0 };
       const s = String(raw);
@@ -858,19 +872,40 @@
       if (!isNaN(num)) return { h: Math.floor(num / 60), m: num % 60 };
       return { h: 0, m: 0 };
     }
-    function setMakeTimeSelects(raw) {
+    function setTimeSelects(hourId, minuteId, raw) {
       const { h, m } = parseMakeTimeToHM(raw);
-      $("recipe-field-make-hours").value = String(Math.min(12, Math.max(0, h)));
+      $(hourId).value = String(Math.min(12, Math.max(0, h)));
       const roundedM = Math.min(55, Math.max(0, Math.round(m / 5) * 5));
-      $("recipe-field-make-minutes").value = String(roundedM);
+      $(minuteId).value = String(roundedM);
     }
-    function getMakeTimeString() {
-      const h = Number($("recipe-field-make-hours").value) || 0;
-      const m = Number($("recipe-field-make-minutes").value) || 0;
+    function getTimeString(hourId, minuteId) {
+      const h = Number($(hourId).value) || 0;
+      const m = Number($(minuteId).value) || 0;
       const parts = [];
       if (h) parts.push(h + " 小時");
       if (m) parts.push(m + " 分");
       return parts.join(" ");
+    }
+    function setPrepTimeSelects(raw) { setTimeSelects("recipe-field-prep-hours", "recipe-field-prep-minutes", raw); }
+    function setMakeTimeSelects(raw) { setTimeSelects("recipe-field-make-hours", "recipe-field-make-minutes", raw); }
+    function getPrepTimeString() { return getTimeString("recipe-field-prep-hours", "recipe-field-prep-minutes"); }
+    function getMakeTimeString() { return getTimeString("recipe-field-make-hours", "recipe-field-make-minutes"); }
+    // 把「1 小時 30 分」這種字串換算成總分鐘數，方便加總
+    function timeStringToMinutes(raw) {
+      const { h, m } = parseMakeTimeToHM(raw);
+      return h * 60 + m;
+    }
+    function formatMinutesAsDuration(totalMin) {
+      const h = Math.floor(totalMin / 60), m = totalMin % 60;
+      const parts = [];
+      if (h) parts.push(h + " 小時");
+      if (m || !h) parts.push(m + " 分");
+      return parts.join(" ");
+    }
+    // 準備時間 10 分 + 製作時間 15 分 = 總計 25 分，兩者都沒填就顯示「—」
+    function buildTotalTimeLabel(prepMin, makeMin) {
+      if (!prepMin && !makeMin) return "";
+      return formatMinutesAsDuration(prepMin + makeMin);
     }
 
     // ================= 食譜列表 =================
@@ -926,10 +961,16 @@
       card.className = "book-card";
       card.dataset.recipeId = r.id;
       card.addEventListener("click", () => openRecipeDetail(r));
+      const totalMin = timeStringToMinutes(r.prepTime) + timeStringToMinutes(r.makeTime);
+      const metaChips = [
+        r.servings ? `<span class="recipe-card-chip"><i class="ti ti-users"></i>${escapeHtml(r.servings)}</span>` : "",
+        totalMin ? `<span class="recipe-card-chip"><i class="ti ti-clock"></i>${escapeHtml(formatMinutesAsDuration(totalMin))}</span>` : ""
+      ].filter(Boolean).join("");
       card.innerHTML = `
         <div class="book-cover recipe-cover">${r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
         <p class="book-title">${escapeHtml(r.name || "未命名食譜")}</p>
-        <p class="book-author">${escapeHtml(getRecipeCategory(r))}</p>`;
+        <p class="book-author">${escapeHtml(getRecipeCategory(r))}</p>
+        ${metaChips ? `<div class="book-meta recipe-card-meta">${metaChips}</div>` : ""}`;
       return card;
     }
 
@@ -1009,7 +1050,10 @@
       $("recipe-detail-cover").innerHTML = r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`;
       $("recipe-detail-created").textContent = r.createdDate || "—";
       $("recipe-detail-servings").textContent = r.servings || "—";
+      $("recipe-detail-prep-time").textContent = r.prepTime || "—";
       $("recipe-detail-make-time").textContent = r.makeTime || "—";
+      const totalMin = timeStringToMinutes(r.prepTime) + timeStringToMinutes(r.makeTime);
+      $("recipe-detail-total-time").textContent = totalMin ? formatMinutesAsDuration(totalMin) : "—";
       $("recipe-detail-star-joy").innerHTML = starsHtml(r.ratingJoy || 0);
       $("recipe-detail-star-effort").innerHTML = starsHtml(r.ratingEffort || 0);
       $("recipe-detail-star-result").innerHTML = starsHtml(r.ratingResult || 0);
@@ -1545,6 +1589,7 @@
       applyRatingsToForm();
       $("recipe-field-created-date").value = new Date().toISOString().slice(0, 10);
       $("recipe-field-servings").value = "";
+      setPrepTimeSelects("");
       setMakeTimeSelects("");
       currentRecipeTags = [];
       renderRecipeTagPicker();
@@ -1569,6 +1614,7 @@
       $("recipe-field-notes").value = r.notes || "";
       $("recipe-field-created-date").value = r.createdDate || "";
       $("recipe-field-servings").value = r.servings || "";
+      setPrepTimeSelects(r.prepTime || "");
       setMakeTimeSelects(r.makeTime || "");
       currentRecipeTags = Array.isArray(r.tags) ? [...r.tags] : [];
       renderRecipeTagPicker();
@@ -1625,6 +1671,7 @@
           category: $("recipe-field-category").value.trim() || "未分類",
           tags: currentRecipeTags,
           servings: $("recipe-field-servings").value.trim(),
+          prepTime: getPrepTimeString(),
           makeTime: getMakeTimeString(),
           photoUrl: photoUrl || "",
           ingredients: currentIngredientGroups
