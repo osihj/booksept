@@ -868,6 +868,22 @@
   .module-placeholder h2 { font-size: 20px; color: var(--text); }
   .module-placeholder p { max-width: 420px; font-size: 14px; line-height: 1.7; margin: 0; }
 
-  /* 「我的心得／改版紀錄」等輸入時自動長高的 textarea：關掉手動縮放與捲軸，
+  /* 「心得紀錄」等輸入時自動長高的 textarea：關掉手動縮放與捲軸，
      改由 JS 依內容量測高度撐開 */
   .autosize-textarea { resize: none; overflow: hidden; }
+
+  /* 製作時間：改成像鬧鐘一樣選小時／分鐘，取代原本要手打文字的做法 */
+  .time-picker-field { display: flex; align-items: center; gap: 6px; }
+  .time-picker-field select.time-select { flex: 1; min-width: 0; }
+  .time-picker-field .time-unit { font-size: 12.5px; color: var(--text2); flex-shrink: 0; }
+
+  /* 食譜標籤挑選器（表單內）：沿用 .tag-chip，可點選切換是否套用在這道食譜上 */
+  .tag-picker-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .tag-chip.pickable { user-select: none; }
+  .tag-chip.pickable.selected { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .tag-picker-add { display: flex; align-items: center; gap: 8px; }
+  .tag-picker-add input[type="text"] {
+    flex: 1; border: 1px solid var(--border); border-radius: 999px; padding: 7px 16px;
+    font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface);
+  }
+  .tag-picker-add input[type="text"]:focus { outline: none; border-color: var(--accent2); }
