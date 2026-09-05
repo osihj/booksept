@@ -886,13 +886,12 @@
   .detail-substep-row p { margin: 0; line-height: 1.7; white-space: pre-wrap; color: var(--text2); }
   .detail-substep-letter { flex-shrink: 0; min-width: 16px; font-size: 12px; font-weight: 700; color: var(--text3); }
   .detail-substep-note {
-    align-items: flex-start;
-    background: var(--red-light); border-radius: var(--radius); padding: 8px 10px; color: var(--red);
+    color: var(--red);
   }
-  .detail-substep-note .detail-substep-letter { margin-top: 1px; color: var(--red); }
+  .detail-substep-note .detail-substep-letter { color: var(--red); }
   .detail-substep-note-box { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
-  .detail-substep-note-box i { flex-shrink: 0; }
-  .detail-substep-note-box p { margin: 0; }
+  .detail-substep-note-box i { flex-shrink: 0; color: var(--red); }
+  .detail-substep-note-box p { margin: 0; color: var(--red); }
   .detail-substep-heading p { font-weight: 700; color: var(--text); }
 
   .detail-source { margin: 0; line-height: 1.7; word-break: break-all; }
