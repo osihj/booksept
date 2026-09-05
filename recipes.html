@@ -98,7 +98,6 @@
                 <div class="list-card-head-right">
                   <select id="recipe-sort-select" class="sort-select">
                     <option value="createdAt-desc">最新建立</option>
-                    <option value="lastMadeAt-desc">最近製作</option>
                     <option value="name-asc">名稱（A-Z）</option>
                   </select>
                 </div>
@@ -169,7 +168,6 @@
                   <label class="field"><span>建立日期</span><input type="date" id="recipe-field-created-date" readonly></label>
                   <label class="field"><span>份量</span><input type="text" id="recipe-field-servings" placeholder="例：4 人份"></label>
                   <label class="field"><span>製作時間</span><input type="text" id="recipe-field-make-time" placeholder="例：1 小時 30 分"></label>
-                  <label class="field"><span>最後製作日期</span><input type="date" id="recipe-field-last-made"></label>
                 </div>
 
                 <div class="notes-section">
@@ -238,14 +236,12 @@
                 </div>
 
                 <div class="field-grid">
-                  <label class="field"><span>來源名稱</span><input type="text" id="recipe-field-source-name" placeholder="例：糖餃子 Sweet Dumpling"></label>
-                  <label class="field"><span>觀看平台</span><input type="text" id="recipe-field-source-platform" placeholder="例：YouTube"></label>
                   <label class="field field-wide"><span>參考影片／網址</span><input type="url" id="recipe-field-source-url" placeholder="https://..."></label>
                 </div>
 
                 <div class="notes-section">
                   <span class="field-label">我的心得／改版紀錄</span>
-                  <textarea id="recipe-field-notes" rows="4" placeholder="材料修改、比例調整、製作心得、成品口感、下次想怎麼改..." style="width:100%;"></textarea>
+                  <textarea id="recipe-field-notes" class="autosize-textarea" rows="3" placeholder="材料修改、比例調整、製作心得、成品口感、下次想怎麼改..." style="width:100%;"></textarea>
                 </div>
 
                 <div class="modal-footer">
@@ -646,8 +642,6 @@
       const sortValue = $("recipe-sort-select").value;
       if (sortValue === "createdAt-desc") {
         recipes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      } else if (sortValue === "lastMadeAt-desc") {
-        recipes.sort((a, b) => (b.lastMadeAt || "").localeCompare(a.lastMadeAt || ""));
       } else if (sortValue === "name-asc") {
         recipes.sort((a, b) => (a.name || "").localeCompare(b.name || "", "zh-Hant"));
       }
@@ -688,11 +682,7 @@
       card.innerHTML = `
         <div class="book-cover recipe-cover">${r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
         <p class="book-title">${escapeHtml(r.name || "未命名食譜")}</p>
-        <p class="book-author">${escapeHtml(getRecipeCategory(r))}</p>
-        <div class="book-meta">
-          <span class="book-rating">${starsHtml(r.ratingResult || 0)}</span>
-          <span class="status-badge">${r.lastMadeAt ? "最近製作 " + escapeHtml(r.lastMadeAt) : "尚未製作"}</span>
-        </div>`;
+        <p class="book-author">${escapeHtml(getRecipeCategory(r))}</p>`;
       return card;
     }
 
@@ -714,6 +704,46 @@
       }
     }
     function closeRecipeDetail() { goToPage(recipeDetailReturnPage); }
+    // 做法：主步驟維持數字編號；緊接在某個步驟後面的「小標題／注意事項／一般文字」
+    // 會變成該步驟底下的字母子項目（a. b. c...），呈現方式參考 Notion 的巢狀編號清單。
+    function renderDetailStepGroups(stepBlocks) {
+      const groups = [];
+      let current = null;
+      stepBlocks.forEach((b) => {
+        if (b.type === "step") {
+          current = { step: b, subs: [] };
+          groups.push(current);
+        } else if (current) {
+          current.subs.push(b);
+        } else {
+          groups.push({ step: null, leading: b });
+        }
+      });
+
+      let stepCounter = 0;
+      return groups.map((g) => {
+        if (!g.step) {
+          const b = g.leading;
+          if (b.type === "heading") return `<h4 class="detail-step-heading">${escapeHtml(b.content)}</h4>`;
+          if (b.type === "note") return `<div class="detail-step-block detail-step-block-note"><i class="ti ti-alert-triangle"></i><p>${escapeHtml(b.content)}</p></div>`;
+          return `<p class="detail-step-text">${escapeHtml(b.content)}</p>`;
+        }
+        stepCounter++;
+        const subsHtml = g.subs.length
+          ? `<div class="detail-substep-list">${g.subs.map((sb, i) => {
+              const letter = String.fromCharCode(97 + i) + ".";
+              if (sb.type === "note") {
+                return `<div class="detail-substep-row detail-substep-note"><span class="detail-substep-letter">${letter}</span><i class="ti ti-alert-triangle"></i><p>${escapeHtml(sb.content)}</p></div>`;
+              }
+              if (sb.type === "heading") {
+                return `<div class="detail-substep-row detail-substep-heading"><span class="detail-substep-letter">${letter}</span><p>${escapeHtml(sb.content)}</p></div>`;
+              }
+              return `<div class="detail-substep-row"><span class="detail-substep-letter">${letter}</span><p>${escapeHtml(sb.content)}</p></div>`;
+            }).join("")}</div>`
+          : "";
+        return `<div class="detail-step-block detail-step-block-step"><span class="detail-step-num">${stepCounter}</span><div class="detail-step-body"><p>${escapeHtml(g.step.content)}</p>${subsHtml}</div></div>`;
+      }).join("");
+    }
     function renderRecipeDetail(r) {
       $("recipe-detail-name").textContent = r.name || "未命名食譜";
       $("recipe-detail-category").textContent = getRecipeCategory(r);
@@ -741,23 +771,14 @@
         : `<p class="detail-empty-hint">尚未填寫食材</p>`;
 
       const stepBlocks = toDisplayStepBlocks(r.steps);
-      let stepCounter = 0;
       $("recipe-detail-steps").innerHTML = stepBlocks.length
-        ? `<div class="detail-step-list">${stepBlocks.map((b) => {
-            if (b.type === "step") {
-              stepCounter++;
-              return `<div class="detail-step-block detail-step-block-step"><span class="detail-step-num">${stepCounter}</span><p>${escapeHtml(b.content)}</p></div>`;
-            }
-            if (b.type === "heading") return `<h4 class="detail-step-heading">${escapeHtml(b.content)}</h4>`;
-            if (b.type === "note") return `<div class="detail-step-block detail-step-block-note"><i class="ti ti-alert-triangle"></i><p>${escapeHtml(b.content)}</p></div>`;
-            return `<p class="detail-step-text">${escapeHtml(b.content)}</p>`;
-          }).join("")}</div>`
+        ? `<div class="detail-step-list">${renderDetailStepGroups(stepBlocks)}</div>`
         : `<p class="detail-empty-hint">尚未填寫做法</p>`;
 
       const sourceParts = [r.sourceName, r.sourcePlatform].filter((v) => (v || "").trim()).map(escapeHtml);
       let sourceHtml = sourceParts.join(" · ");
       if ((r.sourceUrl || "").trim()) {
-        sourceHtml += (sourceHtml ? " · " : "") + `<a href="${escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(r.sourceUrl)}</a>`;
+        sourceHtml += (sourceHtml ? " · " : "") + `<a class="detail-source-link" href="${escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(r.sourceUrl)}</a>`;
       }
       $("recipe-detail-source-section").hidden = !sourceHtml;
       $("recipe-detail-source").innerHTML = sourceHtml;
@@ -1071,6 +1092,10 @@
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
     }
+    // 「我的心得／改版紀錄」輸入時自動長高，不用手動拖曳才看得到打過的字
+    document.querySelectorAll(".autosize-textarea").forEach((el) => {
+      el.addEventListener("input", () => autoGrowTextarea(el));
+    });
     function stepBlockHtml(block, idx, stepNumber, total) {
       const placeholderMap = { step: "輸入這個步驟…", heading: "輸入小標題…", note: "輸入注意事項…", text: "輸入文字…" };
       const markerHtml = block.type === "step"
@@ -1174,6 +1199,9 @@
     // ---------- 開啟新增／編輯 ----------
     function openAddRecipe() {
       rememberRecipeReturnPage();
+      // 先切換到表單頁面再渲染食材／做法，避免頁面還是 display:none 時
+      // 量測 textarea 高度拿到 0，導致自動長高失準、文字被裁切
+      goToPage("recipe-form");
       editingRecipeId = null;
       $("recipe-form-title").textContent = "新增食譜";
       $("recipe-delete-btn").hidden = true;
@@ -1188,11 +1216,11 @@
       $("recipe-field-created-date").value = new Date().toISOString().slice(0, 10);
       $("recipe-field-servings").value = "";
       $("recipe-field-make-time").value = "";
-      $("recipe-field-last-made").value = "";
-      goToPage("recipe-form");
+      autoGrowTextarea($("recipe-field-notes"));
     }
     function openEditRecipe(r) {
       rememberRecipeReturnPage();
+      goToPage("recipe-form");
       editingRecipeId = r.id;
       $("recipe-form-title").textContent = "編輯食譜";
       $("recipe-delete-btn").hidden = false;
@@ -1205,15 +1233,12 @@
       renderIngredientGroups(); renderStepBlocks();
       recipeRatings = { joy: r.ratingJoy || 0, effort: r.ratingEffort || 0, result: r.ratingResult || 0 };
       applyRatingsToForm();
-      $("recipe-field-source-name").value = r.sourceName || "";
-      $("recipe-field-source-platform").value = r.sourcePlatform || "";
       $("recipe-field-source-url").value = r.sourceUrl || "";
       $("recipe-field-notes").value = r.notes || "";
       $("recipe-field-created-date").value = r.createdDate || "";
       $("recipe-field-servings").value = r.servings || "";
       $("recipe-field-make-time").value = r.makeTime || "";
-      $("recipe-field-last-made").value = r.lastMadeAt || "";
-      goToPage("recipe-form");
+      autoGrowTextarea($("recipe-field-notes"));
     }
     $("recipe-add-btn").addEventListener("click", openAddRecipe);
     $("recipe-cancel-btn").addEventListener("click", closeRecipeForm);
@@ -1260,7 +1285,6 @@
         let photoUrl = currentRecipePhotoUrl;
         if (pendingRecipePhotoFile) photoUrl = await uploadRecipePhoto(pendingRecipePhotoFile, id);
 
-        const lastMadeAt = $("recipe-field-last-made").value || "";
         const data = {
           uid: currentUser.uid,
           name,
@@ -1282,14 +1306,8 @@
           ratingJoy: Number(recipeRatings.joy) || 0,
           ratingEffort: Number(recipeRatings.effort) || 0,
           ratingResult: Number(recipeRatings.result) || 0,
-          sourceName: $("recipe-field-source-name").value.trim(),
-          sourcePlatform: $("recipe-field-source-platform").value.trim(),
           sourceUrl: $("recipe-field-source-url").value.trim(),
           notes: $("recipe-field-notes").value,
-          // lastMadeMonthDay 額外存 "MM-DD"，Firestore 沒辦法直接查詢日期字串的月-日部分，
-          // 之後「回顧」頁要查「歷年今天做過的菜」需要靠這個欄位直接 where 查詢。
-          lastMadeAt,
-          lastMadeMonthDay: lastMadeAt ? lastMadeAt.slice(5) : "",
           updatedAt: serverTimestamp()
         };
         if (!editingRecipeId) {
