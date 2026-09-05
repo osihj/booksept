@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#b8621d">
+<title>日記 · 我的書齋</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+  <!-- 未登入畫面：跟 index.html 用同一組 id，shared.js 的 wireLoginScreen()／watchAuth() 才能直接操作 -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <h1>藏書閣</h1>
+      <p class="login-sub">請登入以繼續</p>
+
+      <button id="google-login-btn" class="login-google-btn" type="button">
+        <svg class="login-google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.23c0-.82-.07-1.42-.22-2.05H12v3.72h6.02c-.12.97-.78 2.43-2.24 3.41l-.02.14 3.25 2.52.23.02c2.07-1.91 3.26-4.72 3.26-7.76z"/><path fill="#34A853" d="M12 23c2.94 0 5.4-.97 7.2-2.63l-3.43-2.66c-.92.64-2.16 1.09-3.77 1.09-2.88 0-5.32-1.9-6.19-4.53l-.13.01-3.38 2.62-.04.13C4.24 20.55 7.83 23 12 23z"/><path fill="#FBBC05" d="M5.81 14.27a6.6 6.6 0 01-.36-2.13c0-.74.13-1.46.35-2.13l-.01-.14-3.42-2.66-.11.05A10.94 10.94 0 001 12.14c0 1.78.43 3.46 1.26 4.94z"/><path fill="#EA4335" d="M12 5.48c2.04 0 3.42.88 4.21 1.62l3.07-3c-1.9-1.77-4.36-2.85-7.28-2.85-4.17 0-7.76 2.45-9.43 6.03l3.55 2.76c.87-2.63 3.31-4.56 6.19-4.56z"/></svg>
+        使用 Google 登入
+      </button>
+
+      <div class="login-divider"><span>或</span></div>
+
+      <input id="email-input" class="login-input" type="email" placeholder="Email" autocomplete="email">
+      <input id="password-input" class="login-input" type="password" placeholder="密碼" autocomplete="current-password">
+
+      <button id="email-login-btn" class="login-email-btn" type="button">Email 登入</button>
+      <button id="forgot-password-btn" class="forgot-password-btn" type="button">忘記密碼？寄送重設信</button>
+
+      <p id="login-error" class="login-error" hidden></p>
+    </div>
+  </div>
+
+  <!-- 主畫面 -->
+  <div id="app" hidden>
+    <div class="app-shell">
+
+      <!-- App 切換列（4 模組共用，內容由 shared.js 的 renderAppSwitcher() 動態畫出） -->
+      <nav class="app-switcher" id="app-switcher"></nav>
+
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="brand">
+            <span class="brand-mark">📖</span>
+            <span class="brand-name">日記</span>
+          </div>
+        </div>
+        <div class="sidebar-scroll">
+          <div>
+            <div class="sidebar-group-label"><span>日記</span></div>
+          </div>
+        </div>
+        <div class="sidebar-footer">
+          <button id="logout-top-btn" class="btn btn-ghost btn-sm" type="button" style="width:100%">登出</button>
+        </div>
+      </aside>
+
+      <div class="content-col">
+        <header class="topbar-desktop"></header>
+
+        <main class="main">
+          <div class="module-placeholder">
+            <div class="module-placeholder-emoji">📖</div>
+            <h2>日記模組尚未開放</h2>
+            <p>這裡之後會用來記錄生活點滴：文字、照片、心情，依日期整理成時間軸或月曆。目前先完成了登入跟頁面切換的骨架，功能還在製作中，敬請期待。</p>
+          </div>
+        </main>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { wireLoginScreen, watchAuth, renderAppSwitcher } from "./shared.js";
+
+    wireLoginScreen();
+    renderAppSwitcher("diary");
+
+    watchAuth((user) => {
+      // 日記模組的資料還沒開始接，這裡先只確認登入成功、其餘留給之後開發。
+      console.log("已登入：", user.email);
+    });
+  </script>
+</body>
+</html>
