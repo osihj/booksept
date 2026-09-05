@@ -640,6 +640,10 @@
     padding: 24px;
     color: var(--text2);
   }
-  .module-placeholder .module-placeholder-emoji { font-size: 48px; }
+  .module-placeholder .module-placeholder-emoji {
+    display: flex; align-items: center; justify-content: center;
+    width: 56px; height: 56px; color: var(--text3);
+  }
+  .module-placeholder .module-placeholder-emoji svg { width: 48px; height: 48px; display: block; }
   .module-placeholder h2 { font-size: 20px; color: var(--text); }
   .module-placeholder p { max-width: 420px; font-size: 14px; line-height: 1.7; margin: 0; }
