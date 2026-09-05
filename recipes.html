@@ -58,7 +58,7 @@
               <i class="ti ti-plus"></i><span class="label">新增食譜</span>
             </button>
             <button class="sidebar-link" data-page="recipe-manage" type="button">
-              <i class="ti ti-list"></i><span class="label">食譜分類管理</span>
+              <i class="ti ti-list"></i><span class="label">分類與標籤管理</span>
             </button>
           </div>
         </div>
@@ -84,7 +84,12 @@
 
             <div class="inlist-search">
               <i class="ti ti-search"></i>
-              <input type="text" id="recipe-search-input" placeholder="食譜內搜尋：名稱、分類、來源或心得...">
+              <input type="text" id="recipe-search-input" placeholder="食譜內搜尋：名稱、分類、標籤、來源或心得...">
+            </div>
+
+            <div class="tag-row-wrap">
+              <div class="tag-row-label"><i class="ti ti-tag"></i><span>標籤</span></div>
+              <div class="tag-chip-list" id="recipe-tag-chip-list"></div>
             </div>
 
             <div class="list-card">
@@ -93,6 +98,10 @@
                   <div>
                     <span class="list-card-title">食譜列表</span>
                     <span class="list-card-count" id="recipe-count-label">共 0 道食譜</span>
+                  </div>
+                  <div class="view-toggle">
+                    <button type="button" class="view-btn active" id="recipe-view-grid-btn" title="格狀檢視" aria-label="格狀檢視"><i class="ti ti-layout-grid"></i></button>
+                    <button type="button" class="view-btn" id="recipe-view-list-btn" title="列表檢視" aria-label="列表檢視"><i class="ti ti-list"></i></button>
                   </div>
                 </div>
                 <div class="list-card-head-right">
@@ -109,26 +118,40 @@
             </div>
           </section>
 
-          <!-- 食譜分類管理 -->
+          <!-- 食譜分類與標籤管理（同一頁兩欄，跟書庫「書單管理」一致） -->
           <section id="page-recipe-manage" class="page">
             <div class="shelf-header">
               <div>
                 <div class="shelf-eyebrow2">TOOLS</div>
-                <h1>食譜分類管理</h1>
-                <p class="shelf-sub">分類依每道食譜的「食物類型」自動產生，可在此重新命名、刪除或拖曳排序</p>
+                <h1>分類與標籤管理</h1>
+                <p class="shelf-sub">類別依每道食譜的「食物類別」自動產生、標籤依「食譜標籤」欄位自動產生，皆可在此重新命名、刪除或拖曳排序</p>
               </div>
             </div>
-            <div class="card">
-              <div class="card-title-row">
-                <div class="card-title">所有分類</div>
-                <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-recipe-category-btn"><i class="ti ti-plus"></i> 新增分類</button>
+            <div class="manage-columns">
+              <div class="card">
+                <div class="card-title-row">
+                  <div class="card-title">食譜類別</div>
+                  <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-recipe-category-btn"><i class="ti ti-plus"></i> 新增類別</button>
+                </div>
+                <div class="manage-add-form" id="manage-recipe-category-add-form" hidden>
+                  <input type="text" id="new-recipe-category-input" placeholder="輸入類別名稱，按 Enter 新增">
+                  <button type="button" class="icon-btn" id="confirm-add-recipe-category" title="新增"><i class="ti ti-check"></i></button>
+                  <button type="button" class="icon-btn" id="cancel-add-recipe-category" title="取消"><i class="ti ti-x"></i></button>
+                </div>
+                <div id="manage-recipe-category-list"></div>
               </div>
-              <div class="manage-add-form" id="manage-recipe-category-add-form" hidden>
-                <input type="text" id="new-recipe-category-input" placeholder="輸入分類名稱，按 Enter 新增">
-                <button type="button" class="icon-btn" id="confirm-add-recipe-category" title="新增"><i class="ti ti-check"></i></button>
-                <button type="button" class="icon-btn" id="cancel-add-recipe-category" title="取消"><i class="ti ti-x"></i></button>
+              <div class="card">
+                <div class="card-title-row">
+                  <div class="card-title">食譜標籤</div>
+                  <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-recipe-tag-btn"><i class="ti ti-plus"></i> 新增標籤</button>
+                </div>
+                <div class="manage-add-form" id="manage-recipe-tag-add-form" hidden>
+                  <input type="text" id="new-recipe-tag-input" placeholder="輸入標籤名稱，按 Enter 新增">
+                  <button type="button" class="icon-btn" id="confirm-add-recipe-tag" title="新增"><i class="ti ti-check"></i></button>
+                  <button type="button" class="icon-btn" id="cancel-add-recipe-tag" title="取消"><i class="ti ti-x"></i></button>
+                </div>
+                <div id="manage-recipe-tag-list"></div>
               </div>
-              <div id="manage-recipe-category-list"></div>
             </div>
           </section>
 
@@ -159,15 +182,33 @@
                 </div>
 
                 <div class="field-grid">
-                  <label class="field field-wide"><span>食譜名稱 *</span><input type="text" id="recipe-field-name" required></label>
+                  <label class="field"><span>食譜名稱 *</span><input type="text" id="recipe-field-name" required></label>
+                  <label class="field"><span>建立日期</span><input type="date" id="recipe-field-created-date" readonly></label>
                   <label class="field">
-                    <span>食物類型／分類</span>
+                    <span>食物類別</span>
                     <input type="text" id="recipe-field-category" list="recipe-category-options" placeholder="例：甜點、家常菜、湯品">
                     <datalist id="recipe-category-options"></datalist>
                   </label>
-                  <label class="field"><span>建立日期</span><input type="date" id="recipe-field-created-date" readonly></label>
-                  <label class="field"><span>份量</span><input type="text" id="recipe-field-servings" placeholder="例：4 人份"></label>
-                  <label class="field"><span>製作時間</span><input type="text" id="recipe-field-make-time" placeholder="例：1 小時 30 分"></label>
+                  <label class="field"><span>份量／人</span><input type="text" id="recipe-field-servings" placeholder="例：4"></label>
+                  <label class="field">
+                    <span>製作時間</span>
+                    <div class="time-picker-field">
+                      <select id="recipe-field-make-hours" class="time-select" aria-label="製作時間（小時）"></select>
+                      <span class="time-unit">時</span>
+                      <select id="recipe-field-make-minutes" class="time-select" aria-label="製作時間（分鐘）"></select>
+                      <span class="time-unit">分</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="notes-section">
+                  <span class="field-label">食譜標籤</span>
+                  <p class="field-hint">點選已有標籤加入這道食譜，或直接輸入新標籤名稱後按 Enter 新增並套用。</p>
+                  <div class="tag-picker-list" id="recipe-tag-picker"></div>
+                  <div class="tag-picker-add">
+                    <input type="text" id="recipe-new-tag-input" placeholder="輸入新標籤，按 Enter 新增">
+                    <button type="button" class="icon-btn" id="recipe-add-tag-confirm" title="新增"><i class="ti ti-check"></i></button>
+                  </div>
                 </div>
 
                 <div class="notes-section">
@@ -240,7 +281,7 @@
                 </div>
 
                 <div class="notes-section">
-                  <span class="field-label">我的心得／改版紀錄</span>
+                  <span class="field-label">心得紀錄</span>
                   <textarea id="recipe-field-notes" class="autosize-textarea" rows="3" placeholder="材料修改、比例調整、製作心得、成品口感、下次想怎麼改..." style="width:100%;"></textarea>
                 </div>
 
@@ -285,6 +326,11 @@
                 </div>
               </div>
 
+              <div class="notes-section" id="recipe-detail-tags-section" hidden>
+                <span class="field-label">食譜標籤</span>
+                <div class="tag-chip-list" id="recipe-detail-tags"></div>
+              </div>
+
               <div class="notes-section">
                 <span class="field-label">食材</span>
                 <div class="detail-ingredient-groups" id="recipe-detail-ingredients"></div>
@@ -301,7 +347,7 @@
               </div>
 
               <div class="notes-section" id="recipe-detail-notes-section" hidden>
-                <span class="field-label">我的心得／改版紀錄</span>
+                <span class="field-label">心得紀錄</span>
                 <p class="detail-notes" id="recipe-detail-notes"></p>
               </div>
 
@@ -340,11 +386,18 @@
     // ---------- State ----------
     let currentUser = null;
     let allRecipes = [];
-    let recipeMeta = { categoryOrder: [], manualCategories: [] };
+    let recipeMeta = { categoryOrder: [], manualCategories: [], tagOrder: [], manualTags: [] };
     let unsubscribeRecipes = null;
     let unsubscribeRecipeMeta = null;
     let lastCategoryCounts = {};
     let activeCategory = "all";
+    let activeTag = null;
+    let currentRecipeTags = [];
+    const RECIPE_VIEW_MODE_KEY = "recipeApp:viewMode";
+    function loadRecipeViewMode() {
+      try { return localStorage.getItem(RECIPE_VIEW_MODE_KEY) === "list" ? "list" : "grid"; } catch { return "grid"; }
+    }
+    let recipeViewMode = loadRecipeViewMode();
     let editingRecipeId = null;
     let recipeFormReturnPage = "recipes";
     let currentDetailRecipe = null;
@@ -481,6 +534,7 @@
         (snap) => {
           allRecipes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
           renderSidebarRecipeCategories();
+          renderRecipeTagsUI();
           render();
         },
         (err) => console.error("recipes 讀取失敗：", err)
@@ -495,9 +549,12 @@
           const d = snap.data() || {};
           recipeMeta = {
             categoryOrder: Array.isArray(d.categoryOrder) ? d.categoryOrder : [],
-            manualCategories: Array.isArray(d.manualCategories) ? d.manualCategories : []
+            manualCategories: Array.isArray(d.manualCategories) ? d.manualCategories : [],
+            tagOrder: Array.isArray(d.tagOrder) ? d.tagOrder : [],
+            manualTags: Array.isArray(d.manualTags) ? d.manualTags : []
           };
           renderSidebarRecipeCategories();
+          renderRecipeTagsUI();
         },
         (err) => console.error("recipeMeta 讀取失敗：", err)
       );
@@ -522,6 +579,7 @@
 
     // ---------- Helpers ----------
     function getRecipeCategory(r) { return (r.category || "未分類").trim() || "未分類"; }
+    function getRecipeTags(r) { return Array.isArray(r.tags) ? r.tags : []; }
     function starsHtml(n) {
       let s = "";
       for (let i = 1; i <= 5; i++) s += `<i class="ti ti-star${i <= n ? "" : " empty"}"></i>`;
@@ -627,14 +685,179 @@
       }
     });
 
+    // ================= 食譜標籤（列表篩選、管理頁、表單挑選器，沿用書庫「標籤」同一套邏輯） =================
+    function getRecipeTagCounts() {
+      const counts = {};
+      allRecipes.forEach((r) => { getRecipeTags(r).forEach((t) => { counts[t] = (counts[t] || 0) + 1; }); });
+      return counts;
+    }
+    function getAllRecipeTagNames(tagCounts) {
+      const counts = tagCounts || getRecipeTagCounts();
+      const allNames = new Set([...Object.keys(counts), ...recipeMeta.manualTags]);
+      return orderNames([...allNames], recipeMeta.tagOrder);
+    }
+    function renderRecipeTagFilterRow(tagsSorted, tagCounts) {
+      const el = $("recipe-tag-chip-list");
+      if (!tagsSorted.length) {
+        el.innerHTML = `<span class="tag-empty-hint">尚未建立任何標籤，可至「分類與標籤管理」新增</span>`;
+        return;
+      }
+      el.innerHTML = tagsSorted.map((t) => `
+        <button type="button" class="tag-chip${activeTag === t ? " active" : ""}" data-tag="${escapeHtml(t)}">
+          #${escapeHtml(t)} <span class="tc-count">(${tagCounts[t] || 0})</span>
+        </button>`).join("");
+      el.querySelectorAll(".tag-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          activeTag = activeTag === chip.dataset.tag ? null : chip.dataset.tag;
+          renderRecipeTagFilterRow(tagsSorted, tagCounts);
+          render();
+        });
+      });
+    }
+    async function renameRecipeTag(oldName, newName) {
+      const affected = allRecipes.filter((r) => getRecipeTags(r).includes(oldName));
+      for (const r of affected) {
+        const tags = [...new Set(getRecipeTags(r).map((t) => (t === oldName ? newName : t)))];
+        await setDoc(doc(db, "recipes", r.id), { tags }, { merge: true });
+      }
+      const manualTags = recipeMeta.manualTags.filter((t) => t !== oldName);
+      if (affected.length === 0) manualTags.push(newName);
+      const tagOrder = recipeMeta.tagOrder.map((t) => (t === oldName ? newName : t));
+      if (!tagOrder.includes(newName)) tagOrder.push(newName);
+      if (activeTag === oldName) activeTag = newName;
+      await saveRecipeMeta({ manualTags, tagOrder });
+    }
+    async function deleteRecipeTag(name) {
+      const affected = allRecipes.filter((r) => getRecipeTags(r).includes(name));
+      const msg = affected.length
+        ? `確定要刪除標籤「${name}」嗎？會從 ${affected.length} 道相關食譜移除此標籤，食譜本身不會被刪除。`
+        : `確定要刪除標籤「${name}」嗎？`;
+      if (!confirm(msg)) return;
+      for (const r of affected) {
+        const tags = getRecipeTags(r).filter((t) => t !== name);
+        await setDoc(doc(db, "recipes", r.id), { tags }, { merge: true });
+      }
+      const manualTags = recipeMeta.manualTags.filter((t) => t !== name);
+      const tagOrder = recipeMeta.tagOrder.filter((t) => t !== name);
+      if (activeTag === name) activeTag = null;
+      await saveRecipeMeta({ manualTags, tagOrder });
+    }
+    function renderManageRecipeTagList(tagsSorted, tagCounts) {
+      const el = $("manage-recipe-tag-list");
+      if (!tagsSorted.length) {
+        el.innerHTML = `<p class="manage-empty-hint">還沒有任何標籤，可按上方「新增標籤」先建立，或在食譜表單新增標籤時自動出現在這裡。</p>`;
+        return;
+      }
+      el.className = "manage-pill-list";
+      el.innerHTML = tagsSorted.map((t) => renderManagePillRow(t, tagCounts[t] || 0, true)).join("");
+      el.querySelectorAll(".manage-pill").forEach((row) => {
+        wireManagePillRow(row, { onRename: renameRecipeTag, onDelete: deleteRecipeTag });
+      });
+      enablePointerReorder(el, (order) => saveRecipeMeta({ tagOrder: order }), renderRecipeTagsUI);
+    }
+    function renderRecipeTagPicker() {
+      const el = $("recipe-tag-picker");
+      const allTags = getAllRecipeTagNames();
+      if (!allTags.length) {
+        el.innerHTML = `<p class="manage-empty-hint">還沒有任何標籤，輸入下方欄位新增第一個標籤。</p>`;
+        return;
+      }
+      el.innerHTML = allTags.map((t) => `
+        <button type="button" class="tag-chip pickable${currentRecipeTags.includes(t) ? " selected" : ""}" data-tag="${escapeHtml(t)}">
+          #${escapeHtml(t)}
+        </button>`).join("");
+      el.querySelectorAll(".tag-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const t = chip.dataset.tag;
+          currentRecipeTags = currentRecipeTags.includes(t) ? currentRecipeTags.filter((x) => x !== t) : [...currentRecipeTags, t];
+          renderRecipeTagPicker();
+        });
+      });
+    }
+    function renderRecipeTagsUI() {
+      const tagCounts = getRecipeTagCounts();
+      const tagsSorted = getAllRecipeTagNames(tagCounts);
+      renderRecipeTagFilterRow(tagsSorted, tagCounts);
+      renderManageRecipeTagList(tagsSorted, tagCounts);
+      renderRecipeTagPicker();
+    }
+    setupInlineAdd({
+      addBtnId: "add-recipe-tag-btn", formId: "manage-recipe-tag-add-form", inputId: "new-recipe-tag-input",
+      confirmId: "confirm-add-recipe-tag", cancelId: "cancel-add-recipe-tag",
+      onAdd: async (name) => {
+        const tagCounts = getRecipeTagCounts();
+        if (tagCounts[name] != null || recipeMeta.manualTags.includes(name)) {
+          alert("這個標籤已經存在了。");
+          return;
+        }
+        const manualTags = [...recipeMeta.manualTags, name];
+        const tagOrder = recipeMeta.tagOrder.includes(name) ? recipeMeta.tagOrder : [...recipeMeta.tagOrder, name];
+        await saveRecipeMeta({ manualTags, tagOrder });
+      }
+    });
+    async function addNewRecipeTagFromInput() {
+      const input = $("recipe-new-tag-input");
+      const val = input.value.trim();
+      if (!val) return;
+      if (getAllRecipeTagNames().includes(val)) {
+        if (!currentRecipeTags.includes(val)) { currentRecipeTags.push(val); renderRecipeTagPicker(); }
+        input.value = "";
+        return;
+      }
+      const manualTags = [...recipeMeta.manualTags, val];
+      const tagOrder = recipeMeta.tagOrder.includes(val) ? recipeMeta.tagOrder : [...recipeMeta.tagOrder, val];
+      await saveRecipeMeta({ manualTags, tagOrder });
+      if (!currentRecipeTags.includes(val)) currentRecipeTags.push(val);
+      input.value = "";
+      renderRecipeTagPicker();
+    }
+    $("recipe-add-tag-confirm").addEventListener("click", addNewRecipeTagFromInput);
+    $("recipe-new-tag-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addNewRecipeTagFromInput(); }
+    });
+
+    // ================= 製作時間：像鬧鐘一樣選小時／分鐘，不用手打文字 =================
+    function initMakeTimeSelects() {
+      $("recipe-field-make-hours").innerHTML = Array.from({ length: 13 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
+      $("recipe-field-make-minutes").innerHTML = Array.from({ length: 12 }, (_, i) => i * 5).map((m) => `<option value="${m}">${m}</option>`).join("");
+    }
+    initMakeTimeSelects();
+    function parseMakeTimeToHM(raw) {
+      if (!raw) return { h: 0, m: 0 };
+      const s = String(raw);
+      const hMatch = s.match(/(\d+)\s*(?:小時|時|hr|h)/i);
+      const mMatch = s.match(/(\d+)\s*(?:分鐘|分|min|m)(?!\w)/i);
+      if (hMatch || mMatch) {
+        return { h: hMatch ? parseInt(hMatch[1], 10) : 0, m: mMatch ? parseInt(mMatch[1], 10) : 0 };
+      }
+      const num = parseInt(s, 10);
+      if (!isNaN(num)) return { h: Math.floor(num / 60), m: num % 60 };
+      return { h: 0, m: 0 };
+    }
+    function setMakeTimeSelects(raw) {
+      const { h, m } = parseMakeTimeToHM(raw);
+      $("recipe-field-make-hours").value = String(Math.min(12, Math.max(0, h)));
+      const roundedM = Math.min(55, Math.max(0, Math.round(m / 5) * 5));
+      $("recipe-field-make-minutes").value = String(roundedM);
+    }
+    function getMakeTimeString() {
+      const h = Number($("recipe-field-make-hours").value) || 0;
+      const m = Number($("recipe-field-make-minutes").value) || 0;
+      const parts = [];
+      if (h) parts.push(h + " 小時");
+      if (m) parts.push(m + " 分");
+      return parts.join(" ");
+    }
+
     // ================= 食譜列表 =================
     function render() {
       let recipes = [...allRecipes];
       if (activeCategory !== "all") recipes = recipes.filter((r) => getRecipeCategory(r) === activeCategory);
+      if (activeTag) recipes = recipes.filter((r) => getRecipeTags(r).includes(activeTag));
       const term = $("recipe-search-input").value.trim().toLowerCase();
       if (term) {
         recipes = recipes.filter((r) => {
-          const hay = [r.name, r.category, r.notes, r.sourceName].filter(Boolean).join(" ").toLowerCase();
+          const hay = [r.name, r.category, r.notes, r.sourceName, ...getRecipeTags(r)].filter(Boolean).join(" ").toLowerCase();
           return hay.includes(term);
         });
       }
@@ -688,6 +911,18 @@
 
     $("recipe-search-input").addEventListener("input", render);
     $("recipe-sort-select").addEventListener("change", render);
+
+    // ================= 檢視方式：格狀／列表（沿用書庫 .book-grid.view-list 樣式） =================
+    function setRecipeViewMode(mode) {
+      recipeViewMode = mode;
+      try { localStorage.setItem(RECIPE_VIEW_MODE_KEY, mode); } catch { /* 忽略 */ }
+      $("recipe-grid").classList.toggle("view-list", mode === "list");
+      $("recipe-view-grid-btn").classList.toggle("active", mode === "grid");
+      $("recipe-view-list-btn").classList.toggle("active", mode === "list");
+    }
+    $("recipe-view-grid-btn").addEventListener("click", () => setRecipeViewMode("grid"));
+    $("recipe-view-list-btn").addEventListener("click", () => setRecipeViewMode("list"));
+    setRecipeViewMode(recipeViewMode);
 
     // ================= 新增／編輯食譜表單 =================
     function rememberRecipeReturnPage() {
@@ -754,6 +989,10 @@
       $("recipe-detail-star-joy").innerHTML = starsHtml(r.ratingJoy || 0);
       $("recipe-detail-star-effort").innerHTML = starsHtml(r.ratingEffort || 0);
       $("recipe-detail-star-result").innerHTML = starsHtml(r.ratingResult || 0);
+
+      const detailTags = getRecipeTags(r);
+      $("recipe-detail-tags-section").hidden = !detailTags.length;
+      $("recipe-detail-tags").innerHTML = detailTags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join("");
 
       const ingredientGroups = toDisplayIngredientGroups(r.ingredients);
       $("recipe-detail-ingredients").innerHTML = ingredientGroups.length
@@ -1092,7 +1331,7 @@
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
     }
-    // 「我的心得／改版紀錄」輸入時自動長高，不用手動拖曳才看得到打過的字
+    // 「心得紀錄」輸入時自動長高，不用手動拖曳才看得到打過的字
     document.querySelectorAll(".autosize-textarea").forEach((el) => {
       el.addEventListener("input", () => autoGrowTextarea(el));
     });
@@ -1215,7 +1454,9 @@
       applyRatingsToForm();
       $("recipe-field-created-date").value = new Date().toISOString().slice(0, 10);
       $("recipe-field-servings").value = "";
-      $("recipe-field-make-time").value = "";
+      setMakeTimeSelects("");
+      currentRecipeTags = [];
+      renderRecipeTagPicker();
       autoGrowTextarea($("recipe-field-notes"));
     }
     function openEditRecipe(r) {
@@ -1237,7 +1478,9 @@
       $("recipe-field-notes").value = r.notes || "";
       $("recipe-field-created-date").value = r.createdDate || "";
       $("recipe-field-servings").value = r.servings || "";
-      $("recipe-field-make-time").value = r.makeTime || "";
+      setMakeTimeSelects(r.makeTime || "");
+      currentRecipeTags = Array.isArray(r.tags) ? [...r.tags] : [];
+      renderRecipeTagPicker();
       autoGrowTextarea($("recipe-field-notes"));
     }
     $("recipe-add-btn").addEventListener("click", openAddRecipe);
@@ -1289,8 +1532,9 @@
           uid: currentUser.uid,
           name,
           category: $("recipe-field-category").value.trim() || "未分類",
+          tags: currentRecipeTags,
           servings: $("recipe-field-servings").value.trim(),
-          makeTime: $("recipe-field-make-time").value.trim(),
+          makeTime: getMakeTimeString(),
           photoUrl: photoUrl || "",
           ingredients: currentIngredientGroups
             .map((g) => ({
