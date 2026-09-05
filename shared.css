@@ -873,6 +873,8 @@
   }
   .detail-step-block-note i { flex-shrink: 0; }
   .detail-step-text { margin: 0; line-height: 1.7; white-space: pre-wrap; color: var(--text2); }
+  /* 出現在第一個「步驟」之前的小標題／注意事項／一般文字，如果有選編號樣式，前面顯示這個小標記 */
+  .detail-leading-marker { display: inline-block; min-width: 16px; margin-right: 6px; font-size: 12px; font-weight: 700; color: var(--text3); }
 
   /* 巢狀子步驟（緊接在某個步驟後面的小標題／注意事項／一般文字），
      用字母 a. b. c... 呈現，仿照 Notion 的巢狀編號清單 */
