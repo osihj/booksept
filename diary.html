@@ -39,7 +39,17 @@
   .diary-entry-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .diary-entry-title { font-weight: 600; font-size: 15px; margin: 0; }
   .diary-entry-cat { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; background: rgba(0,0,0,.05); white-space: nowrap; }
+  .diary-entry-event {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11.5px; padding: 2px 9px; border-radius: 999px; white-space: nowrap;
+    background: rgba(184,98,29,.12); color: #b8621d;
+  }
+  .diary-entry-event i { font-size: 11px; }
   .diary-entry-tags { margin-top: 7px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ---- 詳情頁「事件／分類」並排對齊：跟表單的兩欄排版呼應 ---- */
+  .diary-detail-meta-row { display: flex; gap: 32px; flex-wrap: wrap; }
+  .diary-detail-meta-row .notes-section { margin-bottom: 14px; }
 
   /* ---- 日期＋標題堆疊 ／ 分類＋標籤 的表單排版：日期／標題／分類／標籤統一固定寬度 360px ---- */
   .diary-date-title-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
@@ -332,6 +342,8 @@
                   <div class="diary-date-title-col">
                     <label class="field"><span>日期 *</span><input type="date" id="diary-field-date" required></label>
                     <label class="field"><span>標題 *</span><input type="text" id="diary-field-title" required placeholder="今天發生的事..."></label>
+                    <label class="field"><span>事件</span><input type="text" id="diary-field-event" list="diary-event-options" placeholder="例：新竹館慶、母親節"></label>
+                    <datalist id="diary-event-options"></datalist>
                   </div>
                   <div class="diary-category-col">
                     <label class="field">
@@ -396,9 +408,16 @@
             </div>
 
             <div class="card">
-              <div class="notes-section">
-                <span class="field-label detail-section-label">分類</span>
-                <p class="detail-notes" id="diary-detail-category">未分類</p>
+              <div class="diary-detail-meta-row">
+                <div class="notes-section" id="diary-detail-event-section" hidden>
+                  <span class="field-label detail-section-label">事件</span>
+                  <p class="detail-notes" id="diary-detail-event">—</p>
+                </div>
+
+                <div class="notes-section">
+                  <span class="field-label detail-section-label">分類</span>
+                  <p class="detail-notes" id="diary-detail-category">未分類</p>
+                </div>
               </div>
 
               <div class="notes-section" id="diary-detail-tags-section" hidden>
@@ -568,6 +587,7 @@
 
     // ---------- Helpers ----------
     function getEntryCategory(e) { return (e.category || "未分類").trim() || "未分類"; }
+    function getEntryEvent(e) { return (e.event || "").trim(); }
     function getEntryTags(e) { return Array.isArray(e.tags) ? e.tags : []; }
     // ---- 日記分類／標籤自訂顏色（跟食譜同一套，標籤也比照分類的做法加上顏色選取） ----
     const CATEGORY_COLOR_PRESETS = ["#2c5234", "#b8621d", "#96352b", "#4a6fa5", "#7c5a8c"];
@@ -969,7 +989,7 @@
       const term = $("diary-search-input").value.trim().toLowerCase();
       if (term) {
         entries = entries.filter((e) => {
-          const hay = [e.title, stripHtmlToText(e.content), getEntryCategory(e), ...getEntryTags(e)].filter(Boolean).join(" ").toLowerCase();
+          const hay = [e.title, stripHtmlToText(e.content), getEntryCategory(e), getEntryEvent(e), ...getEntryTags(e)].filter(Boolean).join(" ").toLowerCase();
           return hay.includes(term);
         });
       }
@@ -1024,6 +1044,7 @@
       const catStyle = catColor ? ` style="background:${hexToRgba(catColor, 0.14)};color:${catColor}"` : "";
       const dateObj = parseDiaryDate(e.date);
       const tags = getEntryTags(e);
+      const eventName = getEntryEvent(e);
       row.innerHTML = `
         <div class="diary-entry-date">
           <span class="d-sub">${dateObj ? (dateObj.getMonth() + 1) + "月" : ""}</span>
@@ -1033,6 +1054,7 @@
           <div class="diary-entry-title-row">
             <p class="diary-entry-title">${escapeHtml(e.title || "未命名日記")}</p>
             <span class="diary-entry-cat"${catStyle}>${escapeHtml(catName)}</span>
+            ${eventName ? `<span class="diary-entry-event"><i class="ti ti-star-filled"></i>${escapeHtml(eventName)}</span>` : ""}
           </div>
           ${tags.length ? `<div class="diary-entry-tags">${tags.map((t) => `<span class="tag-chip"${tagChipStyle(t)}>#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
         </div>`;
@@ -1058,6 +1080,7 @@
       $("diary-delete-btn").hidden = true;
       $("diary-form").reset();
       $("diary-field-date").value = presetDate || todayStr();
+      $("diary-field-event").value = "";
       $("diary-field-content").innerHTML = "";
       currentEntryTags = [];
       renderEntryTagPicker();
@@ -1071,6 +1094,7 @@
       $("diary-field-date").value = e.date || todayStr();
       $("diary-field-title").value = e.title || "";
       $("diary-field-category").value = e.category || "";
+      $("diary-field-event").value = e.event || "";
       $("diary-field-content").innerHTML = e.content || "";
       currentEntryTags = Array.isArray(e.tags) ? [...e.tags] : [];
       renderEntryTagPicker();
@@ -1095,6 +1119,7 @@
           date,
           title,
           category: $("diary-field-category").value.trim() || "未分類",
+          event: $("diary-field-event").value.trim(),
           tags: currentEntryTags,
           content: getDiaryEditorContent(),
           updatedAt: serverTimestamp()
@@ -1143,6 +1168,9 @@
       const dateObj = parseDiaryDate(e.date);
       $("diary-detail-date").textContent = dateObj ? formatDiaryDateLabel(dateObj) : (e.date || "—");
       $("diary-detail-category").textContent = getEntryCategory(e);
+      const eventName = getEntryEvent(e);
+      $("diary-detail-event-section").hidden = !eventName;
+      $("diary-detail-event").textContent = eventName || "—";
       const tags = getEntryTags(e);
       $("diary-detail-tags-section").hidden = !tags.length;
       $("diary-detail-tags").innerHTML = tags.map((t) => `<span class="tag-chip"${tagChipStyle(t)}>#${escapeHtml(t)}</span>`).join("");
