@@ -831,6 +831,29 @@
   .recipe-detail-card { display: flex; flex-direction: column; gap: 4px; }
   .recipe-detail-top { display: flex; gap: 20px; margin-bottom: 8px; flex-wrap: wrap; align-items: stretch; }
   .cover-preview.recipe-cover.recipe-detail-cover { flex-shrink: 0; width: 280px; height: auto; aspect-ratio: auto; }
+  /* 詳情頁照片：可直接點擊上傳／更換照片 */
+  .recipe-detail-cover-uploadable { position: relative; cursor: pointer; }
+  .recipe-detail-cover-uploadable:hover,
+  .recipe-detail-cover-uploadable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .recipe-detail-cover-hint {
+    position: absolute; inset: 0; display: flex; flex-direction: column; gap: 4px;
+    align-items: center; justify-content: center; text-align: center;
+    background: rgba(0, 0, 0, 0.45); color: #fff; font-size: 12px;
+    opacity: 0; transition: opacity 0.15s ease;
+  }
+  .recipe-detail-cover-hint i { font-size: 20px; }
+  .recipe-detail-cover-uploadable:hover .recipe-detail-cover-hint,
+  .recipe-detail-cover-uploadable:focus-visible .recipe-detail-cover-hint,
+  .recipe-detail-cover-uploadable.is-uploading .recipe-detail-cover-hint { opacity: 1; }
+  .recipe-detail-cover-uploadable.is-uploading .recipe-detail-cover-hint span::after { content: "上傳中..."; }
+  .recipe-detail-cover-uploadable.is-uploading .recipe-detail-cover-hint span { font-size: 0; }
+  .recipe-detail-cover-uploadable.is-uploading .recipe-detail-cover-hint i { display: none; }
+  /* 觸控裝置（手機／平板）沒有 hover，改成常駐顯示一個小提示角標，
+     避免使用者不知道照片可以點擊上傳 */
+  @media (hover: none) {
+    .recipe-detail-cover-hint { position: absolute; inset: auto 0 0 0; top: auto; opacity: 1; padding: 4px 6px; flex-direction: row; gap: 4px; font-size: 11px; background: rgba(0, 0, 0, 0.55); }
+    .recipe-detail-cover-hint i { font-size: 13px; }
+  }
 
   /* 頂部資訊改成 4 欄 × 2 排的表格式排版：
      第一排 建立日期／準備時間／製作時間／總時間，第二排 份量／人／製作快樂度／用腦費工／成品評分，
@@ -864,7 +887,9 @@
     .recipe-detail-stat:nth-child(2n) { border-right: none; }
     .recipe-detail-stat:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
     .recipe-detail-stat:nth-last-child(-n+2) { border-bottom: none; }
-    .cover-preview.recipe-cover.recipe-detail-cover { width: 100%; aspect-ratio: 4 / 3; }
+    /* 手機拍照大多是直式（約 3:4），改成 4:5 比較不會裁掉太多照片內容，
+       又不會像 3:4 那麼高、佔掉太多版面 */
+    .cover-preview.recipe-cover.recipe-detail-cover { width: 100%; aspect-ratio: 4 / 5; }
   }
   /* 食譜卡片上的份量／時間小標籤 */
   .recipe-card-chip {
