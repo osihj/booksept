@@ -20,14 +20,21 @@
   .diary-entry-list { display: flex; flex-direction: column; gap: 10px; }
   .diary-entry {
     display: flex; align-items: flex-start; gap: 14px;
-    padding: 14px 16px; border: 1px solid rgba(0,0,0,.08); border-radius: 12px;
+    padding: 14px 16px 14px 13px; border: 1px solid rgba(0,0,0,.08); border-left: 3px solid #2c5234; border-radius: 12px;
     cursor: pointer; background: #fff;
     transition: box-shadow .15s ease, border-color .15s ease, transform .1s ease;
   }
+  .diary-entry.is-holiday { border-left-color: #96352b; }
   .diary-entry:hover { box-shadow: 0 3px 12px rgba(0,0,0,.07); border-color: rgba(0,0,0,.15); transform: translateY(-1px); }
-  .diary-entry-date { flex: 0 0 auto; width: 52px; text-align: center; padding-top: 1px; }
-  .diary-entry-date .d-num { display: block; font-family: "Noto Serif TC", serif; font-size: 22px; font-weight: 600; line-height: 1.05; }
-  .diary-entry-date .d-sub { display: block; font-size: 11px; opacity: .55; margin-top: 2px; }
+  .diary-entry.is-holiday:hover { border-left-color: #96352b; }
+  /* 日期小方塊：跟參考圖一樣做成有邊框的小卡片，月份在上、日期數字在下；假日會自動換色 */
+  .diary-entry-date {
+    flex: 0 0 auto; width: 54px; text-align: center; padding: 6px 4px 5px;
+    border: 1px solid rgba(0,0,0,.08); border-radius: 9px; background: #fdfbf8;
+  }
+  .diary-entry-date .d-sub { display: block; font-size: 11px; opacity: .55; margin-bottom: 2px; }
+  .diary-entry-date .d-num { display: block; font-family: "Noto Serif TC", serif; font-size: 20px; font-weight: 700; line-height: 1.05; color: #2c5234; }
+  .diary-entry.is-holiday .diary-entry-date .d-num { color: #96352b; }
   .diary-entry-body { flex: 1; min-width: 0; }
   .diary-entry-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .diary-entry-title { font-weight: 600; font-size: 15px; margin: 0; }
@@ -38,18 +45,21 @@
   }
   .diary-entry-tags { margin-top: 7px; display: flex; gap: 6px; flex-wrap: wrap; }
 
-  /* ---- 日期＋標題堆疊／分類 的表單排版：標題欄位改成跟日期一樣窄，不再佔滿整排 ---- */
+  /* ---- 日期＋標題堆疊 ／ 分類＋標籤 的表單排版：標題欄位跟日期一樣窄，標籤移到分類下方 ---- */
   .diary-date-title-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
   .diary-date-title-col { display: flex; flex-direction: column; gap: 10px; width: 180px; flex: 0 0 auto; }
   .diary-category-col { flex: 1; min-width: 0; }
+  .diary-category-col .notes-section { margin-top: 14px; margin-bottom: 0; }
   @media (max-width: 640px) {
     .diary-date-title-row { flex-direction: column; }
     .diary-date-title-col { width: 100%; }
   }
 
-  /* ---- 內容欄位（日記）的輕量格式工具列：粗體／斜體／小標題／項目符號／編號清單 ---- */
+  /* ---- 內容欄位（日記）的輕量格式工具列：粗體／斜體／小標題／項目符號／編號清單 ----
+     工具列本身寬度限制在「日期欄位寬度 x2」，不要拉滿整排變成一條很長的空白色塊 */
   .rte-toolbar {
     display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+    width: 360px; max-width: 100%; box-sizing: border-box;
     margin-bottom: 8px; padding: 5px; border: 1px solid rgba(0,0,0,.08); border-radius: 10px 10px 0 0; border-bottom: none;
     background: var(--surface2, #f7f5f2);
   }
@@ -81,7 +91,7 @@
   .rte-content b, .rte-content strong { font-weight: 700; }
   .rte-content i, .rte-content em { font-style: italic; }
 
-  /* ---- 日記列表／月曆檢視 切換（跟食譜的格狀/列表切換同一套 .view-toggle / .view-btn） ---- */
+  /* ---- 日記列表／月曆檢視 切換：跟食譜的格狀/列表切換放在同一個位置——列表標題列／月曆標題列的右側 ---- */
   #diary-view-calendar { margin-top: 4px; }
   .cal-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
   .cal-toolbar-title { font-family: "Noto Serif TC", serif; font-size: 19px; font-weight: 600; }
@@ -92,6 +102,7 @@
     display: grid; grid-template-columns: repeat(7, 1fr);
     text-align: center; font-size: 12px; opacity: .55; padding: 2px 0 10px;
   }
+  .cal-weekdays span:first-child { color: #96352b; opacity: .85; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
   .cal-cell {
     position: relative; min-height: 64px; border-radius: 10px;
@@ -104,6 +115,7 @@
   .cal-cell.is-today { border-color: #b8621d; }
   .cal-cell.is-selected { background: rgba(184,98,29,.13); border-color: #b8621d; }
   .cal-cell .cal-daynum { font-size: 13px; font-weight: 500; }
+  .cal-cell.is-holiday .cal-daynum { color: #96352b; }
   .cal-cell .cal-count-badge {
     position: absolute; top: 4px; right: 5px; font-size: 10px; line-height: 15px;
     background: #b8621d; color: #fff; border-radius: 999px; padding: 0 5px; min-width: 15px; text-align: center;
@@ -180,17 +192,13 @@
 
         <main class="main">
 
-          <!-- 我的日記：列表／月曆共用同一頁，用右上角切換鈕決定要看哪一種檢視 -->
+          <!-- 我的日記：列表／月曆共用同一頁，用各自標題列右側的切換鈕決定要看哪一種檢視（跟食譜的格狀/列表切換位置一致） -->
           <section id="page-diary" class="page active">
             <div class="shelf-header">
               <div>
                 <div class="shelf-eyebrow2">MY DIARY</div>
                 <h1 id="diary-shelf-title">我的日記</h1>
                 <p class="shelf-sub" id="diary-shelf-subtitle">目前共 0 篇日記</p>
-              </div>
-              <div class="view-toggle" id="diary-view-toggle">
-                <button type="button" class="view-btn active" data-view="list" title="列表檢視"><i class="ti ti-list"></i></button>
-                <button type="button" class="view-btn" data-view="calendar" title="月曆檢視"><i class="ti ti-calendar"></i></button>
               </div>
             </div>
 
@@ -215,6 +223,10 @@
                     </div>
                   </div>
                   <div class="list-card-head-right">
+                    <div class="view-toggle diary-view-toggle">
+                      <button type="button" class="view-btn active" data-view="list" title="列表檢視"><i class="ti ti-list"></i></button>
+                      <button type="button" class="view-btn" data-view="calendar" title="月曆檢視"><i class="ti ti-calendar"></i></button>
+                    </div>
                     <select id="diary-sort-select" class="sort-select">
                       <option value="date-desc">日期（新到舊）</option>
                       <option value="date-asc">日期（舊到新）</option>
@@ -238,6 +250,10 @@
                   <div class="cal-toolbar-sub" id="diary-cal-subtitle">這個月共寫了 0 篇日記</div>
                 </div>
                 <div class="detail-header-actions">
+                  <div class="view-toggle diary-view-toggle">
+                    <button type="button" class="view-btn" data-view="list" title="列表檢視"><i class="ti ti-list"></i></button>
+                    <button type="button" class="view-btn active" data-view="calendar" title="月曆檢視"><i class="ti ti-calendar"></i></button>
+                  </div>
                   <button type="button" class="btn btn-ghost btn-sm" id="diary-cal-prev-btn"><i class="ti ti-chevron-left"></i> 上個月</button>
                   <button type="button" class="btn btn-ghost btn-sm" id="diary-cal-today-btn">回到本月</button>
                   <button type="button" class="btn btn-ghost btn-sm" id="diary-cal-next-btn">下個月 <i class="ti ti-chevron-right"></i></button>
@@ -323,20 +339,21 @@
                     <label class="field"><span>日期 *</span><input type="date" id="diary-field-date" required></label>
                     <label class="field"><span>標題 *</span><input type="text" id="diary-field-title" required placeholder="今天發生的事..."></label>
                   </div>
-                  <label class="field diary-category-col">
-                    <span>分類</span>
-                    <input type="text" id="diary-field-category" list="diary-category-options" placeholder="例：心情、旅行、工作">
-                    <datalist id="diary-category-options"></datalist>
-                  </label>
-                </div>
-
-                <div class="notes-section">
-                  <span class="field-label">標籤</span>
-                  <p class="field-hint">點選已有標籤加入這篇日記，或直接輸入新標籤名稱後按 Enter 新增並套用。</p>
-                  <div class="tag-picker-list" id="diary-tag-picker"></div>
-                  <div class="tag-picker-add">
-                    <input type="text" id="diary-new-tag-input" placeholder="輸入新標籤，按 Enter 新增">
-                    <button type="button" class="icon-btn" id="diary-add-tag-confirm" title="新增"><i class="ti ti-check"></i></button>
+                  <div class="diary-category-col">
+                    <label class="field">
+                      <span>分類</span>
+                      <input type="text" id="diary-field-category" list="diary-category-options" placeholder="例：心情、旅行、工作">
+                      <datalist id="diary-category-options"></datalist>
+                    </label>
+                    <div class="notes-section">
+                      <span class="field-label">標籤</span>
+                      <p class="field-hint">點選已有標籤加入這篇日記，或直接輸入新標籤名稱後按 Enter 新增並套用。</p>
+                      <div class="tag-picker-list" id="diary-tag-picker"></div>
+                      <div class="tag-picker-add">
+                        <input type="text" id="diary-new-tag-input" placeholder="輸入新標籤，按 Enter 新增">
+                        <button type="button" class="icon-btn" id="diary-add-tag-confirm" title="新增"><i class="ti ti-check"></i></button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -462,15 +479,17 @@
       btn.addEventListener("click", () => goToPage(btn.dataset.page));
     });
 
-    // ---------- 「我的日記」頁內的 列表／月曆 切換（跟食譜的格狀/列表切換同一套 .view-toggle） ----------
+    // ---------- 「我的日記」頁內的 列表／月曆 切換：跟食譜的格狀/列表切換一樣放在列表/月曆各自標題列右側 ----------
     function setDiaryViewMode(mode) {
       diaryViewMode = mode;
-      $("diary-view-toggle").querySelectorAll(".view-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === mode));
+      document.querySelectorAll(".diary-view-toggle").forEach((group) => {
+        group.querySelectorAll(".view-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === mode));
+      });
       $("diary-view-list").hidden = mode !== "list";
       $("diary-view-calendar").hidden = mode !== "calendar";
       if (mode === "calendar") renderCalendar(); else render();
     }
-    $("diary-view-toggle").querySelectorAll(".view-btn").forEach((btn) => {
+    document.querySelectorAll(".diary-view-toggle .view-btn").forEach((btn) => {
       btn.addEventListener("click", () => setDiaryViewMode(btn.dataset.view));
     });
 
@@ -487,6 +506,15 @@
     function formatDiaryDateLabel(d) {
       const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
       return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日 星期" + weekdays[d.getDay()];
+    }
+    // ---------- 假日判斷：星期日自動視為假日；台灣國定假日可依需要繼續往陣列裡加日期（格式 YYYY-MM-DD） ----------
+    const TAIWAN_HOLIDAYS = new Set([
+      // 例："2026-01-01"（元旦）、"2026-02-28"（和平紀念日）...，之後有需要再手動補上
+    ]);
+    function isHolidayDate(dStr) {
+      const d = parseDiaryDate(dStr);
+      if (!d) return false;
+      return d.getDay() === 0 || TAIWAN_HOLIDAYS.has(dStr);
     }
 
     // ---------- Firestore 讀取／訂閱 ----------
@@ -995,7 +1023,7 @@
     // 條列卡片：日記列表、月曆當天清單共用同一個 renderer
     function renderEntryRow(e) {
       const row = document.createElement("div");
-      row.className = "diary-entry";
+      row.className = "diary-entry" + (isHolidayDate(e.date) ? " is-holiday" : "");
       row.dataset.entryId = e.id;
       row.addEventListener("click", () => openEntryDetail(e));
       const catName = getEntryCategory(e);
@@ -1178,9 +1206,10 @@
         monthCount += dayEntries.length;
         const isToday = dStr === todayS;
         const isSelected = dStr === selectedCalendarDate;
+        const isHoliday = isHolidayDate(dStr);
         const dots = dayEntries.slice(0, 4).map(() => `<span class="cal-dot"></span>`).join("");
         html += `
-          <div class="cal-cell${isToday ? " is-today" : ""}${isSelected ? " is-selected" : ""}" data-date="${dStr}">
+          <div class="cal-cell${isToday ? " is-today" : ""}${isSelected ? " is-selected" : ""}${isHoliday ? " is-holiday" : ""}" data-date="${dStr}">
             <span class="cal-daynum">${day}</span>
             ${dayEntries.length ? `<span class="cal-count-badge">${dayEntries.length}</span>` : ""}
             <div class="cal-dot-row">${dots}</div>
