@@ -715,14 +715,17 @@
       if (!countEl) return;
       const picker = document.createElement("div");
       picker.className = "category-color-picker";
-      picker.innerHTML = CATEGORY_COLOR_PRESETS.map((c) =>
+      picker.innerHTML = `<button type="button" class="color-swatch-none${current ? "" : " active"}" data-color="" title="清除顏色（恢復預設）"><i class="ti ti-x"></i></button>` +
+        CATEGORY_COLOR_PRESETS.map((c) =>
         `<button type="button" class="color-swatch-btn${current === c ? " active" : ""}" data-color="${c}" style="background:${c}" title="套用這個顏色"></button>`
       ).join("") + `<span class="color-swatch-custom-wrap" title="自訂顏色（可用滴管工具）"><i class="ti ti-color-picker"></i><input type="color" class="color-swatch-custom" value="${current || "#9c968f"}"></span>`;
       countEl.before(picker);
       function selectColor(color) {
         onSelect(color);
-        picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", b.dataset.color.toLowerCase() === color.toLowerCase()));
+        picker.querySelector(".color-swatch-none").classList.toggle("active", !color);
+        picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", !!color && b.dataset.color.toLowerCase() === color.toLowerCase()));
       }
+      picker.querySelector(".color-swatch-none").addEventListener("click", () => selectColor(""));
       picker.querySelectorAll(".color-swatch-btn").forEach((btn) => {
         btn.addEventListener("click", () => selectColor(btn.dataset.color));
       });
