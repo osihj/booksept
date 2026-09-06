@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#b8621d">
 <title>日記 · 我的書齋</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared.css?v=20260906e">
+<link rel="stylesheet" href="shared.css?v=20260906f">
 <style>
   /* ============================================================
      日記模組專屬樣式：日記列表的「條列卡片」、月曆頁的月曆格。
@@ -184,7 +184,7 @@
               <div>
                 <div class="shelf-eyebrow2">TOOLS</div>
                 <h1>分類與標籤管理</h1>
-                <p class="shelf-sub">類別依每篇日記的「分類」自動產生、標籤依「標籤」欄位自動產生，皆可在此重新命名、刪除或拖曳排序</p>
+                <p class="shelf-sub">類別依每篇日記的「分類」自動產生、標籤依「標籤」欄位自動產生，皆可在此重新命名、刪除、拖曳排序或設定顏色</p>
               </div>
             </div>
             <div class="manage-columns">
@@ -230,7 +230,7 @@
 
                 <div class="field-grid">
                   <label class="field"><span>日期 *</span><input type="date" id="diary-field-date" required></label>
-                  <label class="field"><span>標題 *</span><input type="text" id="diary-field-title" required placeholder="今天發生的事..."></label>
+                  <label class="field field-wide"><span>標題 *</span><input type="text" id="diary-field-title" required placeholder="今天發生的事..."></label>
                   <label class="field">
                     <span>分類</span>
                     <input type="text" id="diary-field-category" list="diary-category-options" placeholder="例：心情、旅行、工作">
@@ -355,7 +355,7 @@
       db,
       $, wireLoginScreen, watchAuth, renderAppSwitcher, initIconSystem,
       escapeHtml, orderNames, renderManagePillRow, wireManagePillRow, enablePointerReorder
-    } from "./shared.js?v=20260906e";
+    } from "./shared.js?v=20260906f";
     import {
       collection, doc, setDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
@@ -367,7 +367,7 @@
     // ---------- State ----------
     let currentUser = null;
     let allEntries = [];
-    let diaryMeta = { categoryOrder: [], manualCategories: [], tagOrder: [], manualTags: [], categoryColors: {} };
+    let diaryMeta = { categoryOrder: [], manualCategories: [], tagOrder: [], manualTags: [], categoryColors: {}, tagColors: {} };
     let unsubscribeEntries = null;
     let unsubscribeMeta = null;
     let lastCategoryCounts = {};
@@ -438,7 +438,8 @@
             manualCategories: Array.isArray(d.manualCategories) ? d.manualCategories : [],
             tagOrder: Array.isArray(d.tagOrder) ? d.tagOrder : [],
             manualTags: Array.isArray(d.manualTags) ? d.manualTags : [],
-            categoryColors: (d.categoryColors && typeof d.categoryColors === "object") ? d.categoryColors : {}
+            categoryColors: (d.categoryColors && typeof d.categoryColors === "object") ? d.categoryColors : {},
+            tagColors: (d.tagColors && typeof d.tagColors === "object") ? d.tagColors : {}
           };
           renderSidebarCategories();
           renderTagsUI();
@@ -468,10 +469,13 @@
     // ---------- Helpers ----------
     function getEntryCategory(e) { return (e.category || "未分類").trim() || "未分類"; }
     function getEntryTags(e) { return Array.isArray(e.tags) ? e.tags : []; }
-    // ---- 日記分類自訂顏色（跟食譜同一套） ----
+    // ---- 日記分類／標籤自訂顏色（跟食譜同一套，標籤也比照分類的做法加上顏色選取） ----
     const CATEGORY_COLOR_PRESETS = ["#2c5234", "#b8621d", "#96352b", "#4a6fa5", "#7c5a8c"];
     function getCategoryColor(name) {
       return (diaryMeta.categoryColors && diaryMeta.categoryColors[name]) || "";
+    }
+    function getTagColor(name) {
+      return (diaryMeta.tagColors && diaryMeta.tagColors[name]) || "";
     }
     function hexToRgba(hex, alpha) {
       const h = (hex || "").replace("#", "");
@@ -482,6 +486,15 @@
     function setCategoryColor(name, color) {
       const categoryColors = { ...(diaryMeta.categoryColors || {}), [name]: color };
       return saveDiaryMeta({ categoryColors });
+    }
+    function setTagColor(name, color) {
+      const tagColors = { ...(diaryMeta.tagColors || {}), [name]: color };
+      return saveDiaryMeta({ tagColors });
+    }
+    // 標籤顯示用：有設定顏色的話回傳可以直接塞進 <span/button style="..."> 的字串
+    function tagChipStyle(name) {
+      const c = getTagColor(name);
+      return c ? ` style="background:${hexToRgba(c, 0.14)};color:${c};border-color:${hexToRgba(c, 0.35)}"` : "";
     }
 
     // ================= 側邊欄：日記分類（沿用食譜分類同一套邏輯） =================
@@ -555,8 +568,10 @@
       });
       enablePointerReorder(el, (order) => saveDiaryMeta({ categoryOrder: order }), renderSidebarCategories);
     }
-    // 在分類管理列的「筆數」文字前面，插入 5 個基本色 + 1 個滴管／自訂顏色選取器
-    function applyCategoryBadgeColor(row, color) {
+    // 在分類／標籤管理列的「筆數」文字前面，插入 5 個基本色 + 1 個滴管／自訂顏色選取器。
+    // 分類跟標籤各自維護自己的顏色表（categoryColors／tagColors），畫面呈現與互動邏輯完全一樣，
+    // 所以拆成 applyBadgeColor(row, color) 這個共用函式，分類／標籤各自包一層小函式呼叫它。
+    function applyBadgeColor(row, color) {
       const badge = row.querySelector(".manage-pill-badge");
       if (!badge) return;
       if (color) {
@@ -567,11 +582,11 @@
         badge.style.color = "";
       }
     }
-    function injectCategoryColorPicker(row, name) {
+    function applyCategoryBadgeColor(row, color) { applyBadgeColor(row, color); }
+    function applyTagBadgeColor(row, color) { applyBadgeColor(row, color); }
+    function injectColorPicker(row, current, onSelect) {
       const countEl = row.querySelector(".manage-row-count");
       if (!countEl) return;
-      const current = (getCategoryColor(name) || "").toLowerCase();
-      applyCategoryBadgeColor(row, current);
       const picker = document.createElement("div");
       picker.className = "category-color-picker";
       picker.innerHTML = CATEGORY_COLOR_PRESETS.map((c) =>
@@ -579,14 +594,29 @@
       ).join("") + `<span class="color-swatch-custom-wrap" title="自訂顏色（可用滴管工具）"><i class="ti ti-color-picker"></i><input type="color" class="color-swatch-custom" value="${current || "#9c968f"}"></span>`;
       countEl.before(picker);
       function selectColor(color) {
-        setCategoryColor(name, color);
-        applyCategoryBadgeColor(row, color);
+        onSelect(color);
         picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", b.dataset.color.toLowerCase() === color.toLowerCase()));
       }
       picker.querySelectorAll(".color-swatch-btn").forEach((btn) => {
         btn.addEventListener("click", () => selectColor(btn.dataset.color));
       });
       picker.querySelector(".color-swatch-custom").addEventListener("input", (e) => selectColor(e.target.value));
+    }
+    function injectCategoryColorPicker(row, name) {
+      const current = (getCategoryColor(name) || "").toLowerCase();
+      applyCategoryBadgeColor(row, current);
+      injectColorPicker(row, current, (color) => {
+        setCategoryColor(name, color);
+        applyCategoryBadgeColor(row, color);
+      });
+    }
+    function injectTagColorPicker(row, name) {
+      const current = (getTagColor(name) || "").toLowerCase();
+      applyTagBadgeColor(row, current);
+      injectColorPicker(row, current, (color) => {
+        setTagColor(name, color);
+        applyTagBadgeColor(row, color);
+      });
     }
     function setupInlineAdd({ addBtnId, formId, inputId, confirmId, cancelId, onAdd }) {
       const addBtn = $(addBtnId), form = $(formId), input = $(inputId);
@@ -598,8 +628,25 @@
       async function submit() {
         const val = input.value.trim();
         if (!val) { input.focus(); return; }
-        await onAdd(val);
-        close();
+        confirmBtn.disabled = true;
+        try {
+          await onAdd(val);
+          close();
+        } catch (err) {
+          // 之前這裡沒有 try/catch：如果 Firestore 拒絕寫入（例如規則沒開放 diaryMeta），
+          // 表單會卡住不關閉、看起來就像「打字沒反應／新增不了」，但其實是背景寫入失敗。
+          // 現在會清楚跳出錯誤訊息，方便判斷是不是 Firestore 規則的問題。
+          console.error("新增失敗：", err);
+          let message = "新增失敗，請稍後再試。";
+          if (err?.code === "permission-denied") {
+            message = "Firestore 拒絕寫入（permission-denied）。\n請到 Firebase Console → Firestore Database → Rules，確認 diaryEntries／diaryMeta 集合允許目前登入使用者建立/修改自己的資料。";
+          } else if (err?.message) {
+            message += "\n" + err.message;
+          }
+          alert(message);
+        } finally {
+          confirmBtn.disabled = false;
+        }
       }
       confirmBtn.addEventListener("click", submit);
       input.addEventListener("keydown", (e) => {
@@ -639,7 +686,7 @@
         return;
       }
       el.innerHTML = tagsSorted.map((t) => `
-        <button type="button" class="tag-chip${activeTag === t ? " active" : ""}" data-tag="${escapeHtml(t)}">
+        <button type="button" class="tag-chip${activeTag === t ? " active" : ""}"${activeTag === t ? "" : tagChipStyle(t)} data-tag="${escapeHtml(t)}">
           #${escapeHtml(t)} <span class="tc-count">(${tagCounts[t] || 0})</span>
         </button>`).join("");
       el.querySelectorAll(".tag-chip").forEach((chip) => {
@@ -660,8 +707,10 @@
       if (affected.length === 0) manualTags.push(newName);
       const tagOrder = diaryMeta.tagOrder.map((t) => (t === oldName ? newName : t));
       if (!tagOrder.includes(newName)) tagOrder.push(newName);
+      const tagColors = { ...(diaryMeta.tagColors || {}) };
+      if (tagColors[oldName]) { tagColors[newName] = tagColors[oldName]; delete tagColors[oldName]; }
       if (activeTag === oldName) activeTag = newName;
-      await saveDiaryMeta({ manualTags, tagOrder });
+      await saveDiaryMeta({ manualTags, tagOrder, tagColors });
     }
     async function deleteDiaryTag(name) {
       const affected = allEntries.filter((e) => getEntryTags(e).includes(name));
@@ -675,8 +724,10 @@
       }
       const manualTags = diaryMeta.manualTags.filter((t) => t !== name);
       const tagOrder = diaryMeta.tagOrder.filter((t) => t !== name);
+      const tagColors = { ...(diaryMeta.tagColors || {}) };
+      delete tagColors[name];
       if (activeTag === name) activeTag = null;
-      await saveDiaryMeta({ manualTags, tagOrder });
+      await saveDiaryMeta({ manualTags, tagOrder, tagColors });
     }
     function renderManageTagList(tagsSorted, tagCounts) {
       const el = $("manage-diary-tag-list");
@@ -688,6 +739,7 @@
       el.innerHTML = tagsSorted.map((t) => renderManagePillRow(t, tagCounts[t] || 0, true)).join("");
       el.querySelectorAll(".manage-pill").forEach((row) => {
         wireManagePillRow(row, { onRename: renameDiaryTag, onDelete: deleteDiaryTag });
+        injectTagColorPicker(row, row.dataset.name);
       });
       enablePointerReorder(el, (order) => saveDiaryMeta({ tagOrder: order }), renderTagsUI);
     }
@@ -699,7 +751,7 @@
         return;
       }
       el.innerHTML = allTags.map((t) => `
-        <button type="button" class="tag-chip pickable${currentEntryTags.includes(t) ? " selected" : ""}" data-tag="${escapeHtml(t)}">
+        <button type="button" class="tag-chip pickable${currentEntryTags.includes(t) ? " selected" : ""}"${currentEntryTags.includes(t) ? "" : tagChipStyle(t)} data-tag="${escapeHtml(t)}">
           #${escapeHtml(t)}
         </button>`).join("");
       el.querySelectorAll(".tag-chip").forEach((chip) => {
@@ -740,12 +792,21 @@
         input.value = "";
         return;
       }
-      const manualTags = [...diaryMeta.manualTags, val];
-      const tagOrder = diaryMeta.tagOrder.includes(val) ? diaryMeta.tagOrder : [...diaryMeta.tagOrder, val];
-      await saveDiaryMeta({ manualTags, tagOrder });
-      if (!currentEntryTags.includes(val)) currentEntryTags.push(val);
-      input.value = "";
-      renderEntryTagPicker();
+      try {
+        const manualTags = [...diaryMeta.manualTags, val];
+        const tagOrder = diaryMeta.tagOrder.includes(val) ? diaryMeta.tagOrder : [...diaryMeta.tagOrder, val];
+        await saveDiaryMeta({ manualTags, tagOrder });
+        if (!currentEntryTags.includes(val)) currentEntryTags.push(val);
+        input.value = "";
+        renderEntryTagPicker();
+      } catch (err) {
+        console.error("新增標籤失敗：", err);
+        let message = "新增標籤失敗，請稍後再試。";
+        if (err?.code === "permission-denied") {
+          message = "Firestore 拒絕寫入（permission-denied）。\n請到 Firebase Console → Firestore Database → Rules，確認 diaryMeta 集合允許目前登入使用者建立/修改自己的資料。";
+        }
+        alert(message);
+      }
     }
     $("diary-add-tag-confirm").addEventListener("click", addNewDiaryTagFromInput);
     $("diary-new-tag-input").addEventListener("keydown", (e) => {
@@ -835,7 +896,7 @@
             <span class="diary-entry-cat"${catStyle}>${escapeHtml(catName)}</span>
           </div>
           ${e.content ? `<p class="diary-entry-snippet">${escapeHtml(e.content)}</p>` : ""}
-          ${tags.length ? `<div class="diary-entry-tags">${tags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
+          ${tags.length ? `<div class="diary-entry-tags">${tags.map((t) => `<span class="tag-chip"${tagChipStyle(t)}>#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
         </div>`;
       return row;
     }
@@ -947,7 +1008,7 @@
       $("diary-detail-category").textContent = getEntryCategory(e);
       const tags = getEntryTags(e);
       $("diary-detail-tags-section").hidden = !tags.length;
-      $("diary-detail-tags").innerHTML = tags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join("");
+      $("diary-detail-tags").innerHTML = tags.map((t) => `<span class="tag-chip"${tagChipStyle(t)}>#${escapeHtml(t)}</span>`).join("");
       $("diary-detail-content").textContent = e.content || "";
     }
     function showEntryDetail(e) {
