@@ -93,6 +93,9 @@
   /* 富文字內容的顯示樣式：日記表單編輯區、日記詳情頁的內容都套用同一組，確保排版一致 */
   .rte-content h4 { font-size: 15px; font-weight: 700; margin: 14px 0 6px; }
   .rte-content h4:first-child { margin-top: 0; }
+  /* .detail-notes 預設 white-space:pre-wrap 是給純文字欄位用的；日記內容是 HTML，
+     pre-wrap 會把原始碼裡的換行也當空白顯示，才是段落間距過大的真正原因 */
+  .rte-content { white-space: normal; }
   .rte-content p { margin: 0 0 2px; line-height: 1.6; }
   .rte-content p:last-child { margin-bottom: 0; }
   .rte-content p:empty,
