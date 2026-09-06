@@ -271,7 +271,8 @@ export const ICONS = {
   heading: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v14"/><path d="M19 5v14"/><path d="M5 12h14"/></svg>`,
   "alert-triangle": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l9 15.5H3z"/><path d="M12 10v4"/><path d="M12 17.2h.01"/></svg>`,
   "align-left": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h13"/></svg>`,
-  "list-numbers": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4.5 4.5v3"/><path d="M4 7.3h1"/><path d="M4.1 11.2c.4-.5 1.4-.5 1.6.1.2.5-.1.8-.5 1l-1.1.9h1.7"/><path d="M4.1 16.9h1.4c.5 0 .6.6.2.9l-1.5 1.1h1.6"/></svg>`
+  "list-numbers": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4.5 4.5v3"/><path d="M4 7.3h1"/><path d="M4.1 11.2c.4-.5 1.4-.5 1.6.1.2.5-.1.8-.5 1l-1.1.9h1.7"/><path d="M4.1 16.9h1.4c.5 0 .6.6.2.9l-1.5 1.1h1.6"/></svg>`,
+  "color-picker": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 3.5a2.1 2.1 0 013 3l-2 2-3-3z"/><path d="M15.5 5.5L6 15l-2 5 5-2 9.5-9.5"/><path d="M9 12l3 3"/></svg>`
 };
 
 function hydrateIcon(el) {
