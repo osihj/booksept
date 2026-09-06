@@ -97,6 +97,12 @@
   .rte-content p:last-child { margin-bottom: 0; }
   .rte-content p:empty,
   .rte-content p:has(> br:only-child) { margin: 0 0 2px; min-height: 1em; }
+  /* 瀏覽器 contenteditable 換行預設會用 <div> 而非 <p>，兩種標籤都要套用同一套緊湊間距，
+     確保「新增/編輯」欄位跟「詳情」唯讀畫面的段落間距完全一致 */
+  .rte-content div { margin: 0 0 2px; line-height: 1.6; }
+  .rte-content div:last-child { margin-bottom: 0; }
+  .rte-content div:empty,
+  .rte-content div:has(> br:only-child) { margin: 0 0 2px; min-height: 1em; }
   .rte-content ul, .rte-content ol { margin: 6px 0 10px; padding-left: 22px; }
   .rte-content b, .rte-content strong { font-weight: 700; }
   .rte-content i, .rte-content em { font-style: italic; }
@@ -449,6 +455,7 @@
 
     wireLoginScreen();
     renderAppSwitcher("diary");
+    try { document.execCommand("defaultParagraphSeparator", false, "p"); } catch (_) {}
     initIconSystem();
 
     // ---------- State ----------
