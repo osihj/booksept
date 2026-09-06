@@ -349,7 +349,7 @@
 
             <div class="card recipe-detail-card">
               <div class="recipe-detail-top">
-                <div class="cover-preview recipe-cover recipe-detail-cover" id="recipe-detail-cover"><i class="ti ti-photo"></i></div>
+                <div class="cover-preview recipe-cover recipe-detail-cover recipe-detail-cover-uploadable" id="recipe-detail-cover" role="button" tabindex="0" title="點擊上傳／更換照片"><i class="ti ti-photo"></i></div>
                 <div class="recipe-detail-stats">
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">建立日期</span><span class="recipe-detail-stat-value" id="recipe-detail-created">—</span></div>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">準備時間</span><span class="recipe-detail-stat-value" id="recipe-detail-prep-time">—</span></div>
@@ -1136,7 +1136,9 @@
     function renderRecipeDetail(r) {
       $("recipe-detail-name").textContent = r.name || "未命名食譜";
       $("recipe-detail-category").textContent = getRecipeCategory(r);
-      $("recipe-detail-cover").innerHTML = r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`;
+      $("recipe-detail-cover").innerHTML = (r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`) +
+        `<div class="recipe-detail-cover-hint"><i class="ti ti-camera"></i><span>${r.photoUrl ? "點擊更換照片" : "點擊上傳照片"}</span></div>` +
+        `<input type="file" accept="image/*" id="recipe-detail-cover-upload-input" hidden>`;
       $("recipe-detail-created").textContent = r.createdDate || "—";
       $("recipe-detail-servings").textContent = r.servings || "—";
       $("recipe-detail-prep-time").textContent = r.prepTime || "—";
@@ -1195,6 +1197,50 @@
       await deleteDoc(doc(db, "recipes", id));
       try { await deleteObject(storageRef(storage, `recipe-photos/${currentUser.uid}/${id}.jpg`)); } catch (err) { /* 可能本來就沒有照片，忽略即可 */ }
     }
+    // ---------- 詳情頁直接點照片上傳（不用先進編輯頁） ----------
+    let detailPhotoUploading = false;
+    async function handleDetailCoverFile(file) {
+      if (!file || !currentDetailRecipe || detailPhotoUploading) return;
+      detailPhotoUploading = true;
+      const coverEl = $("recipe-detail-cover");
+      coverEl.classList.add("is-uploading");
+      try {
+        const id = currentDetailRecipe.id;
+        const photoUrl = await uploadRecipePhoto(file, id);
+        await setDoc(doc(db, "recipes", id), { photoUrl, updatedAt: serverTimestamp() }, { merge: true });
+        currentDetailRecipe.photoUrl = photoUrl;
+        if (editingRecipeId === id) { currentRecipePhotoUrl = photoUrl; updateRecipeCoverPreview(); }
+        coverEl.innerHTML = `<img src="${escapeHtml(photoUrl)}" alt="">` +
+          `<div class="recipe-detail-cover-hint"><i class="ti ti-camera"></i><span>點擊更換照片</span></div>` +
+          `<input type="file" accept="image/*" id="recipe-detail-cover-upload-input" hidden>`;
+      } catch (err) {
+        console.error("詳情頁照片上傳錯誤：", err);
+        renderRecipeDetail(currentDetailRecipe);
+        let message = "照片上傳失敗。";
+        if (err?.code === "storage/unauthorized") {
+          message = "Firebase Storage 拒絕上傳照片。\n請到 Firebase Console → Storage → Rules，確認 recipe-photos 路徑允許目前登入使用者上傳自己的照片。";
+        } else if (err?.message) {
+          message += "\n錯誤：" + err.message;
+        }
+        alert(message);
+      } finally {
+        coverEl.classList.remove("is-uploading");
+        detailPhotoUploading = false;
+      }
+    }
+    $("recipe-detail-cover").addEventListener("click", () => {
+      const input = $("recipe-detail-cover-upload-input");
+      if (input) input.click();
+    });
+    $("recipe-detail-cover").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("recipe-detail-cover").click(); }
+    });
+    $("recipe-detail-cover").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) handleDetailCoverFile(file);
+      e.target.value = "";
+    });
+
     $("recipe-detail-back-btn").addEventListener("click", closeRecipeDetail);
     $("recipe-detail-edit-btn").addEventListener("click", () => { if (currentDetailRecipe) openEditRecipe(currentDetailRecipe); });
     $("recipe-detail-delete-btn").addEventListener("click", async () => {
