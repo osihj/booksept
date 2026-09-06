@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#b8621d">
 <title>食譜 · 我的書齋</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="shared.css?v=20260906">
 </head>
 <body>
 
@@ -108,6 +108,7 @@
                   <select id="recipe-sort-select" class="sort-select">
                     <option value="createdAt-desc">最新建立</option>
                     <option value="name-asc">名稱（A-Z）</option>
+                    <option value="category-asc">分類（A-Z）</option>
                   </select>
                 </div>
               </div>
@@ -937,6 +938,11 @@
         recipes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       } else if (sortValue === "name-asc") {
         recipes.sort((a, b) => (a.name || "").localeCompare(b.name || "", "zh-Hant"));
+      } else if (sortValue === "category-asc") {
+        recipes.sort((a, b) => {
+          const catCmp = getRecipeCategory(a).localeCompare(getRecipeCategory(b), "zh-Hant");
+          return catCmp !== 0 ? catCmp : (a.name || "").localeCompare(b.name || "", "zh-Hant");
+        });
       }
 
       const grid = $("recipe-grid");
