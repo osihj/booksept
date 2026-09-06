@@ -409,15 +409,20 @@
   .category-color-picker { display: flex; align-items: center; gap: 6px; margin-right: 10px; }
   .color-swatch-btn {
     width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent;
-    cursor: pointer; padding: 0; box-shadow: 0 0 0 1px rgba(44,42,39,0.12) inset;
+    cursor: pointer; padding: 0; box-shadow: 0 0 0 1px rgba(44,42,39,0.15) inset;
   }
-  .color-swatch-btn.active { border-color: var(--text); }
+  .color-swatch-btn.active { border-color: #fff; box-shadow: 0 0 0 1px rgba(44,42,39,0.35) inset, 0 0 0 1.5px currentColor; }
+  .color-swatch-custom-wrap {
+    position: relative; width: 18px; height: 18px; border-radius: 50%;
+    border: 1px dashed var(--text3); display: flex; align-items: center; justify-content: center;
+    color: var(--text3); flex-shrink: 0;
+  }
+  .color-swatch-custom-wrap i { width: 10px; height: 10px; pointer-events: none; }
+  .color-swatch-custom-wrap svg { width: 10px; height: 10px; }
   .color-swatch-custom {
-    width: 18px; height: 18px; padding: 0; border: none; border-radius: 50%;
-    overflow: hidden; cursor: pointer; background: none;
+    position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+    border: none; padding: 0; background: none;
   }
-  .color-swatch-custom::-webkit-color-swatch-wrapper { padding: 0; }
-  .color-swatch-custom::-webkit-color-swatch { border: 1px dashed var(--text3); border-radius: 50%; }
   .book-card { position: relative; }
   .book-select {
     position: absolute; top: 10px; left: 10px; width: 16px; height: 16px;
