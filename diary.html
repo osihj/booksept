@@ -39,27 +39,21 @@
   .diary-entry-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .diary-entry-title { font-weight: 600; font-size: 15px; margin: 0; }
   .diary-entry-cat { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; background: rgba(0,0,0,.05); white-space: nowrap; }
-  .diary-entry-snippet {
-    margin: 5px 0 0; font-size: 13px; opacity: .72; line-height: 1.5;
-    overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  }
   .diary-entry-tags { margin-top: 7px; display: flex; gap: 6px; flex-wrap: wrap; }
 
-  /* ---- 日期＋標題堆疊 ／ 分類＋標籤 的表單排版：標題欄位跟日期一樣窄，標籤移到分類下方 ---- */
+  /* ---- 日期＋標題堆疊 ／ 分類＋標籤 的表單排版：日期／標題／分類／標籤統一固定寬度 360px ---- */
   .diary-date-title-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
-  .diary-date-title-col { display: flex; flex-direction: column; gap: 10px; width: 180px; flex: 0 0 auto; }
-  .diary-category-col { flex: 1; min-width: 0; }
+  .diary-date-title-col { display: flex; flex-direction: column; gap: 10px; width: 360px; max-width: 100%; flex: 0 0 auto; }
+  .diary-category-col { width: 360px; max-width: 100%; flex: 0 0 auto; }
   .diary-category-col .notes-section { margin-top: 14px; margin-bottom: 0; }
   @media (max-width: 640px) {
     .diary-date-title-row { flex-direction: column; }
-    .diary-date-title-col { width: 100%; }
+    .diary-date-title-col, .diary-category-col { width: 100%; }
   }
 
-  /* ---- 內容欄位（日記）的輕量格式工具列：粗體／斜體／小標題／項目符號／編號清單 ----
-     工具列本身寬度限制在「日期欄位寬度 x2」，不要拉滿整排變成一條很長的空白色塊 */
+  /* ---- 內容欄位（日記）的輕量格式工具列：粗體／斜體／小標題／項目符號／編號清單，拉滿整排 ---- */
   .rte-toolbar {
     display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
-    width: 360px; max-width: 100%; box-sizing: border-box;
     margin-bottom: 8px; padding: 5px; border: 1px solid rgba(0,0,0,.08); border-radius: 10px 10px 0 0; border-bottom: none;
     background: var(--surface2, #f7f5f2);
   }
@@ -347,7 +341,6 @@
                     </label>
                     <div class="notes-section">
                       <span class="field-label">標籤</span>
-                      <p class="field-hint">點選已有標籤加入這篇日記，或直接輸入新標籤名稱後按 Enter 新增並套用。</p>
                       <div class="tag-picker-list" id="diary-tag-picker"></div>
                       <div class="tag-picker-add">
                         <input type="text" id="diary-new-tag-input" placeholder="輸入新標籤，按 Enter 新增">
@@ -1031,18 +1024,16 @@
       const catStyle = catColor ? ` style="background:${hexToRgba(catColor, 0.14)};color:${catColor}"` : "";
       const dateObj = parseDiaryDate(e.date);
       const tags = getEntryTags(e);
-      const snippetText = stripHtmlToText(e.content);
       row.innerHTML = `
         <div class="diary-entry-date">
-          <span class="d-num">${dateObj ? dateObj.getDate() : "—"}</span>
           <span class="d-sub">${dateObj ? (dateObj.getMonth() + 1) + "月" : ""}</span>
+          <span class="d-num">${dateObj ? dateObj.getDate() : "—"}</span>
         </div>
         <div class="diary-entry-body">
           <div class="diary-entry-title-row">
             <p class="diary-entry-title">${escapeHtml(e.title || "未命名日記")}</p>
             <span class="diary-entry-cat"${catStyle}>${escapeHtml(catName)}</span>
           </div>
-          ${snippetText ? `<p class="diary-entry-snippet">${escapeHtml(snippetText)}</p>` : ""}
           ${tags.length ? `<div class="diary-entry-tags">${tags.map((t) => `<span class="tag-chip"${tagChipStyle(t)}>#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
         </div>`;
       return row;
