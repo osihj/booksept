@@ -859,6 +859,12 @@
   /* 固定成橫式 4:3，不管上傳的照片是直式還是橫式都用這個框裁切，
      這樣旁邊的資訊欄位高度才不會因為照片比例被撐高或壓扁 */
   .cover-preview.recipe-cover.recipe-detail-cover { flex-shrink: 0; width: 280px; height: 210px; aspect-ratio: 4 / 3; }
+  /* 修正照片比例 bug：#recipe-detail-cover-content 這層包裝 div 原本沒有明確的寬高，
+     在 flex（align-items:center）容器裡會依內容（照片原始比例）自動縮放，
+     導致每張照片在固定的 280x210 框裡顯示大小不一致（有些照片上下留白、有些被撐大）。
+     這裡讓包裝 div 確實撐滿整個框，img 的 width:100%/height:100% 才能正確計算，
+     搭配 object-fit: cover 統一裁切、填滿，框的寬高完全不變。 */
+  #recipe-detail-cover-content { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
   /* 詳情頁照片：可直接點擊上傳／更換照片 */
   .recipe-detail-cover-uploadable { position: relative; cursor: pointer; }
   .recipe-detail-cover-uploadable:hover,
