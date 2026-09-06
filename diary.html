@@ -6,7 +6,66 @@
 <meta name="theme-color" content="#b8621d">
 <title>日記 · 我的書齋</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="shared.css?v=20260906e">
+<style>
+  /* ============================================================
+     日記模組專屬樣式：日記列表的「條列卡片」、月曆頁的月曆格。
+     這兩種呈現方式食譜／書庫都沒有現成的樣式可以照抄，所以獨立寫在
+     這個頁面自己的 <style> 裡（不動 shared.css，降低影響到其他頁面的風險）。
+     配色沿用食譜分類自訂色的作法（同一組 CATEGORY_COLOR_PRESETS），
+     版面呼吸感、圓角、邊框粗細則比照 .card / .manage-pill 的既有質感。
+     ============================================================ */
+
+  /* ---- 日記列表／月曆選取日清單：共用同一種「條列卡片」 ---- */
+  .diary-entry-list { display: flex; flex-direction: column; gap: 10px; }
+  .diary-entry {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 16px; border: 1px solid rgba(0,0,0,.08); border-radius: 12px;
+    cursor: pointer; background: #fff;
+    transition: box-shadow .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .diary-entry:hover { box-shadow: 0 3px 12px rgba(0,0,0,.07); border-color: rgba(0,0,0,.15); transform: translateY(-1px); }
+  .diary-entry-date { flex: 0 0 auto; width: 52px; text-align: center; padding-top: 1px; }
+  .diary-entry-date .d-num { display: block; font-family: "Noto Serif TC", serif; font-size: 22px; font-weight: 600; line-height: 1.05; }
+  .diary-entry-date .d-sub { display: block; font-size: 11px; opacity: .55; margin-top: 2px; }
+  .diary-entry-body { flex: 1; min-width: 0; }
+  .diary-entry-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .diary-entry-title { font-weight: 600; font-size: 15px; margin: 0; }
+  .diary-entry-cat { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; background: rgba(0,0,0,.05); white-space: nowrap; }
+  .diary-entry-snippet {
+    margin: 5px 0 0; font-size: 13px; opacity: .72; line-height: 1.5;
+    overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .diary-entry-tags { margin-top: 7px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ---- 月曆頁 ---- */
+  .cal-weekdays {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; font-size: 12px; opacity: .55; padding: 2px 0 10px;
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-cell {
+    position: relative; min-height: 64px; border-radius: 10px;
+    border: 1px solid rgba(0,0,0,.06); padding: 6px 6px 5px;
+    display: flex; flex-direction: column; cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .cal-cell.is-empty { border-color: transparent; cursor: default; }
+  .cal-cell:not(.is-empty):hover { background: rgba(184,98,29,.07); }
+  .cal-cell.is-today { border-color: #b8621d; }
+  .cal-cell.is-selected { background: rgba(184,98,29,.13); border-color: #b8621d; }
+  .cal-cell .cal-daynum { font-size: 13px; font-weight: 500; }
+  .cal-cell .cal-count-badge {
+    position: absolute; top: 4px; right: 5px; font-size: 10px; line-height: 15px;
+    background: #b8621d; color: #fff; border-radius: 999px; padding: 0 5px; min-width: 15px; text-align: center;
+  }
+  .cal-cell .cal-dot-row { margin-top: auto; display: flex; gap: 3px; flex-wrap: wrap; }
+  .cal-dot { width: 6px; height: 6px; border-radius: 50%; background: #b8621d; opacity: .75; }
+  @media (max-width: 720px) {
+    .cal-cell { min-height: 46px; }
+    .cal-cell .cal-daynum { font-size: 12px; }
+  }
+</style>
 </head>
 <body>
 
@@ -49,7 +108,20 @@
         </div>
         <div class="sidebar-scroll">
           <div>
-            <div class="sidebar-group-label"><span>日記</span></div>
+            <div class="sidebar-group-label"><span>日記分類</span></div>
+            <div id="sidebar-diary-list"></div>
+          </div>
+          <div>
+            <div class="sidebar-group-label"><span>工具</span></div>
+            <button class="sidebar-link" id="diary-add-btn" type="button">
+              <i class="ti ti-plus"></i><span class="label">新增日記</span>
+            </button>
+            <button class="sidebar-link" data-page="diary-calendar" type="button">
+              <i class="ti ti-calendar"></i><span class="label">月曆</span>
+            </button>
+            <button class="sidebar-link" data-page="diary-manage" type="button">
+              <i class="ti ti-list"></i><span class="label">分類與標籤管理</span>
+            </button>
           </div>
         </div>
         <div class="sidebar-footer">
@@ -61,11 +133,217 @@
         <header class="topbar-desktop"></header>
 
         <main class="main">
-          <div class="module-placeholder">
-            <div class="module-placeholder-emoji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="1.5"/><path d="M9 3.5v17"/><path d="M12.5 8h4"/><path d="M12.5 11.5h4"/><path d="M12.5 15h2.5"/></svg></div>
-            <h2>日記模組尚未開放</h2>
-            <p>這裡之後會用來記錄生活點滴：文字、照片、心情，依日期整理成時間軸或月曆。目前先完成了登入跟頁面切換的骨架，功能還在製作中，敬請期待。</p>
-          </div>
+
+          <!-- 日記列表 -->
+          <section id="page-diary" class="page active">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">MY DIARY</div>
+                <h1 id="diary-shelf-title">我的日記</h1>
+                <p class="shelf-sub" id="diary-shelf-subtitle">目前共 0 篇日記</p>
+              </div>
+            </div>
+
+            <div class="inlist-search">
+              <i class="ti ti-search"></i>
+              <input type="text" id="diary-search-input" placeholder="日記內搜尋：標題、內容、分類或標籤...">
+            </div>
+
+            <div class="tag-row-wrap">
+              <div class="tag-row-label"><i class="ti ti-tag"></i><span>標籤</span></div>
+              <div class="tag-chip-list" id="diary-tag-chip-list"></div>
+            </div>
+
+            <div class="list-card">
+              <div class="list-card-head">
+                <div class="list-card-head-left">
+                  <div>
+                    <span class="list-card-title">日記列表</span>
+                    <span class="list-card-count" id="diary-count-label">共 0 篇日記</span>
+                  </div>
+                </div>
+                <div class="list-card-head-right">
+                  <select id="diary-sort-select" class="sort-select">
+                    <option value="date-desc">日期（新到舊）</option>
+                    <option value="date-asc">日期（舊到新）</option>
+                    <option value="createdAt-desc">最新建立</option>
+                    <option value="title-asc">標題（A-Z）</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="diary-entry-list" class="diary-entry-list"></div>
+
+              <div id="diary-empty-state" class="empty-state" hidden></div>
+            </div>
+          </section>
+
+          <!-- 日記分類與標籤管理（同一頁兩欄，跟食譜的「分類與標籤管理」一致） -->
+          <section id="page-diary-manage" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">TOOLS</div>
+                <h1>分類與標籤管理</h1>
+                <p class="shelf-sub">類別依每篇日記的「分類」自動產生、標籤依「標籤」欄位自動產生，皆可在此重新命名、刪除或拖曳排序</p>
+              </div>
+            </div>
+            <div class="manage-columns">
+              <div class="card">
+                <div class="card-title-row">
+                  <div class="card-title">日記分類</div>
+                  <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-diary-category-btn"><i class="ti ti-plus"></i> 新增分類</button>
+                </div>
+                <div class="manage-add-form" id="manage-diary-category-add-form" hidden>
+                  <input type="text" id="new-diary-category-input" placeholder="輸入分類名稱，按 Enter 新增">
+                  <button type="button" class="icon-btn" id="confirm-add-diary-category" title="新增"><i class="ti ti-check"></i></button>
+                  <button type="button" class="icon-btn" id="cancel-add-diary-category" title="取消"><i class="ti ti-x"></i></button>
+                </div>
+                <div id="manage-diary-category-list"></div>
+              </div>
+              <div class="card">
+                <div class="card-title-row">
+                  <div class="card-title">日記標籤</div>
+                  <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-diary-tag-btn"><i class="ti ti-plus"></i> 新增標籤</button>
+                </div>
+                <div class="manage-add-form" id="manage-diary-tag-add-form" hidden>
+                  <input type="text" id="new-diary-tag-input" placeholder="輸入標籤名稱，按 Enter 新增">
+                  <button type="button" class="icon-btn" id="confirm-add-diary-tag" title="新增"><i class="ti ti-check"></i></button>
+                  <button type="button" class="icon-btn" id="cancel-add-diary-tag" title="取消"><i class="ti ti-x"></i></button>
+                </div>
+                <div id="manage-diary-tag-list"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 新增／編輯日記（同一個表單，跟食譜慣例一致；一天可以有多篇，日期本身是可以編輯的欄位） -->
+          <section id="page-diary-form" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">TOOLS</div>
+                <h1 id="diary-form-title">新增日記</h1>
+                <p class="shelf-sub">記錄今天的日期、心情與內容，之後可以隨時回來修改</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <form id="diary-form">
+
+                <div class="field-grid">
+                  <label class="field"><span>日期 *</span><input type="date" id="diary-field-date" required></label>
+                  <label class="field"><span>標題 *</span><input type="text" id="diary-field-title" required placeholder="今天發生的事..."></label>
+                  <label class="field">
+                    <span>分類</span>
+                    <input type="text" id="diary-field-category" list="diary-category-options" placeholder="例：心情、旅行、工作">
+                    <datalist id="diary-category-options"></datalist>
+                  </label>
+                </div>
+
+                <div class="notes-section">
+                  <span class="field-label">標籤</span>
+                  <p class="field-hint">點選已有標籤加入這篇日記，或直接輸入新標籤名稱後按 Enter 新增並套用。</p>
+                  <div class="tag-picker-list" id="diary-tag-picker"></div>
+                  <div class="tag-picker-add">
+                    <input type="text" id="diary-new-tag-input" placeholder="輸入新標籤，按 Enter 新增">
+                    <button type="button" class="icon-btn" id="diary-add-tag-confirm" title="新增"><i class="ti ti-check"></i></button>
+                  </div>
+                </div>
+
+                <div class="notes-section">
+                  <span class="field-label">內容</span>
+                  <textarea id="diary-field-content" class="autosize-textarea" rows="8" placeholder="寫下今天的心情、發生的事、想記錄的一切..." style="width:100%;"></textarea>
+                </div>
+
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-ghost" id="diary-delete-btn" hidden>
+                    <i class="ti ti-trash"></i>
+                    刪除這篇日記
+                  </button>
+                  <div class="footer-spacer"></div>
+                  <button type="button" class="btn btn-ghost" id="diary-cancel-btn">取消</button>
+                  <button type="submit" class="btn btn-accent">儲存</button>
+                </div>
+
+              </form>
+            </div>
+          </section>
+
+          <!-- 日記詳情（唯讀瀏覽用；點列表卡片、月曆當天清單、或新增/編輯儲存後都會進到這裡，要修改請按「編輯」） -->
+          <section id="page-diary-detail" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">DIARY</div>
+                <h1 id="diary-detail-title">日記標題</h1>
+                <p class="shelf-sub" id="diary-detail-date">—</p>
+              </div>
+              <div class="detail-header-actions">
+                <button type="button" class="btn btn-ghost btn-sm" id="diary-detail-back-btn"><i class="ti ti-arrow-left"></i> 返回列表</button>
+                <button type="button" class="btn btn-accent-outline btn-sm" id="diary-detail-edit-btn"><i class="ti ti-edit"></i> 編輯</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="notes-section">
+                <span class="field-label detail-section-label">分類</span>
+                <p class="detail-notes" id="diary-detail-category">未分類</p>
+              </div>
+
+              <div class="notes-section" id="diary-detail-tags-section" hidden>
+                <span class="field-label detail-section-label">標籤</span>
+                <div class="tag-chip-list" id="diary-detail-tags"></div>
+              </div>
+
+              <div class="notes-section">
+                <span class="field-label detail-section-label">內容</span>
+                <p class="detail-notes" id="diary-detail-content"></p>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" id="diary-detail-delete-btn">
+                  <i class="ti ti-trash"></i>
+                  刪除這篇日記
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- 日記月曆：看這個月哪天有寫日記，點日期列出當天清單，可從清單點進單篇或直接新增 -->
+          <section id="page-diary-calendar" class="page">
+            <div class="shelf-header">
+              <div>
+                <div class="shelf-eyebrow2">CALENDAR</div>
+                <h1 id="diary-cal-title">—</h1>
+                <p class="shelf-sub" id="diary-cal-subtitle">這個月共寫了 0 篇日記</p>
+              </div>
+              <div class="detail-header-actions">
+                <button type="button" class="btn btn-ghost btn-sm" id="diary-cal-prev-btn"><i class="ti ti-chevron-left"></i> 上個月</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="diary-cal-today-btn">回到本月</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="diary-cal-next-btn">下個月 <i class="ti ti-chevron-right"></i></button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="cal-weekdays">
+                <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+              </div>
+              <div class="cal-grid" id="diary-cal-grid"></div>
+            </div>
+
+            <div class="list-card" id="diary-cal-day-panel" hidden>
+              <div class="list-card-head">
+                <div class="list-card-head-left">
+                  <div>
+                    <span class="list-card-title" id="diary-cal-day-title">—</span>
+                    <span class="list-card-count" id="diary-cal-day-count">共 0 篇</span>
+                  </div>
+                </div>
+                <div class="list-card-head-right">
+                  <button type="button" class="btn btn-accent btn-sm" id="diary-cal-day-add-btn"><i class="ti ti-plus"></i> 新增日記</button>
+                </div>
+              </div>
+              <div id="diary-cal-day-list" class="diary-entry-list"></div>
+            </div>
+          </section>
+
         </main>
       </div>
 
@@ -73,14 +351,704 @@
   </div>
 
   <script type="module">
-    import { wireLoginScreen, watchAuth, renderAppSwitcher } from "./shared.js";
+    import {
+      db,
+      $, wireLoginScreen, watchAuth, renderAppSwitcher, initIconSystem,
+      escapeHtml, orderNames, renderManagePillRow, wireManagePillRow, enablePointerReorder
+    } from "./shared.js?v=20260906e";
+    import {
+      collection, doc, setDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
     wireLoginScreen();
     renderAppSwitcher("diary");
+    initIconSystem();
 
-    watchAuth((user) => {
-      // 日記模組的資料還沒開始接，這裡先只確認登入成功、其餘留給之後開發。
-      console.log("已登入：", user.email);
+    // ---------- State ----------
+    let currentUser = null;
+    let allEntries = [];
+    let diaryMeta = { categoryOrder: [], manualCategories: [], tagOrder: [], manualTags: [], categoryColors: {} };
+    let unsubscribeEntries = null;
+    let unsubscribeMeta = null;
+    let lastCategoryCounts = {};
+    let activeCategory = "all";
+    let activeTag = null;
+    let currentEntryTags = [];
+    let editingEntryId = null;
+    let diaryFormReturnPage = "diary";
+    let currentDetailEntry = null;
+    let diaryDetailReturnPage = "diary";
+    let calendarViewDate = new Date();
+    let selectedCalendarDate = null; // "YYYY-MM-DD" | null
+
+    // ---------- 頁面切換（跟食譜同一套邏輯：純粹切換 .page/.sidebar-link 的 active class） ----------
+    function goToPage(target) {
+      document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + target));
+      document.querySelectorAll(".sidebar-link[data-page]").forEach((b) => {
+        if (b.dataset.category !== undefined) return; // 分類按鈕的 active 狀態由 renderSidebarCategories 自己管理
+        b.classList.toggle("active", b.dataset.page === target);
+      });
+      window.scrollTo(0, 0);
+      if (target === "diary-calendar") renderCalendar();
+    }
+    document.querySelectorAll(".sidebar-link[data-page]:not([data-category])").forEach((btn) => {
+      btn.addEventListener("click", () => goToPage(btn.dataset.page));
+    });
+
+    // ---------- 小工具：日期字串 <-> Date ----------
+    function pad2(n) { return String(n).padStart(2, "0"); }
+    function dateToStr(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+    function todayStr() { return dateToStr(new Date()); }
+    function parseDiaryDate(s) {
+      if (!s) return null;
+      const parts = s.split("-").map(Number);
+      if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return null;
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    function formatDiaryDateLabel(d) {
+      const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+      return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日 星期" + weekdays[d.getDay()];
+    }
+
+    // ---------- Firestore 讀取／訂閱 ----------
+    function subscribeEntries(uid) {
+      if (unsubscribeEntries) unsubscribeEntries();
+      const q = query(collection(db, "diaryEntries"), where("uid", "==", uid));
+      unsubscribeEntries = onSnapshot(
+        q,
+        (snap) => {
+          allEntries = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          renderSidebarCategories();
+          renderTagsUI();
+          render();
+          renderCalendar();
+        },
+        (err) => console.error("diaryEntries 讀取失敗：", err)
+      );
+    }
+    function subscribeMeta(uid) {
+      if (unsubscribeMeta) unsubscribeMeta();
+      const ref = doc(db, "diaryMeta", uid);
+      unsubscribeMeta = onSnapshot(
+        ref,
+        (snap) => {
+          const d = snap.data() || {};
+          diaryMeta = {
+            categoryOrder: Array.isArray(d.categoryOrder) ? d.categoryOrder : [],
+            manualCategories: Array.isArray(d.manualCategories) ? d.manualCategories : [],
+            tagOrder: Array.isArray(d.tagOrder) ? d.tagOrder : [],
+            manualTags: Array.isArray(d.manualTags) ? d.manualTags : [],
+            categoryColors: (d.categoryColors && typeof d.categoryColors === "object") ? d.categoryColors : {}
+          };
+          renderSidebarCategories();
+          renderTagsUI();
+          render();
+        },
+        (err) => console.error("diaryMeta 讀取失敗：", err)
+      );
+    }
+    function saveDiaryMeta(partial) {
+      return setDoc(doc(db, "diaryMeta", currentUser.uid), partial, { merge: true });
+    }
+
+    watchAuth(
+      (user) => {
+        currentUser = user;
+        subscribeEntries(user.uid);
+        subscribeMeta(user.uid);
+      },
+      () => {
+        currentUser = null;
+        if (unsubscribeEntries) unsubscribeEntries();
+        if (unsubscribeMeta) unsubscribeMeta();
+        allEntries = [];
+      }
+    );
+
+    // ---------- Helpers ----------
+    function getEntryCategory(e) { return (e.category || "未分類").trim() || "未分類"; }
+    function getEntryTags(e) { return Array.isArray(e.tags) ? e.tags : []; }
+    // ---- 日記分類自訂顏色（跟食譜同一套） ----
+    const CATEGORY_COLOR_PRESETS = ["#2c5234", "#b8621d", "#96352b", "#4a6fa5", "#7c5a8c"];
+    function getCategoryColor(name) {
+      return (diaryMeta.categoryColors && diaryMeta.categoryColors[name]) || "";
+    }
+    function hexToRgba(hex, alpha) {
+      const h = (hex || "").replace("#", "");
+      const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
+      if ([r, g, b].some(Number.isNaN)) return "";
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    function setCategoryColor(name, color) {
+      const categoryColors = { ...(diaryMeta.categoryColors || {}), [name]: color };
+      return saveDiaryMeta({ categoryColors });
+    }
+
+    // ================= 側邊欄：日記分類（沿用食譜分類同一套邏輯） =================
+    function renderSidebarCategories() {
+      const categoryCounts = {};
+      allEntries.forEach((e) => { const c = getEntryCategory(e); categoryCounts[c] = (categoryCounts[c] || 0) + 1; });
+      const allNames = new Set([...Object.keys(categoryCounts), ...diaryMeta.manualCategories]);
+      const categoriesSorted = orderNames([...allNames], diaryMeta.categoryOrder);
+      lastCategoryCounts = categoryCounts;
+
+      let html = `<button class="sidebar-link${activeCategory === "all" ? " active" : ""}" data-page="diary" data-category="all">
+          <i class="ti ti-notebook"></i><span class="label">所有日記</span>
+        </button>`;
+      html += categoriesSorted.map((c) => `
+        <button class="sidebar-link${activeCategory === c ? " active" : ""}" data-page="diary" data-category="${escapeHtml(c)}">
+          <i class="ti ti-list"></i><span class="label">${escapeHtml(c)}</span>
+        </button>`).join("");
+      $("sidebar-diary-list").innerHTML = html;
+
+      $("sidebar-diary-list").querySelectorAll(".sidebar-link").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          activeCategory = btn.dataset.category;
+          goToPage("diary");
+          renderSidebarCategories();
+          render();
+        });
+      });
+
+      $("diary-category-options").innerHTML = categoriesSorted.map((c) => `<option value="${escapeHtml(c)}"></option>`).join("");
+      renderManageCategoryList(categoriesSorted, categoryCounts);
+    }
+
+    // ================= 日記分類管理（重新命名／刪除／拖曳排序／新增空分類） =================
+    async function renameDiaryCategory(oldName, newName) {
+      const affected = allEntries.filter((e) => getEntryCategory(e) === oldName);
+      for (const e of affected) { await setDoc(doc(db, "diaryEntries", e.id), { category: newName }, { merge: true }); }
+      const manualCategories = diaryMeta.manualCategories.filter((c) => c !== oldName);
+      if (affected.length === 0) manualCategories.push(newName);
+      const categoryOrder = diaryMeta.categoryOrder.map((c) => (c === oldName ? newName : c));
+      if (!categoryOrder.includes(newName)) categoryOrder.push(newName);
+      const categoryColors = { ...(diaryMeta.categoryColors || {}) };
+      if (categoryColors[oldName]) { categoryColors[newName] = categoryColors[oldName]; delete categoryColors[oldName]; }
+      if (activeCategory === oldName) activeCategory = newName;
+      await saveDiaryMeta({ manualCategories, categoryOrder, categoryColors });
+    }
+    async function deleteDiaryCategory(name) {
+      const affected = allEntries.filter((e) => getEntryCategory(e) === name);
+      const msg = affected.length
+        ? `確定要刪除分類「${name}」嗎？相關日記會改為「未分類」，日記本身不會被刪除。`
+        : `確定要刪除分類「${name}」嗎？`;
+      if (!confirm(msg)) return;
+      for (const e of affected) { await setDoc(doc(db, "diaryEntries", e.id), { category: "未分類" }, { merge: true }); }
+      const manualCategories = diaryMeta.manualCategories.filter((c) => c !== name);
+      const categoryOrder = diaryMeta.categoryOrder.filter((c) => c !== name);
+      const categoryColors = { ...(diaryMeta.categoryColors || {}) };
+      delete categoryColors[name];
+      if (activeCategory === name) activeCategory = "all";
+      await saveDiaryMeta({ manualCategories, categoryOrder, categoryColors });
+    }
+    function renderManageCategoryList(categoriesSorted, categoryCounts) {
+      const el = $("manage-diary-category-list");
+      if (!categoriesSorted.length) {
+        el.innerHTML = `<p class="manage-empty-hint">還沒有任何分類，可按上方「新增分類」先建立，或新增日記並填寫分類後自動出現在這裡。</p>`;
+        return;
+      }
+      el.className = "manage-pill-list";
+      el.innerHTML = categoriesSorted.map((c) => renderManagePillRow(c, categoryCounts[c] || 0, false)).join("");
+      el.querySelectorAll(".manage-pill").forEach((row) => {
+        wireManagePillRow(row, { onRename: renameDiaryCategory, onDelete: deleteDiaryCategory });
+        injectCategoryColorPicker(row, row.dataset.name);
+      });
+      enablePointerReorder(el, (order) => saveDiaryMeta({ categoryOrder: order }), renderSidebarCategories);
+    }
+    // 在分類管理列的「筆數」文字前面，插入 5 個基本色 + 1 個滴管／自訂顏色選取器
+    function applyCategoryBadgeColor(row, color) {
+      const badge = row.querySelector(".manage-pill-badge");
+      if (!badge) return;
+      if (color) {
+        badge.style.background = hexToRgba(color, 0.14);
+        badge.style.color = color;
+      } else {
+        badge.style.background = "";
+        badge.style.color = "";
+      }
+    }
+    function injectCategoryColorPicker(row, name) {
+      const countEl = row.querySelector(".manage-row-count");
+      if (!countEl) return;
+      const current = (getCategoryColor(name) || "").toLowerCase();
+      applyCategoryBadgeColor(row, current);
+      const picker = document.createElement("div");
+      picker.className = "category-color-picker";
+      picker.innerHTML = CATEGORY_COLOR_PRESETS.map((c) =>
+        `<button type="button" class="color-swatch-btn${current === c ? " active" : ""}" data-color="${c}" style="background:${c}" title="套用這個顏色"></button>`
+      ).join("") + `<span class="color-swatch-custom-wrap" title="自訂顏色（可用滴管工具）"><i class="ti ti-color-picker"></i><input type="color" class="color-swatch-custom" value="${current || "#9c968f"}"></span>`;
+      countEl.before(picker);
+      function selectColor(color) {
+        setCategoryColor(name, color);
+        applyCategoryBadgeColor(row, color);
+        picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", b.dataset.color.toLowerCase() === color.toLowerCase()));
+      }
+      picker.querySelectorAll(".color-swatch-btn").forEach((btn) => {
+        btn.addEventListener("click", () => selectColor(btn.dataset.color));
+      });
+      picker.querySelector(".color-swatch-custom").addEventListener("input", (e) => selectColor(e.target.value));
+    }
+    function setupInlineAdd({ addBtnId, formId, inputId, confirmId, cancelId, onAdd }) {
+      const addBtn = $(addBtnId), form = $(formId), input = $(inputId);
+      const confirmBtn = $(confirmId), cancelBtn = $(cancelId);
+      function open() { addBtn.hidden = true; form.hidden = false; input.value = ""; input.focus(); }
+      function close() { form.hidden = true; addBtn.hidden = false; }
+      addBtn.addEventListener("click", open);
+      cancelBtn.addEventListener("click", close);
+      async function submit() {
+        const val = input.value.trim();
+        if (!val) { input.focus(); return; }
+        await onAdd(val);
+        close();
+      }
+      confirmBtn.addEventListener("click", submit);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); submit(); }
+        else if (e.key === "Escape") { close(); }
+      });
+    }
+    setupInlineAdd({
+      addBtnId: "add-diary-category-btn", formId: "manage-diary-category-add-form", inputId: "new-diary-category-input",
+      confirmId: "confirm-add-diary-category", cancelId: "cancel-add-diary-category",
+      onAdd: async (name) => {
+        if (lastCategoryCounts[name] != null || diaryMeta.manualCategories.includes(name)) {
+          alert("這個分類已經存在了。");
+          return;
+        }
+        const manualCategories = [...diaryMeta.manualCategories, name];
+        const categoryOrder = diaryMeta.categoryOrder.includes(name) ? diaryMeta.categoryOrder : [...diaryMeta.categoryOrder, name];
+        await saveDiaryMeta({ manualCategories, categoryOrder });
+      }
+    });
+
+    // ================= 日記標籤（列表篩選、管理頁、表單挑選器，沿用食譜標籤同一套邏輯） =================
+    function getEntryTagCounts() {
+      const counts = {};
+      allEntries.forEach((e) => { getEntryTags(e).forEach((t) => { counts[t] = (counts[t] || 0) + 1; }); });
+      return counts;
+    }
+    function getAllTagNames(tagCounts) {
+      const counts = tagCounts || getEntryTagCounts();
+      const allNames = new Set([...Object.keys(counts), ...diaryMeta.manualTags]);
+      return orderNames([...allNames], diaryMeta.tagOrder);
+    }
+    function renderTagFilterRow(tagsSorted, tagCounts) {
+      const el = $("diary-tag-chip-list");
+      if (!tagsSorted.length) {
+        el.innerHTML = `<span class="tag-empty-hint">尚未建立任何標籤，可至「分類與標籤管理」新增</span>`;
+        return;
+      }
+      el.innerHTML = tagsSorted.map((t) => `
+        <button type="button" class="tag-chip${activeTag === t ? " active" : ""}" data-tag="${escapeHtml(t)}">
+          #${escapeHtml(t)} <span class="tc-count">(${tagCounts[t] || 0})</span>
+        </button>`).join("");
+      el.querySelectorAll(".tag-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          activeTag = activeTag === chip.dataset.tag ? null : chip.dataset.tag;
+          renderTagFilterRow(tagsSorted, tagCounts);
+          render();
+        });
+      });
+    }
+    async function renameDiaryTag(oldName, newName) {
+      const affected = allEntries.filter((e) => getEntryTags(e).includes(oldName));
+      for (const e of affected) {
+        const tags = [...new Set(getEntryTags(e).map((t) => (t === oldName ? newName : t)))];
+        await setDoc(doc(db, "diaryEntries", e.id), { tags }, { merge: true });
+      }
+      const manualTags = diaryMeta.manualTags.filter((t) => t !== oldName);
+      if (affected.length === 0) manualTags.push(newName);
+      const tagOrder = diaryMeta.tagOrder.map((t) => (t === oldName ? newName : t));
+      if (!tagOrder.includes(newName)) tagOrder.push(newName);
+      if (activeTag === oldName) activeTag = newName;
+      await saveDiaryMeta({ manualTags, tagOrder });
+    }
+    async function deleteDiaryTag(name) {
+      const affected = allEntries.filter((e) => getEntryTags(e).includes(name));
+      const msg = affected.length
+        ? `確定要刪除標籤「${name}」嗎？會從 ${affected.length} 篇相關日記移除此標籤，日記本身不會被刪除。`
+        : `確定要刪除標籤「${name}」嗎？`;
+      if (!confirm(msg)) return;
+      for (const e of affected) {
+        const tags = getEntryTags(e).filter((t) => t !== name);
+        await setDoc(doc(db, "diaryEntries", e.id), { tags }, { merge: true });
+      }
+      const manualTags = diaryMeta.manualTags.filter((t) => t !== name);
+      const tagOrder = diaryMeta.tagOrder.filter((t) => t !== name);
+      if (activeTag === name) activeTag = null;
+      await saveDiaryMeta({ manualTags, tagOrder });
+    }
+    function renderManageTagList(tagsSorted, tagCounts) {
+      const el = $("manage-diary-tag-list");
+      if (!tagsSorted.length) {
+        el.innerHTML = `<p class="manage-empty-hint">還沒有任何標籤，可按上方「新增標籤」先建立，或在日記表單新增標籤時自動出現在這裡。</p>`;
+        return;
+      }
+      el.className = "manage-pill-list";
+      el.innerHTML = tagsSorted.map((t) => renderManagePillRow(t, tagCounts[t] || 0, true)).join("");
+      el.querySelectorAll(".manage-pill").forEach((row) => {
+        wireManagePillRow(row, { onRename: renameDiaryTag, onDelete: deleteDiaryTag });
+      });
+      enablePointerReorder(el, (order) => saveDiaryMeta({ tagOrder: order }), renderTagsUI);
+    }
+    function renderEntryTagPicker() {
+      const el = $("diary-tag-picker");
+      const allTags = getAllTagNames();
+      if (!allTags.length) {
+        el.innerHTML = `<p class="manage-empty-hint">還沒有任何標籤，輸入下方欄位新增第一個標籤。</p>`;
+        return;
+      }
+      el.innerHTML = allTags.map((t) => `
+        <button type="button" class="tag-chip pickable${currentEntryTags.includes(t) ? " selected" : ""}" data-tag="${escapeHtml(t)}">
+          #${escapeHtml(t)}
+        </button>`).join("");
+      el.querySelectorAll(".tag-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const t = chip.dataset.tag;
+          currentEntryTags = currentEntryTags.includes(t) ? currentEntryTags.filter((x) => x !== t) : [...currentEntryTags, t];
+          renderEntryTagPicker();
+        });
+      });
+    }
+    function renderTagsUI() {
+      const tagCounts = getEntryTagCounts();
+      const tagsSorted = getAllTagNames(tagCounts);
+      renderTagFilterRow(tagsSorted, tagCounts);
+      renderManageTagList(tagsSorted, tagCounts);
+      renderEntryTagPicker();
+    }
+    setupInlineAdd({
+      addBtnId: "add-diary-tag-btn", formId: "manage-diary-tag-add-form", inputId: "new-diary-tag-input",
+      confirmId: "confirm-add-diary-tag", cancelId: "cancel-add-diary-tag",
+      onAdd: async (name) => {
+        const tagCounts = getEntryTagCounts();
+        if (tagCounts[name] != null || diaryMeta.manualTags.includes(name)) {
+          alert("這個標籤已經存在了。");
+          return;
+        }
+        const manualTags = [...diaryMeta.manualTags, name];
+        const tagOrder = diaryMeta.tagOrder.includes(name) ? diaryMeta.tagOrder : [...diaryMeta.tagOrder, name];
+        await saveDiaryMeta({ manualTags, tagOrder });
+      }
+    });
+    async function addNewDiaryTagFromInput() {
+      const input = $("diary-new-tag-input");
+      const val = input.value.trim();
+      if (!val) return;
+      if (getAllTagNames().includes(val)) {
+        if (!currentEntryTags.includes(val)) { currentEntryTags.push(val); renderEntryTagPicker(); }
+        input.value = "";
+        return;
+      }
+      const manualTags = [...diaryMeta.manualTags, val];
+      const tagOrder = diaryMeta.tagOrder.includes(val) ? diaryMeta.tagOrder : [...diaryMeta.tagOrder, val];
+      await saveDiaryMeta({ manualTags, tagOrder });
+      if (!currentEntryTags.includes(val)) currentEntryTags.push(val);
+      input.value = "";
+      renderEntryTagPicker();
+    }
+    $("diary-add-tag-confirm").addEventListener("click", addNewDiaryTagFromInput);
+    $("diary-new-tag-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); addNewDiaryTagFromInput(); }
+    });
+
+    // ================= 「心得／內容」輸入時自動長高 =================
+    function autoGrowTextarea(el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+    document.querySelectorAll(".autosize-textarea").forEach((el) => {
+      el.addEventListener("input", () => autoGrowTextarea(el));
+    });
+
+    // ================= 日記列表 =================
+    function render() {
+      let entries = [...allEntries];
+      if (activeCategory !== "all") entries = entries.filter((e) => getEntryCategory(e) === activeCategory);
+      if (activeTag) entries = entries.filter((e) => getEntryTags(e).includes(activeTag));
+      const term = $("diary-search-input").value.trim().toLowerCase();
+      if (term) {
+        entries = entries.filter((e) => {
+          const hay = [e.title, e.content, getEntryCategory(e), ...getEntryTags(e)].filter(Boolean).join(" ").toLowerCase();
+          return hay.includes(term);
+        });
+      }
+
+      const sortValue = $("diary-sort-select").value;
+      if (sortValue === "date-desc") {
+        entries.sort((a, b) => (b.date || "").localeCompare(a.date || "") || ((b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
+      } else if (sortValue === "date-asc") {
+        entries.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+      } else if (sortValue === "createdAt-desc") {
+        entries.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      } else if (sortValue === "title-asc") {
+        entries.sort((a, b) => (a.title || "").localeCompare(b.title || "", "zh-Hant"));
+      }
+
+      const listEl = $("diary-entry-list");
+      listEl.innerHTML = "";
+      const emptyState = $("diary-empty-state");
+      if (allEntries.length === 0) {
+        emptyState.hidden = false;
+        emptyState.innerHTML = `<i class="ti ti-notebook"></i><h3>還沒有任何日記</h3><p>寫下你的第一篇日記，記錄今天的心情與點滴。</p><button class="btn btn-accent" id="diary-empty-add-btn"><i class="ti ti-plus"></i>新增第一篇日記</button>`;
+        $("diary-empty-add-btn").onclick = () => openAddEntry();
+      } else if (entries.length === 0) {
+        emptyState.hidden = false;
+        emptyState.innerHTML = `<i class="ti ti-filter-off"></i><h3>沒有符合條件的日記</h3><p>請調整搜尋或分類篩選。</p>`;
+      } else {
+        emptyState.hidden = true;
+      }
+      entries.forEach((e) => listEl.appendChild(renderEntryRow(e)));
+      $("diary-count-label").textContent = "共 " + entries.length + " 篇日記";
+      updateDiaryShelfHeading(entries.length);
+    }
+
+    function updateDiaryShelfHeading(visibleCount) {
+      if (activeCategory === "all") {
+        $("diary-shelf-title").textContent = "我的日記";
+        $("diary-shelf-subtitle").textContent = "目前共 " + allEntries.length + " 篇日記";
+      } else {
+        $("diary-shelf-title").textContent = activeCategory;
+        $("diary-shelf-subtitle").textContent = "此分類共 " + visibleCount + " 篇日記";
+      }
+    }
+
+    // 條列卡片：日記列表、月曆當天清單共用同一個 renderer
+    function renderEntryRow(e) {
+      const row = document.createElement("div");
+      row.className = "diary-entry";
+      row.dataset.entryId = e.id;
+      row.addEventListener("click", () => openEntryDetail(e));
+      const catName = getEntryCategory(e);
+      const catColor = getCategoryColor(catName);
+      const catStyle = catColor ? ` style="background:${hexToRgba(catColor, 0.14)};color:${catColor}"` : "";
+      const dateObj = parseDiaryDate(e.date);
+      const tags = getEntryTags(e);
+      row.innerHTML = `
+        <div class="diary-entry-date">
+          <span class="d-num">${dateObj ? dateObj.getDate() : "—"}</span>
+          <span class="d-sub">${dateObj ? (dateObj.getMonth() + 1) + "月" : ""}</span>
+        </div>
+        <div class="diary-entry-body">
+          <div class="diary-entry-title-row">
+            <p class="diary-entry-title">${escapeHtml(e.title || "未命名日記")}</p>
+            <span class="diary-entry-cat"${catStyle}>${escapeHtml(catName)}</span>
+          </div>
+          ${e.content ? `<p class="diary-entry-snippet">${escapeHtml(e.content)}</p>` : ""}
+          ${tags.length ? `<div class="diary-entry-tags">${tags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join("")}</div>` : ""}
+        </div>`;
+      return row;
+    }
+
+    $("diary-search-input").addEventListener("input", render);
+    $("diary-sort-select").addEventListener("change", render);
+
+    // ================= 新增／編輯日記表單 =================
+    function rememberDiaryFormReturnPage() {
+      const activePage = document.querySelector(".page.active");
+      if (activePage && activePage.id !== "page-diary-form") diaryFormReturnPage = activePage.id.replace("page-", "");
+    }
+    function closeDiaryForm() { goToPage(diaryFormReturnPage); }
+
+    function openAddEntry(presetDate) {
+      rememberDiaryFormReturnPage();
+      // 先切換到表單頁再設定內容欄位，避免頁面還是 display:none 時量測 textarea 高度拿到 0
+      goToPage("diary-form");
+      editingEntryId = null;
+      $("diary-form-title").textContent = "新增日記";
+      $("diary-delete-btn").hidden = true;
+      $("diary-form").reset();
+      $("diary-field-date").value = presetDate || todayStr();
+      currentEntryTags = [];
+      renderEntryTagPicker();
+      autoGrowTextarea($("diary-field-content"));
+    }
+    function openEditEntry(e) {
+      rememberDiaryFormReturnPage();
+      goToPage("diary-form");
+      editingEntryId = e.id;
+      $("diary-form-title").textContent = "編輯日記";
+      $("diary-delete-btn").hidden = false;
+      $("diary-field-date").value = e.date || todayStr();
+      $("diary-field-title").value = e.title || "";
+      $("diary-field-category").value = e.category || "";
+      $("diary-field-content").value = e.content || "";
+      currentEntryTags = Array.isArray(e.tags) ? [...e.tags] : [];
+      renderEntryTagPicker();
+      autoGrowTextarea($("diary-field-content"));
+    }
+    $("diary-add-btn").addEventListener("click", () => openAddEntry());
+    $("diary-cancel-btn").addEventListener("click", closeDiaryForm);
+
+    // ---------- 儲存／刪除 ----------
+    $("diary-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const date = $("diary-field-date").value;
+      const title = $("diary-field-title").value.trim();
+      if (!date) { $("diary-field-date").focus(); return; }
+      if (!title) { $("diary-field-title").focus(); return; }
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true; submitBtn.textContent = "儲存中...";
+      try {
+        const id = editingEntryId || doc(collection(db, "diaryEntries")).id;
+        const data = {
+          uid: currentUser.uid,
+          date,
+          title,
+          category: $("diary-field-category").value.trim() || "未分類",
+          tags: currentEntryTags,
+          content: $("diary-field-content").value,
+          updatedAt: serverTimestamp()
+        };
+        if (!editingEntryId) data.createdAt = serverTimestamp();
+        await setDoc(doc(db, "diaryEntries", id), data, { merge: true });
+        // 儲存完直接進到「日記詳情」頁，而不是停在表單、或回到列表還要再找一次剛新增的日記
+        const savedEntry = { ...data, id };
+        if (diaryFormReturnPage !== "diary-detail") diaryDetailReturnPage = diaryFormReturnPage;
+        showEntryDetail(savedEntry);
+      } catch (err) {
+        console.error("Firestore 儲存錯誤：", err);
+        let message = "儲存失敗。";
+        if (err?.code === "permission-denied") {
+          message = "Firestore 拒絕寫入（permission-denied）。\n請到 Firebase Console → Firestore Database → Rules，確認 diaryEntries／diaryMeta 集合允許目前登入使用者建立/修改自己的資料。";
+        } else if (err?.code === "unauthenticated") {
+          message = "登入狀態已失效，請重新登入後再儲存。";
+        } else {
+          message += "\n錯誤：" + (err?.message || err);
+        }
+        alert(message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+
+    $("diary-delete-btn").addEventListener("click", async () => {
+      if (!editingEntryId) return;
+      if (!confirm("確定要刪除這篇日記嗎？此動作無法復原。")) return;
+      await deleteEntryById(editingEntryId);
+      // 日記已經刪除，詳情頁不會再有內容可看，所以直接回到列表／月曆，而不是回詳情頁
+      goToPage(diaryFormReturnPage === "diary-detail" ? diaryDetailReturnPage : diaryFormReturnPage);
+    });
+
+    // ================= 日記詳情（唯讀瀏覽） =================
+    function rememberDiaryDetailReturnPage() {
+      const activePage = document.querySelector(".page.active");
+      if (activePage && activePage.id !== "page-diary-detail" && activePage.id !== "page-diary-form") {
+        diaryDetailReturnPage = activePage.id.replace("page-", "");
+      }
+    }
+    function closeDiaryDetail() { goToPage(diaryDetailReturnPage); }
+    function renderEntryDetail(e) {
+      $("diary-detail-title").textContent = e.title || "未命名日記";
+      const dateObj = parseDiaryDate(e.date);
+      $("diary-detail-date").textContent = dateObj ? formatDiaryDateLabel(dateObj) : (e.date || "—");
+      $("diary-detail-category").textContent = getEntryCategory(e);
+      const tags = getEntryTags(e);
+      $("diary-detail-tags-section").hidden = !tags.length;
+      $("diary-detail-tags").innerHTML = tags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join("");
+      $("diary-detail-content").textContent = e.content || "";
+    }
+    function showEntryDetail(e) {
+      currentDetailEntry = e;
+      renderEntryDetail(e);
+      goToPage("diary-detail");
+    }
+    function openEntryDetail(e) {
+      rememberDiaryDetailReturnPage();
+      showEntryDetail(e);
+    }
+    async function deleteEntryById(id) {
+      await deleteDoc(doc(db, "diaryEntries", id));
+    }
+    $("diary-detail-back-btn").addEventListener("click", closeDiaryDetail);
+    $("diary-detail-edit-btn").addEventListener("click", () => { if (currentDetailEntry) openEditEntry(currentDetailEntry); });
+    $("diary-detail-delete-btn").addEventListener("click", async () => {
+      if (!currentDetailEntry) return;
+      if (!confirm("確定要刪除這篇日記嗎？此動作無法復原。")) return;
+      await deleteEntryById(currentDetailEntry.id);
+      closeDiaryDetail();
+    });
+
+    // ================= 日記月曆 =================
+    function getEntriesByDate() {
+      const map = {};
+      allEntries.forEach((e) => {
+        if (!e.date) return;
+        (map[e.date] = map[e.date] || []).push(e);
+      });
+      return map;
+    }
+    function renderCalendar() {
+      const year = calendarViewDate.getFullYear();
+      const month = calendarViewDate.getMonth(); // 0-based
+      $("diary-cal-title").textContent = year + "年" + (month + 1) + "月";
+      const entriesByDate = getEntriesByDate();
+      const firstDay = new Date(year, month, 1);
+      const startWeekday = firstDay.getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayS = todayStr();
+
+      let html = "";
+      for (let i = 0; i < startWeekday; i++) html += `<div class="cal-cell is-empty"></div>`;
+      let monthCount = 0;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dStr = year + "-" + pad2(month + 1) + "-" + pad2(day);
+        const dayEntries = entriesByDate[dStr] || [];
+        monthCount += dayEntries.length;
+        const isToday = dStr === todayS;
+        const isSelected = dStr === selectedCalendarDate;
+        const dots = dayEntries.slice(0, 4).map(() => `<span class="cal-dot"></span>`).join("");
+        html += `
+          <div class="cal-cell${isToday ? " is-today" : ""}${isSelected ? " is-selected" : ""}" data-date="${dStr}">
+            <span class="cal-daynum">${day}</span>
+            ${dayEntries.length ? `<span class="cal-count-badge">${dayEntries.length}</span>` : ""}
+            <div class="cal-dot-row">${dots}</div>
+          </div>`;
+      }
+      $("diary-cal-grid").innerHTML = html;
+      $("diary-cal-subtitle").textContent = "這個月共寫了 " + monthCount + " 篇日記";
+      $("diary-cal-grid").querySelectorAll(".cal-cell[data-date]").forEach((cell) => {
+        cell.addEventListener("click", () => selectCalendarDate(cell.dataset.date));
+      });
+      renderCalendarDayPanel();
+    }
+    function selectCalendarDate(dStr) {
+      selectedCalendarDate = dStr;
+      renderCalendar();
+    }
+    function renderCalendarDayPanel() {
+      const panel = $("diary-cal-day-panel");
+      if (!selectedCalendarDate) { panel.hidden = true; return; }
+      panel.hidden = false;
+      const entriesByDate = getEntriesByDate();
+      const entries = (entriesByDate[selectedCalendarDate] || []).slice()
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      const dateObj = parseDiaryDate(selectedCalendarDate);
+      $("diary-cal-day-title").textContent = dateObj ? (dateObj.getMonth() + 1) + "月" + dateObj.getDate() + "日" : selectedCalendarDate;
+      $("diary-cal-day-count").textContent = "共 " + entries.length + " 篇";
+      const listEl = $("diary-cal-day-list");
+      if (!entries.length) {
+        listEl.innerHTML = `<p class="manage-empty-hint">這天還沒有日記，按右上角「新增日記」開始寫。</p>`;
+      } else {
+        listEl.innerHTML = "";
+        entries.forEach((e) => listEl.appendChild(renderEntryRow(e)));
+      }
+      $("diary-cal-day-add-btn").onclick = () => openAddEntry(selectedCalendarDate);
+    }
+    $("diary-cal-prev-btn").addEventListener("click", () => {
+      calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1);
+      renderCalendar();
+    });
+    $("diary-cal-next-btn").addEventListener("click", () => {
+      calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
+      renderCalendar();
+    });
+    $("diary-cal-today-btn").addEventListener("click", () => {
+      calendarViewDate = new Date();
+      selectedCalendarDate = todayStr();
+      renderCalendar();
     });
   </script>
 </body>
