@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#b8621d">
 <title>食譜 · 我的書齋</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared.css?v=20260906b">
+<link rel="stylesheet" href="shared.css?v=20260906c">
 </head>
 <body>
 
@@ -407,7 +407,7 @@
       db, storage,
       $, wireLoginScreen, watchAuth, renderAppSwitcher, initIconSystem,
       escapeHtml, orderNames, renderManagePillRow, wireManagePillRow, enablePointerReorder
-    } from "./shared.js?v=20260906b";
+    } from "./shared.js?v=20260906c";
     import {
       collection, doc, setDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
@@ -605,6 +605,7 @@
           };
           renderSidebarRecipeCategories();
           renderRecipeTagsUI();
+          render();
         },
         (err) => console.error("recipeMeta 讀取失敗：", err)
       );
@@ -723,26 +724,37 @@
       enablePointerReorder(el, (order) => saveRecipeMeta({ categoryOrder: order }), renderSidebarRecipeCategories);
     }
     // 在分類管理列的「筆數」文字前面，插入 5 個基本色 + 1 個滴管／自訂顏色選取器
+    function applyCategoryBadgeColor(row, color) {
+      const badge = row.querySelector(".manage-pill-badge");
+      if (!badge) return;
+      if (color) {
+        badge.style.background = hexToRgba(color, 0.14);
+        badge.style.color = color;
+      } else {
+        badge.style.background = "";
+        badge.style.color = "";
+      }
+    }
     function injectCategoryColorPicker(row, name) {
       const countEl = row.querySelector(".manage-row-count");
       if (!countEl) return;
       const current = (getCategoryColor(name) || "").toLowerCase();
+      applyCategoryBadgeColor(row, current);
       const picker = document.createElement("div");
       picker.className = "category-color-picker";
       picker.innerHTML = CATEGORY_COLOR_PRESETS.map((c) =>
         `<button type="button" class="color-swatch-btn${current === c ? " active" : ""}" data-color="${c}" style="background:${c}" title="套用這個顏色"></button>`
-      ).join("") + `<input type="color" class="color-swatch-custom" value="${current || "#9c968f"}" title="自訂顏色（可用滴管工具）">`;
+      ).join("") + `<span class="color-swatch-custom-wrap" title="自訂顏色（可用滴管工具）"><i class="ti ti-color-picker"></i><input type="color" class="color-swatch-custom" value="${current || "#9c968f"}"></span>`;
       countEl.before(picker);
+      function selectColor(color) {
+        setCategoryColor(name, color);
+        applyCategoryBadgeColor(row, color);
+        picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", b.dataset.color.toLowerCase() === color.toLowerCase()));
+      }
       picker.querySelectorAll(".color-swatch-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          setCategoryColor(name, btn.dataset.color);
-          picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", b === btn));
-        });
+        btn.addEventListener("click", () => selectColor(btn.dataset.color));
       });
-      picker.querySelector(".color-swatch-custom").addEventListener("input", (e) => {
-        setCategoryColor(name, e.target.value);
-        picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.remove("active"));
-      });
+      picker.querySelector(".color-swatch-custom").addEventListener("input", (e) => selectColor(e.target.value));
     }
     function setupInlineAdd({ addBtnId, formId, inputId, confirmId, cancelId, onAdd }) {
       const addBtn = $(addBtnId), form = $(formId), input = $(inputId);
