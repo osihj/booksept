@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>日記內容補更新工具</title>
+<title>日記內容依標題補更新工具</title>
 <style>
   body { font-family: "Noto Sans TC", sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #2c2a27; }
   h1 { font-size: 22px; }
@@ -17,8 +17,8 @@
 <body>
 
   <div id="login-screen">
-    <h1>日記補更新工具</h1>
-    <p>請先用你的帳號登入，才能更新你的日記資料庫。</p>
+    <h1>日記內容補更新工具</h1>
+    <p>請先用你的帳號登入，才能寫入你的日記資料庫。</p>
     <button id="google-login-btn" type="button">使用 Google 登入</button>
     <p id="login-error" class="login-error" hidden></p>
   </div>
@@ -26,11 +26,11 @@
   <div id="app" hidden>
     <h1>日記內容補更新工具</h1>
     <div class="card">
-      <p>1. 選擇包含內文的 <code>diary_import.json</code> 檔案：</p>
+      <p>1. 選擇 <code>diary_import.json</code>：</p>
       <input type="file" id="file-input" accept="application/json">
       <p id="file-summary"></p>
-      <p>2. 點擊下方按鈕，系統會搜尋資料庫中**相同標題**的日記，並自動將內文補填進去：</p>
-      <button id="update-btn" disabled>依標題比對並更新內文</button>
+      <p>2. 點擊按鈕，系統會依據**標題**比對 Firebase 裡的既有日記，並把內文填補進去：</p>
+      <button id="update-btn" disabled>開始依標題補更新內文</button>
       <div id="log"></div>
     </div>
   </div>
@@ -57,7 +57,7 @@
       try {
         const text = await file.text();
         entries = JSON.parse(text);
-        if (!Array.isArray(entries)) throw new Error("檔案格式不對，應該是一個陣列");
+        if (!Array.isArray(entries)) throw new Error(" JSON 格式不正確");
         $("file-summary").textContent = `讀取到 ${entries.length} 篇 JSON 資料。`;
         $("update-btn").disabled = entries.length === 0;
       } catch (err) {
@@ -69,39 +69,41 @@
     $("update-btn").addEventListener("click", async () => {
       if (!currentUser) { alert("尚未登入"); return; }
       $("update-btn").disabled = true;
-      $("log").textContent = "開始自動比對與更新...\n";
+      $("log").textContent = "開始搜尋資料庫進行內文補填...\n";
       
       let ok = 0, fail = 0, skipped = 0;
 
       for (const e of entries) {
-        if (!e.title || !e.content) {
+        if (!e.title) {
           skipped++;
           continue;
         }
 
         try {
-          // 搜尋 Firestore 中屬於目前使用者且標題相同的日記
+          const titleStr = e.title.trim();
           const q = query(
             collection(db, "diaryEntries"),
             where("uid", "==", currentUser.uid),
-            where("title", "==", e.title.strip ? e.title.strip() : e.title)
+            where("title", "==", titleStr)
           );
           const querySnapshot = await getDocs(q);
 
           if (querySnapshot.empty) {
-            log(`⚠️ 找不到標題匹配項：《${e.title}》`);
+            log(`⚠️ 找不到與《${titleStr}》匹配的資料庫條目`);
             skipped++;
             continue;
           }
 
-          // 對匹配到的所有紀錄補更新 content 內容
           for (const docSnap of querySnapshot.docs) {
-            await updateDoc(doc(db, "diaryEntries", docSnap.id), {
-              content: e.content,
+            const updatePayload = {
               updatedAt: serverTimestamp()
-            });
+            };
+            if (e.content) updatePayload.content = e.content;
+            if (e.date) updatePayload.date = e.date;
+
+            await updateDoc(doc(db, "diaryEntries", docSnap.id), updatePayload);
             ok++;
-            log(`✅ 已成功補上內文：《${e.title}》`);
+            log(`✅ 已成功更新內文：《${titleStr}》`);
           }
         } catch (err) {
           fail++;
@@ -109,7 +111,7 @@
         }
       }
 
-      log(`\n補更新完成：成功補更新 ${ok} 筆內容，失敗 ${fail} 筆，略過 ${skipped} 筆。`);
+      log(`\n🎉 更新任務完成：成功更新 ${ok} 筆，失敗 ${fail} 筆，未匹配/略過 ${skipped} 筆。`);
       $("update-btn").disabled = false;
     });
   </script>
