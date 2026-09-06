@@ -38,7 +38,7 @@
   .diary-entry-body { flex: 1; min-width: 0; }
   .diary-entry-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .diary-entry-title { font-weight: 600; font-size: 15px; margin: 0; }
-  .diary-entry-cat { font-size: 11.5px; padding: 2px 9px; border-radius: 999px; background: rgba(0,0,0,.05); white-space: nowrap; }
+  .diary-entry-cat { display: inline-flex; align-items: center; justify-content: center; font-size: 11.5px; padding: 3px 10px; border-radius: 999px; background: rgba(0,0,0,.05); white-space: nowrap; line-height: 1.4; }
   .diary-entry-event {
     display: inline-flex; align-items: center; gap: 3px;
     font-size: 11.5px; padding: 2px 9px; border-radius: 999px; white-space: nowrap;
@@ -48,9 +48,9 @@
   .diary-entry-tags { margin-top: 7px; display: flex; gap: 6px; flex-wrap: wrap; }
 
   /* ---- 詳情頁：分類／事件／標籤 收進標題列右上角的小徽章列，取代原本一條條的欄位 ---- */
-  .diary-detail-header { align-items: flex-start; }
-  .diary-detail-header-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-  .diary-detail-pills { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; max-width: 360px; }
+  .diary-detail-header { align-items: stretch; }
+  .diary-detail-header-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 10px; }
+  .diary-detail-pills { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; max-width: 360px; margin-top: auto; }
   .diary-detail-pills .diary-entry-cat,
   .diary-detail-pills .diary-entry-event,
   .diary-detail-pills .tag-chip { font-size: 12px; }
@@ -93,10 +93,10 @@
   /* 富文字內容的顯示樣式：日記表單編輯區、日記詳情頁的內容都套用同一組，確保排版一致 */
   .rte-content h4 { font-size: 15px; font-weight: 700; margin: 14px 0 6px; }
   .rte-content h4:first-child { margin-top: 0; }
-  .rte-content p { margin: 0 0 4px; line-height: 1.75; }
+  .rte-content p { margin: 0 0 2px; line-height: 1.6; }
   .rte-content p:last-child { margin-bottom: 0; }
   .rte-content p:empty,
-  .rte-content p:has(> br:only-child) { margin: 0 0 4px; min-height: 1.75em; }
+  .rte-content p:has(> br:only-child) { margin: 0 0 2px; min-height: 1em; }
   .rte-content ul, .rte-content ol { margin: 6px 0 10px; padding-left: 22px; }
   .rte-content b, .rte-content strong { font-weight: 700; }
   .rte-content i, .rte-content em { font-style: italic; }
