@@ -408,16 +408,13 @@
 
   <script type="module">
     import {
-      db, storage,
+      db,
       $, wireLoginScreen, watchAuth, renderAppSwitcher, initIconSystem,
       escapeHtml, orderNames, renderManagePillRow, wireManagePillRow, enablePointerReorder
     } from "./shared.js?v=20260906d";
     import {
       collection, doc, setDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-    import {
-      ref as storageRef, uploadBytes, getDownloadURL, deleteObject
-    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 
     wireLoginScreen();
     renderAppSwitcher("recipes");
@@ -1198,7 +1195,6 @@
     }
     async function deleteRecipeById(id) {
       await deleteDoc(doc(db, "recipes", id));
-      try { await deleteObject(storageRef(storage, `recipe-photos/${currentUser.uid}/${id}.jpg`)); } catch (err) { /* 可能本來就沒有照片，忽略即可 */ }
     }
     // ---------- 詳情頁直接點照片上傳（不用先進編輯頁） ----------
     let detailPhotoUploading = false;
@@ -1209,7 +1205,7 @@
       coverEl.classList.add("is-uploading");
       try {
         const id = currentDetailRecipe.id;
-        const photoUrl = await uploadRecipePhoto(file, id);
+        const photoUrl = await compressImageToDataUrl(file);
         await setDoc(doc(db, "recipes", id), { photoUrl, updatedAt: serverTimestamp() }, { merge: true });
         currentDetailRecipe.photoUrl = photoUrl;
         if (editingRecipeId === id) { currentRecipePhotoUrl = photoUrl; updateRecipeCoverPreview(); }
@@ -1217,13 +1213,7 @@
         $("recipe-detail-cover-hint-text").textContent = "點擊更換照片";
       } catch (err) {
         console.error("詳情頁照片上傳錯誤：", err);
-        let message = "照片上傳失敗。";
-        if (err?.code === "storage/unauthorized") {
-          message = "Firebase Storage 拒絕上傳照片。\n請到 Firebase Console → Storage → Rules，確認 recipe-photos 路徑允許目前登入使用者上傳自己的照片。";
-        } else if (err?.message) {
-          message += "\n錯誤：" + err.message;
-        }
-        alert(message);
+        alert("照片上傳失敗。\n錯誤：" + (err?.message || err));
       } finally {
         coverEl.classList.remove("is-uploading");
         detailPhotoUploading = false;
@@ -1773,8 +1763,8 @@
     $("recipe-add-btn").addEventListener("click", openAddRecipe);
     $("recipe-cancel-btn").addEventListener("click", closeRecipeForm);
 
-    // ---------- 照片上傳（Firebase Storage，不塞進 Firestore 文件本身） ----------
-    function resizeImageToBlob(file, maxWidth = 1000, quality = 0.82) {
+    // ---------- 照片壓縮／轉檔（跟書庫同一套做法：壓縮後轉成 base64 直接存進 Firestore 文件，不需要 Firebase Storage）----------
+    function compressImageToDataUrl(file, maxWidth = 900, quality = 0.75) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onerror = reject;
@@ -1788,18 +1778,12 @@
             const canvas = document.createElement("canvas");
             canvas.width = w; canvas.height = h;
             canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-            canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("圖片轉換失敗"))), "image/jpeg", quality);
+            resolve(canvas.toDataURL("image/jpeg", quality));
           };
           img.src = e.target.result;
         };
         reader.readAsDataURL(file);
       });
-    }
-    async function uploadRecipePhoto(file, recipeId) {
-      const blob = await resizeImageToBlob(file);
-      const photoRef = storageRef(storage, `recipe-photos/${currentUser.uid}/${recipeId}.jpg`);
-      await uploadBytes(photoRef, blob, { contentType: "image/jpeg" });
-      return await getDownloadURL(photoRef);
     }
 
     // ---------- 儲存／刪除 ----------
@@ -1813,7 +1797,7 @@
       try {
         const id = editingRecipeId || doc(collection(db, "recipes")).id;
         let photoUrl = currentRecipePhotoUrl;
-        if (pendingRecipePhotoFile) photoUrl = await uploadRecipePhoto(pendingRecipePhotoFile, id);
+        if (pendingRecipePhotoFile) photoUrl = await compressImageToDataUrl(pendingRecipePhotoFile);
 
         const data = {
           uid: currentUser.uid,
@@ -1863,8 +1847,6 @@
           message = "Firestore 拒絕寫入（permission-denied）。\n請到 Firebase Console → Firestore Database → Rules，確認 recipes／recipeMeta 集合允許目前登入使用者建立/修改自己的資料。";
         } else if (err?.code === "unauthenticated") {
           message = "登入狀態已失效，請重新登入後再儲存。";
-        } else if (err?.code === "storage/unauthorized") {
-          message = "Firebase Storage 拒絕上傳照片。\n請到 Firebase Console → Storage → Rules，確認 recipe-photos 路徑允許目前登入使用者上傳自己的照片。";
         } else {
           message += "\n錯誤：" + (err?.message || err);
         }
