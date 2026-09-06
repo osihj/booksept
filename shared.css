@@ -412,6 +412,14 @@
     cursor: pointer; padding: 0; box-shadow: 0 0 0 1px rgba(44,42,39,0.15) inset;
   }
   .color-swatch-btn.active { border-color: #fff; box-shadow: 0 0 0 1px rgba(44,42,39,0.35) inset, 0 0 0 1.5px currentColor; }
+  /* 「清除顏色／恢復預設」選項：跟自訂顏色滴管同樣的虛線圓圈樣式，放在最前面 */
+  .color-swatch-none {
+    width: 18px; height: 18px; border-radius: 50%; border: 1px dashed var(--text3);
+    display: flex; align-items: center; justify-content: center; color: var(--text3);
+    cursor: pointer; background: none; padding: 0; flex-shrink: 0;
+  }
+  .color-swatch-none i { width: 10px; height: 10px; pointer-events: none; }
+  .color-swatch-none.active { border-color: #fff; box-shadow: 0 0 0 1px rgba(44,42,39,0.35) inset, 0 0 0 1.5px var(--text2); background: var(--surface2); }
   .color-swatch-custom-wrap {
     position: relative; width: 18px; height: 18px; border-radius: 50%;
     border: 1px dashed var(--text3); display: flex; align-items: center; justify-content: center;
