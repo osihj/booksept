@@ -349,7 +349,7 @@
 
             <div class="card recipe-detail-card">
               <div class="recipe-detail-top">
-                <div class="cover-preview recipe-cover recipe-detail-cover recipe-detail-cover-uploadable" id="recipe-detail-cover" role="button" tabindex="0" title="點擊上傳／更換照片">
+                <div class="cover-preview recipe-cover recipe-detail-cover recipe-detail-cover-uploadable" id="recipe-detail-cover" role="button" tabindex="0" title="點擊放大檢視／上傳照片">
                   <div id="recipe-detail-cover-content"><i class="ti ti-photo"></i></div>
                   <div class="recipe-detail-cover-hint"><i class="ti ti-camera"></i><span id="recipe-detail-cover-hint-text">點擊上傳照片</span></div>
                   <input type="file" accept="image/*" id="recipe-detail-cover-upload-input" hidden>
@@ -399,6 +399,14 @@
               </div>
             </div>
           </section>
+
+          <!-- 食譜照片放大檢視（點縮圖時彈出，不用進編輯頁） -->
+          <div class="image-lightbox-overlay" id="recipe-photo-lightbox" hidden>
+            <div class="image-lightbox-box">
+              <button type="button" class="image-lightbox-close" id="recipe-photo-lightbox-close" aria-label="關閉"><i class="ti ti-x"></i></button>
+              <img id="recipe-photo-lightbox-img" src="" alt="">
+            </div>
+          </div>
 
         </main>
       </div>
@@ -1138,7 +1146,7 @@
       $("recipe-detail-name").textContent = r.name || "未命名食譜";
       $("recipe-detail-category").textContent = getRecipeCategory(r);
       $("recipe-detail-cover-content").innerHTML = r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`;
-      $("recipe-detail-cover-hint-text").textContent = r.photoUrl ? "點擊更換照片" : "點擊上傳照片";
+      $("recipe-detail-cover-hint-text").textContent = r.photoUrl ? "點擊放大檢視" : "點擊上傳照片";
       $("recipe-detail-created").textContent = r.createdDate || "—";
       $("recipe-detail-servings").textContent = r.servings || "—";
       $("recipe-detail-prep-time").textContent = r.prepTime || "—";
@@ -1210,7 +1218,7 @@
         currentDetailRecipe.photoUrl = photoUrl;
         if (editingRecipeId === id) { currentRecipePhotoUrl = photoUrl; updateRecipeCoverPreview(); }
         $("recipe-detail-cover-content").innerHTML = `<img src="${escapeHtml(photoUrl)}" alt="">`;
-        $("recipe-detail-cover-hint-text").textContent = "點擊更換照片";
+        $("recipe-detail-cover-hint-text").textContent = "點擊放大檢視";
       } catch (err) {
         console.error("詳情頁照片上傳錯誤：", err);
         alert("照片上傳失敗。\n錯誤：" + (err?.message || err));
@@ -1219,9 +1227,29 @@
         detailPhotoUploading = false;
       }
     }
+    // 點縮圖：已經有照片就放大看，還沒有照片就直接開啟上傳（新增食譜時沒照片，點一下就能傳）
+    function openRecipePhotoLightbox(url) {
+      $("recipe-photo-lightbox-img").src = url;
+      $("recipe-photo-lightbox").hidden = false;
+    }
+    function closeRecipePhotoLightbox() {
+      $("recipe-photo-lightbox").hidden = true;
+      $("recipe-photo-lightbox-img").src = "";
+    }
+    $("recipe-photo-lightbox-close").addEventListener("click", closeRecipePhotoLightbox);
+    $("recipe-photo-lightbox").addEventListener("click", (e) => {
+      if (e.target === $("recipe-photo-lightbox")) closeRecipePhotoLightbox();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !$("recipe-photo-lightbox").hidden) closeRecipePhotoLightbox();
+    });
     $("recipe-detail-cover").addEventListener("click", () => {
-      const input = $("recipe-detail-cover-upload-input");
-      if (input) input.click();
+      if (currentDetailRecipe && currentDetailRecipe.photoUrl) {
+        openRecipePhotoLightbox(currentDetailRecipe.photoUrl);
+      } else {
+        const input = $("recipe-detail-cover-upload-input");
+        if (input) input.click();
+      }
     });
     $("recipe-detail-cover").addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("recipe-detail-cover").click(); }
