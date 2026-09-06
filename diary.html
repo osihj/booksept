@@ -246,6 +246,9 @@
                       <button type="button" class="view-btn active" data-view="list" title="列表檢視"><i class="ti ti-list"></i></button>
                       <button type="button" class="view-btn" data-view="calendar" title="月曆檢視"><i class="ti ti-calendar"></i></button>
                     </div>
+                    <select id="diary-year-select" class="sort-select">
+                      <option value="all">全部年份</option>
+                    </select>
                     <select id="diary-sort-select" class="sort-select">
                       <option value="date-desc">日期（新到舊）</option>
                       <option value="date-asc">日期（舊到新）</option>
@@ -470,6 +473,7 @@
     let lastCategoryCounts = {};
     let activeCategory = "all";
     let activeTag = null;
+    let activeYear = "all";
     let currentEntryTags = [];
     let editingEntryId = null;
     let diaryFormReturnPage = "diary";
@@ -984,10 +988,19 @@
     });
 
     // ================= 日記列表 =================
+    function renderYearOptions() {
+      const years = Array.from(new Set(allEntries.map((e) => (e.date || "").slice(0, 4)).filter(Boolean))).sort((a, b) => b.localeCompare(a));
+      const sel = $("diary-year-select");
+      if (!years.includes(activeYear)) activeYear = "all";
+      sel.innerHTML = `<option value="all">全部年份</option>` + years.map((y) => `<option value="${y}">${y} 年</option>`).join("");
+      sel.value = activeYear;
+    }
     function render() {
+      renderYearOptions();
       let entries = [...allEntries];
       if (activeCategory !== "all") entries = entries.filter((e) => getEntryCategory(e) === activeCategory);
       if (activeTag) entries = entries.filter((e) => getEntryTags(e).includes(activeTag));
+      if (activeYear !== "all") entries = entries.filter((e) => (e.date || "").slice(0, 4) === activeYear);
       const term = $("diary-search-input").value.trim().toLowerCase();
       if (term) {
         entries = entries.filter((e) => {
@@ -1065,6 +1078,7 @@
 
     $("diary-search-input").addEventListener("input", render);
     $("diary-sort-select").addEventListener("change", render);
+    $("diary-year-select").addEventListener("change", () => { activeYear = $("diary-year-select").value; render(); });
 
     // ================= 新增／編輯日記表單 =================
     function rememberDiaryFormReturnPage() {
