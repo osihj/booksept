@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#b8621d">
 <title>食譜 · 我的書齋</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared.css?v=20260906">
+<link rel="stylesheet" href="shared.css?v=20260906b">
 </head>
 <body>
 
@@ -407,7 +407,7 @@
       db, storage,
       $, wireLoginScreen, watchAuth, renderAppSwitcher, initIconSystem,
       escapeHtml, orderNames, renderManagePillRow, wireManagePillRow, enablePointerReorder
-    } from "./shared.js";
+    } from "./shared.js?v=20260906b";
     import {
       collection, doc, setDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
@@ -422,7 +422,7 @@
     // ---------- State ----------
     let currentUser = null;
     let allRecipes = [];
-    let recipeMeta = { categoryOrder: [], manualCategories: [], tagOrder: [], manualTags: [] };
+    let recipeMeta = { categoryOrder: [], manualCategories: [], tagOrder: [], manualTags: [], categoryColors: {} };
     let unsubscribeRecipes = null;
     let unsubscribeRecipeMeta = null;
     let lastCategoryCounts = {};
@@ -600,7 +600,8 @@
             categoryOrder: Array.isArray(d.categoryOrder) ? d.categoryOrder : [],
             manualCategories: Array.isArray(d.manualCategories) ? d.manualCategories : [],
             tagOrder: Array.isArray(d.tagOrder) ? d.tagOrder : [],
-            manualTags: Array.isArray(d.manualTags) ? d.manualTags : []
+            manualTags: Array.isArray(d.manualTags) ? d.manualTags : [],
+            categoryColors: (d.categoryColors && typeof d.categoryColors === "object") ? d.categoryColors : {}
           };
           renderSidebarRecipeCategories();
           renderRecipeTagsUI();
@@ -629,6 +630,21 @@
     // ---------- Helpers ----------
     function getRecipeCategory(r) { return (r.category || "未分類").trim() || "未分類"; }
     function getRecipeTags(r) { return Array.isArray(r.tags) ? r.tags : []; }
+    // ---- 食譜分類自訂顏色 ----
+    const CATEGORY_COLOR_PRESETS = ["#2c5234", "#b8621d", "#96352b", "#4a6fa5", "#7c5a8c"];
+    function getCategoryColor(name) {
+      return (recipeMeta.categoryColors && recipeMeta.categoryColors[name]) || "";
+    }
+    function hexToRgba(hex, alpha) {
+      const h = (hex || "").replace("#", "");
+      const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
+      if ([r, g, b].some(Number.isNaN)) return "";
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    function setCategoryColor(name, color) {
+      const categoryColors = { ...(recipeMeta.categoryColors || {}), [name]: color };
+      return saveRecipeMeta({ categoryColors });
+    }
     function starsHtml(n) {
       let s = "";
       for (let i = 1; i <= 5; i++) s += `<i class="ti ti-star${i <= n ? "" : " empty"}"></i>`;
@@ -673,8 +689,10 @@
       if (affected.length === 0) manualCategories.push(newName);
       const categoryOrder = recipeMeta.categoryOrder.map((c) => (c === oldName ? newName : c));
       if (!categoryOrder.includes(newName)) categoryOrder.push(newName);
+      const categoryColors = { ...(recipeMeta.categoryColors || {}) };
+      if (categoryColors[oldName]) { categoryColors[newName] = categoryColors[oldName]; delete categoryColors[oldName]; }
       if (activeCategory === oldName) activeCategory = newName;
-      await saveRecipeMeta({ manualCategories, categoryOrder });
+      await saveRecipeMeta({ manualCategories, categoryOrder, categoryColors });
     }
     async function deleteRecipeCategory(name) {
       const affected = allRecipes.filter((r) => getRecipeCategory(r) === name);
@@ -685,8 +703,10 @@
       for (const r of affected) { await setDoc(doc(db, "recipes", r.id), { category: "未分類" }, { merge: true }); }
       const manualCategories = recipeMeta.manualCategories.filter((c) => c !== name);
       const categoryOrder = recipeMeta.categoryOrder.filter((c) => c !== name);
+      const categoryColors = { ...(recipeMeta.categoryColors || {}) };
+      delete categoryColors[name];
       if (activeCategory === name) activeCategory = "all";
-      await saveRecipeMeta({ manualCategories, categoryOrder });
+      await saveRecipeMeta({ manualCategories, categoryOrder, categoryColors });
     }
     function renderManageRecipeCategoryList(categoriesSorted, categoryCounts) {
       const el = $("manage-recipe-category-list");
@@ -698,8 +718,31 @@
       el.innerHTML = categoriesSorted.map((c) => renderManagePillRow(c, categoryCounts[c] || 0, false)).join("");
       el.querySelectorAll(".manage-pill").forEach((row) => {
         wireManagePillRow(row, { onRename: renameRecipeCategory, onDelete: deleteRecipeCategory });
+        injectCategoryColorPicker(row, row.dataset.name);
       });
       enablePointerReorder(el, (order) => saveRecipeMeta({ categoryOrder: order }), renderSidebarRecipeCategories);
+    }
+    // 在分類管理列的「筆數」文字前面，插入 5 個基本色 + 1 個滴管／自訂顏色選取器
+    function injectCategoryColorPicker(row, name) {
+      const countEl = row.querySelector(".manage-row-count");
+      if (!countEl) return;
+      const current = (getCategoryColor(name) || "").toLowerCase();
+      const picker = document.createElement("div");
+      picker.className = "category-color-picker";
+      picker.innerHTML = CATEGORY_COLOR_PRESETS.map((c) =>
+        `<button type="button" class="color-swatch-btn${current === c ? " active" : ""}" data-color="${c}" style="background:${c}" title="套用這個顏色"></button>`
+      ).join("") + `<input type="color" class="color-swatch-custom" value="${current || "#9c968f"}" title="自訂顏色（可用滴管工具）">`;
+      countEl.before(picker);
+      picker.querySelectorAll(".color-swatch-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          setCategoryColor(name, btn.dataset.color);
+          picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        });
+      });
+      picker.querySelector(".color-swatch-custom").addEventListener("input", (e) => {
+        setCategoryColor(name, e.target.value);
+        picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.remove("active"));
+      });
     }
     function setupInlineAdd({ addBtnId, formId, inputId, confirmId, cancelId, onAdd }) {
       const addBtn = $(addBtnId), form = $(formId), input = $(inputId);
@@ -978,10 +1021,13 @@
       card.className = "book-card";
       card.dataset.recipeId = r.id;
       card.addEventListener("click", () => openRecipeDetail(r));
+      const catName = getRecipeCategory(r);
+      const catColor = getCategoryColor(catName);
+      const catStyle = catColor ? ` style="--cat-color:${catColor};--cat-bg:${hexToRgba(catColor, 0.12)};--cat-border:${hexToRgba(catColor, 0.35)}"` : "";
       card.innerHTML = `
         <div class="book-cover recipe-cover">${r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
         <p class="book-title">${escapeHtml(r.name || "未命名食譜")}</p>
-        <p class="book-author">${escapeHtml(getRecipeCategory(r))}</p>`;
+        <p class="book-author"${catStyle}>${escapeHtml(catName)}</p>`;
       return card;
     }
 
