@@ -856,7 +856,9 @@
   .detail-header-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: flex-start; }
   .recipe-detail-card { display: flex; flex-direction: column; gap: 4px; }
   .recipe-detail-top { display: flex; gap: 20px; margin-bottom: 8px; flex-wrap: wrap; align-items: stretch; }
-  .cover-preview.recipe-cover.recipe-detail-cover { flex-shrink: 0; width: 280px; height: auto; aspect-ratio: auto; }
+  /* 固定成橫式 4:3，不管上傳的照片是直式還是橫式都用這個框裁切，
+     這樣旁邊的資訊欄位高度才不會因為照片比例被撐高或壓扁 */
+  .cover-preview.recipe-cover.recipe-detail-cover { flex-shrink: 0; width: 280px; height: 210px; aspect-ratio: 4 / 3; }
   /* 詳情頁照片：可直接點擊上傳／更換照片 */
   .recipe-detail-cover-uploadable { position: relative; cursor: pointer; }
   .recipe-detail-cover-uploadable:hover,
