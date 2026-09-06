@@ -349,7 +349,11 @@
 
             <div class="card recipe-detail-card">
               <div class="recipe-detail-top">
-                <div class="cover-preview recipe-cover recipe-detail-cover recipe-detail-cover-uploadable" id="recipe-detail-cover" role="button" tabindex="0" title="點擊上傳／更換照片"><i class="ti ti-photo"></i></div>
+                <div class="cover-preview recipe-cover recipe-detail-cover recipe-detail-cover-uploadable" id="recipe-detail-cover" role="button" tabindex="0" title="點擊上傳／更換照片">
+                  <div id="recipe-detail-cover-content"><i class="ti ti-photo"></i></div>
+                  <div class="recipe-detail-cover-hint"><i class="ti ti-camera"></i><span id="recipe-detail-cover-hint-text">點擊上傳照片</span></div>
+                  <input type="file" accept="image/*" id="recipe-detail-cover-upload-input" hidden>
+                </div>
                 <div class="recipe-detail-stats">
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">建立日期</span><span class="recipe-detail-stat-value" id="recipe-detail-created">—</span></div>
                   <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">準備時間</span><span class="recipe-detail-stat-value" id="recipe-detail-prep-time">—</span></div>
@@ -1136,9 +1140,8 @@
     function renderRecipeDetail(r) {
       $("recipe-detail-name").textContent = r.name || "未命名食譜";
       $("recipe-detail-category").textContent = getRecipeCategory(r);
-      $("recipe-detail-cover").innerHTML = (r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`) +
-        `<div class="recipe-detail-cover-hint"><i class="ti ti-camera"></i><span>${r.photoUrl ? "點擊更換照片" : "點擊上傳照片"}</span></div>` +
-        `<input type="file" accept="image/*" id="recipe-detail-cover-upload-input" hidden>`;
+      $("recipe-detail-cover-content").innerHTML = r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`;
+      $("recipe-detail-cover-hint-text").textContent = r.photoUrl ? "點擊更換照片" : "點擊上傳照片";
       $("recipe-detail-created").textContent = r.createdDate || "—";
       $("recipe-detail-servings").textContent = r.servings || "—";
       $("recipe-detail-prep-time").textContent = r.prepTime || "—";
@@ -1210,12 +1213,10 @@
         await setDoc(doc(db, "recipes", id), { photoUrl, updatedAt: serverTimestamp() }, { merge: true });
         currentDetailRecipe.photoUrl = photoUrl;
         if (editingRecipeId === id) { currentRecipePhotoUrl = photoUrl; updateRecipeCoverPreview(); }
-        coverEl.innerHTML = `<img src="${escapeHtml(photoUrl)}" alt="">` +
-          `<div class="recipe-detail-cover-hint"><i class="ti ti-camera"></i><span>點擊更換照片</span></div>` +
-          `<input type="file" accept="image/*" id="recipe-detail-cover-upload-input" hidden>`;
+        $("recipe-detail-cover-content").innerHTML = `<img src="${escapeHtml(photoUrl)}" alt="">`;
+        $("recipe-detail-cover-hint-text").textContent = "點擊更換照片";
       } catch (err) {
         console.error("詳情頁照片上傳錯誤：", err);
-        renderRecipeDetail(currentDetailRecipe);
         let message = "照片上傳失敗。";
         if (err?.code === "storage/unauthorized") {
           message = "Firebase Storage 拒絕上傳照片。\n請到 Firebase Console → Storage → Rules，確認 recipe-photos 路徑允許目前登入使用者上傳自己的照片。";
@@ -1235,7 +1236,7 @@
     $("recipe-detail-cover").addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("recipe-detail-cover").click(); }
     });
-    $("recipe-detail-cover").addEventListener("change", (e) => {
+    $("recipe-detail-cover-upload-input").addEventListener("change", (e) => {
       const file = e.target.files && e.target.files[0];
       if (file) handleDetailCoverFile(file);
       e.target.value = "";
