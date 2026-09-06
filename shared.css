@@ -1,1782 +1,961 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#b8621d">
-<title>食譜 · 我的書齋</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared.css?v=20260906">
-</head>
-<body>
-
-  <!-- 未登入畫面：跟 index.html 用同一組 id，shared.js 的 wireLoginScreen()／watchAuth() 才能直接操作 -->
-  <div id="login-screen" class="login-screen">
-    <div class="login-card">
-      <h1>藏書閣</h1>
-      <p class="login-sub">請登入以繼續</p>
-
-      <button id="google-login-btn" class="login-google-btn" type="button">
-        <svg class="login-google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.23c0-.82-.07-1.42-.22-2.05H12v3.72h6.02c-.12.97-.78 2.43-2.24 3.41l-.02.14 3.25 2.52.23.02c2.07-1.91 3.26-4.72 3.26-7.76z"/><path fill="#34A853" d="M12 23c2.94 0 5.4-.97 7.2-2.63l-3.43-2.66c-.92.64-2.16 1.09-3.77 1.09-2.88 0-5.32-1.9-6.19-4.53l-.13.01-3.38 2.62-.04.13C4.24 20.55 7.83 23 12 23z"/><path fill="#FBBC05" d="M5.81 14.27a6.6 6.6 0 01-.36-2.13c0-.74.13-1.46.35-2.13l-.01-.14-3.42-2.66-.11.05A10.94 10.94 0 001 12.14c0 1.78.43 3.46 1.26 4.94z"/><path fill="#EA4335" d="M12 5.48c2.04 0 3.42.88 4.21 1.62l3.07-3c-1.9-1.77-4.36-2.85-7.28-2.85-4.17 0-7.76 2.45-9.43 6.03l3.55 2.76c.87-2.63 3.31-4.56 6.19-4.56z"/></svg>
-        使用 Google 登入
-      </button>
-
-      <div class="login-divider"><span>或</span></div>
-
-      <input id="email-input" class="login-input" type="email" placeholder="Email" autocomplete="email">
-      <input id="password-input" class="login-input" type="password" placeholder="密碼" autocomplete="current-password">
-
-      <button id="email-login-btn" class="login-email-btn" type="button">Email 登入</button>
-      <button id="forgot-password-btn" class="forgot-password-btn" type="button">忘記密碼？寄送重設信</button>
-
-      <p id="login-error" class="login-error" hidden></p>
-    </div>
-  </div>
-
-  <!-- 主畫面 -->
-  <div id="app" hidden>
-    <div class="app-shell">
-
-      <!-- App 切換列（4 模組共用，內容由 shared.js 的 renderAppSwitcher() 動態畫出） -->
-      <nav class="app-switcher" id="app-switcher"></nav>
-
-      <aside class="sidebar">
-        <div class="sidebar-brand">
-          <div class="brand">
-            <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M6.5 3v6"/><path d="M8.5 3v6"/><path d="M10.5 3v6"/><path d="M8.5 9v12"/><path d="M16.5 3c-1.6 2-1.6 5.8 0 7.8v10.2"/></svg></span>
-            <span class="brand-name">食譜</span>
-          </div>
-        </div>
-        <div class="sidebar-scroll">
-          <div>
-            <div class="sidebar-group-label"><span>食譜分類</span></div>
-            <div id="sidebar-recipe-list"></div>
-          </div>
-          <div>
-            <div class="sidebar-group-label"><span>工具</span></div>
-            <button class="sidebar-link" id="recipe-add-btn" type="button">
-              <i class="ti ti-plus"></i><span class="label">新增食譜</span>
-            </button>
-            <button class="sidebar-link" data-page="recipe-manage" type="button">
-              <i class="ti ti-list"></i><span class="label">分類與標籤管理</span>
-            </button>
-          </div>
-        </div>
-        <div class="sidebar-footer">
-          <button id="logout-top-btn" class="btn btn-ghost btn-sm" type="button" style="width:100%">登出</button>
-        </div>
-      </aside>
-
-      <div class="content-col">
-        <header class="topbar-desktop"></header>
-
-        <main class="main">
-
-          <!-- 食譜列表 -->
-          <section id="page-recipes" class="page active">
-            <div class="shelf-header">
-              <div>
-                <div class="shelf-eyebrow2">MY RECIPES</div>
-                <h1 id="recipe-shelf-title">我的食譜</h1>
-                <p class="shelf-sub" id="recipe-shelf-subtitle">目前收藏 0 道食譜</p>
-              </div>
-            </div>
-
-            <div class="inlist-search">
-              <i class="ti ti-search"></i>
-              <input type="text" id="recipe-search-input" placeholder="食譜內搜尋：名稱、分類、標籤、來源或心得...">
-            </div>
-
-            <div class="tag-row-wrap">
-              <div class="tag-row-label"><i class="ti ti-tag"></i><span>標籤</span></div>
-              <div class="tag-chip-list" id="recipe-tag-chip-list"></div>
-            </div>
-
-            <div class="list-card">
-              <div class="list-card-head">
-                <div class="list-card-head-left">
-                  <div>
-                    <span class="list-card-title">食譜列表</span>
-                    <span class="list-card-count" id="recipe-count-label">共 0 道食譜</span>
-                  </div>
-                  <div class="view-toggle">
-                    <button type="button" class="view-btn active" id="recipe-view-grid-btn" title="格狀檢視" aria-label="格狀檢視"><i class="ti ti-layout-grid"></i></button>
-                    <button type="button" class="view-btn" id="recipe-view-list-btn" title="列表檢視" aria-label="列表檢視"><i class="ti ti-list"></i></button>
-                  </div>
-                </div>
-                <div class="list-card-head-right">
-                  <select id="recipe-sort-select" class="sort-select">
-                    <option value="createdAt-desc">最新建立</option>
-                    <option value="name-asc">名稱（A-Z）</option>
-                    <option value="category-asc">分類（A-Z）</option>
-                  </select>
-                </div>
-              </div>
-
-              <section id="recipe-grid" class="book-grid"></section>
-
-              <div id="recipe-empty-state" class="empty-state" hidden></div>
-            </div>
-          </section>
-
-          <!-- 食譜分類與標籤管理（同一頁兩欄，跟書庫「書單管理」一致） -->
-          <section id="page-recipe-manage" class="page">
-            <div class="shelf-header">
-              <div>
-                <div class="shelf-eyebrow2">TOOLS</div>
-                <h1>分類與標籤管理</h1>
-                <p class="shelf-sub">類別依每道食譜的「食物類別」自動產生、標籤依「食譜標籤」欄位自動產生，皆可在此重新命名、刪除或拖曳排序</p>
-              </div>
-            </div>
-            <div class="manage-columns">
-              <div class="card">
-                <div class="card-title-row">
-                  <div class="card-title">食譜類別</div>
-                  <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-recipe-category-btn"><i class="ti ti-plus"></i> 新增類別</button>
-                </div>
-                <div class="manage-add-form" id="manage-recipe-category-add-form" hidden>
-                  <input type="text" id="new-recipe-category-input" placeholder="輸入類別名稱，按 Enter 新增">
-                  <button type="button" class="icon-btn" id="confirm-add-recipe-category" title="新增"><i class="ti ti-check"></i></button>
-                  <button type="button" class="icon-btn" id="cancel-add-recipe-category" title="取消"><i class="ti ti-x"></i></button>
-                </div>
-                <div id="manage-recipe-category-list"></div>
-              </div>
-              <div class="card">
-                <div class="card-title-row">
-                  <div class="card-title">食譜標籤</div>
-                  <button type="button" class="btn btn-ghost btn-sm manage-add-btn" id="add-recipe-tag-btn"><i class="ti ti-plus"></i> 新增標籤</button>
-                </div>
-                <div class="manage-add-form" id="manage-recipe-tag-add-form" hidden>
-                  <input type="text" id="new-recipe-tag-input" placeholder="輸入標籤名稱，按 Enter 新增">
-                  <button type="button" class="icon-btn" id="confirm-add-recipe-tag" title="新增"><i class="ti ti-check"></i></button>
-                  <button type="button" class="icon-btn" id="cancel-add-recipe-tag" title="取消"><i class="ti ti-x"></i></button>
-                </div>
-                <div id="manage-recipe-tag-list"></div>
-              </div>
-            </div>
-          </section>
-
-          <!-- 新增／編輯食譜（同一個表單，點食譜卡片直接開這頁編輯，跟書庫慣例一致） -->
-          <section id="page-recipe-form" class="page">
-            <div class="shelf-header">
-              <div>
-                <div class="shelf-eyebrow2">TOOLS</div>
-                <h1 id="recipe-form-title">新增食譜</h1>
-                <p class="shelf-sub">記錄食材、做法、評分與心得，之後可以隨時回來修改</p>
-              </div>
-            </div>
-
-            <div class="card">
-              <form id="recipe-form">
-
-                <div class="cover-field">
-                  <div class="cover-preview recipe-cover" id="recipe-cover-preview">
-                    <i class="ti ti-photo"></i>
-                  </div>
-                  <div class="cover-actions">
-                    <label class="btn btn-accent-outline btn-sm">
-                      上傳照片
-                      <input type="file" accept="image/*" id="recipe-cover-upload-input" hidden>
-                    </label>
-                    <button type="button" class="btn btn-ghost btn-sm" id="recipe-remove-cover-btn" hidden>移除照片</button>
-                  </div>
-                </div>
-
-                <div class="field-grid">
-                  <label class="field"><span>食譜名稱 *</span><input type="text" id="recipe-field-name" required></label>
-                  <label class="field"><span>建立日期</span><input type="date" id="recipe-field-created-date" readonly></label>
-                  <label class="field">
-                    <span>食物類別</span>
-                    <input type="text" id="recipe-field-category" list="recipe-category-options" placeholder="例：甜點、家常菜、湯品">
-                    <datalist id="recipe-category-options"></datalist>
-                  </label>
-                  <label class="field"><span>份量／人</span><input type="text" id="recipe-field-servings" placeholder="例：4"></label>
-                  <label class="field">
-                    <span>準備時間</span>
-                    <div class="time-picker-field">
-                      <select id="recipe-field-prep-hours" class="time-select" aria-label="準備時間（小時）"></select>
-                      <span class="time-unit">時</span>
-                      <select id="recipe-field-prep-minutes" class="time-select" aria-label="準備時間（分鐘）"></select>
-                      <span class="time-unit">分</span>
-                    </div>
-                  </label>
-                  <label class="field">
-                    <span>製作時間</span>
-                    <div class="time-picker-field">
-                      <select id="recipe-field-make-hours" class="time-select" aria-label="製作時間（小時）"></select>
-                      <span class="time-unit">時</span>
-                      <select id="recipe-field-make-minutes" class="time-select" aria-label="製作時間（分鐘）"></select>
-                      <span class="time-unit">分</span>
-                    </div>
-                  </label>
-                </div>
-
-                <div class="notes-section">
-                  <span class="field-label">食譜標籤</span>
-                  <p class="field-hint">點選已有標籤加入這道食譜，或直接輸入新標籤名稱後按 Enter 新增並套用。</p>
-                  <div class="tag-picker-list" id="recipe-tag-picker"></div>
-                  <div class="tag-picker-add">
-                    <input type="text" id="recipe-new-tag-input" placeholder="輸入新標籤，按 Enter 新增">
-                    <button type="button" class="icon-btn" id="recipe-add-tag-confirm" title="新增"><i class="ti ti-check"></i></button>
-                  </div>
-                </div>
-
-                <div class="notes-section">
-                  <span class="field-label">食材</span>
-                  <p class="field-hint">可以不分組直接列清單，也可以按下方「新增食材群組」建立像「內餡」「外皮」「醬汁」這樣的分類（名稱自己輸入，不限數量）。</p>
-                  <div id="recipe-ingredient-groups" class="ingredient-groups"></div>
-                  <datalist id="recipe-unit-options"></datalist>
-                  <div class="import-row">
-                    <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-add-group-btn">
-                      <i class="ti ti-plus"></i> 新增食材群組
-                    </button>
-                    <button type="button" class="btn btn-ghost btn-sm" id="recipe-import-ingredients-btn">
-                      <i class="ti ti-list"></i> 貼上食材清單匯入
-                    </button>
-                  </div>
-                  <div class="import-panel" id="recipe-import-ingredients-panel" hidden>
-                    <p class="field-hint">每行一項食材，例如「雞胸肉 300克」。貼上後按「解析並帶入」，會加到目前食材清單最後面（加到最後一個群組），帶入後請自行核對份量與單位是否正確。</p>
-                    <textarea id="recipe-import-ingredients-input" class="import-textarea" rows="6" placeholder="雞胸肉 300克&#10;洋蔥 1顆&#10;醬油 2大匙&#10;鹽 少許"></textarea>
-                    <div class="import-panel-actions">
-                      <button type="button" class="btn btn-ghost btn-sm" id="recipe-import-ingredients-cancel">取消</button>
-                      <button type="button" class="btn btn-accent btn-sm" id="recipe-import-ingredients-confirm">解析並帶入</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="notes-section">
-                  <span class="field-label">做法</span>
-                  <p class="field-hint">輸入內容後按 Enter 會自動新增下一個步驟（Shift+Enter 換行不新增）；也可以用「新增內容」插入小標題、注意事項或一般文字。</p>
-                  <div id="recipe-step-blocks" class="step-blocks"></div>
-                  <div class="step-add-row">
-                    <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-add-step-btn">
-                      <i class="ti ti-plus"></i> 新增步驟
-                    </button>
-                    <div class="step-add-type-wrap">
-                      <button type="button" class="btn btn-ghost btn-sm" id="recipe-add-content-btn">
-                        <i class="ti ti-plus"></i> 新增內容 <i class="ti ti-chevron-down"></i>
-                      </button>
-                      <div class="step-type-menu" id="recipe-add-content-menu" hidden>
-                        <button type="button" data-type="step"><i class="ti ti-list-numbers"></i> 步驟</button>
-                        <button type="button" data-type="heading"><i class="ti ti-heading"></i> 小標題</button>
-                        <button type="button" data-type="note"><i class="ti ti-alert-triangle"></i> 注意事項</button>
-                        <button type="button" data-type="text"><i class="ti ti-align-left"></i> 一般文字</button>
-                      </div>
-                    </div>
-                    <button type="button" class="btn btn-ghost btn-sm" id="recipe-import-steps-btn">
-                      <i class="ti ti-list-numbers"></i> 貼上做法匯入
-                    </button>
-                  </div>
-                  <div class="import-panel" id="recipe-import-steps-panel" hidden>
-                    <p class="field-hint">每行（或每個編號）算一個步驟，例如「1. 雞胸肉切塊」。貼上後按「解析並帶入」，會加到目前步驟清單最後面，帶入後請自行核對順序與內容是否正確。</p>
-                    <textarea id="recipe-import-steps-input" class="import-textarea" rows="6" placeholder="1. 雞胸肉切塊，醃15分鐘&#10;2. 洋蔥切絲爆香&#10;3. 下雞肉拌炒至熟"></textarea>
-                    <div class="import-panel-actions">
-                      <button type="button" class="btn btn-ghost btn-sm" id="recipe-import-steps-cancel">取消</button>
-                      <button type="button" class="btn btn-accent btn-sm" id="recipe-import-steps-confirm">解析並帶入</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="field-grid">
-                  <label class="field">
-                    <span>製作快樂度</span>
-                    <div class="star-input" id="recipe-star-joy" data-value="0" role="radiogroup" aria-label="製作快樂度">
-                      <i class="ti ti-star" data-star="1" role="radio" aria-label="1 星"></i>
-                      <i class="ti ti-star" data-star="2" role="radio" aria-label="2 星"></i>
-                      <i class="ti ti-star" data-star="3" role="radio" aria-label="3 星"></i>
-                      <i class="ti ti-star" data-star="4" role="radio" aria-label="4 星"></i>
-                      <i class="ti ti-star" data-star="5" role="radio" aria-label="5 星"></i>
-                    </div>
-                  </label>
-                  <label class="field">
-                    <span>用腦／費工程度</span>
-                    <div class="star-input" id="recipe-star-effort" data-value="0" role="radiogroup" aria-label="用腦／費工程度">
-                      <i class="ti ti-star" data-star="1" role="radio" aria-label="1 星"></i>
-                      <i class="ti ti-star" data-star="2" role="radio" aria-label="2 星"></i>
-                      <i class="ti ti-star" data-star="3" role="radio" aria-label="3 星"></i>
-                      <i class="ti ti-star" data-star="4" role="radio" aria-label="4 星"></i>
-                      <i class="ti ti-star" data-star="5" role="radio" aria-label="5 星"></i>
-                    </div>
-                  </label>
-                  <label class="field">
-                    <span>成品評分</span>
-                    <div class="star-input" id="recipe-star-result" data-value="0" role="radiogroup" aria-label="成品評分">
-                      <i class="ti ti-star" data-star="1" role="radio" aria-label="1 星"></i>
-                      <i class="ti ti-star" data-star="2" role="radio" aria-label="2 星"></i>
-                      <i class="ti ti-star" data-star="3" role="radio" aria-label="3 星"></i>
-                      <i class="ti ti-star" data-star="4" role="radio" aria-label="4 星"></i>
-                      <i class="ti ti-star" data-star="5" role="radio" aria-label="5 星"></i>
-                    </div>
-                  </label>
-                </div>
-
-                <div class="field-grid">
-                  <label class="field field-wide"><span>參考影片／網址</span><input type="url" id="recipe-field-source-url" placeholder="https://..."></label>
-                </div>
-
-                <div class="notes-section" id="recipe-form-notes-section">
-                  <span class="field-label">心得紀錄</span>
-                  <textarea id="recipe-field-notes" class="autosize-textarea" rows="3" placeholder="材料修改、比例調整、製作心得、成品口感、下次想怎麼改..." style="width:100%;"></textarea>
-                </div>
-
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-ghost" id="recipe-delete-btn" hidden>
-                    <i class="ti ti-trash"></i>
-                    刪除這道食譜
-                  </button>
-                  <div class="footer-spacer"></div>
-                  <button type="button" class="btn btn-ghost" id="recipe-cancel-btn">取消</button>
-                  <button type="submit" class="btn btn-accent">儲存</button>
-                </div>
-
-              </form>
-            </div>
-          </section>
-
-          <!-- 食譜詳情（唯讀瀏覽用；點列表卡片、或新增/編輯儲存後都會進到這裡，要修改請按「編輯」） -->
-          <section id="page-recipe-detail" class="page">
-            <div class="shelf-header">
-              <div>
-                <div class="shelf-eyebrow2">RECIPE</div>
-                <h1 id="recipe-detail-name">食譜名稱</h1>
-                <p class="shelf-sub" id="recipe-detail-category">未分類</p>
-              </div>
-              <div class="detail-header-actions">
-                <button type="button" class="btn btn-ghost btn-sm" id="recipe-detail-back-btn"><i class="ti ti-arrow-left"></i> 返回列表</button>
-                <button type="button" class="btn btn-accent-outline btn-sm" id="recipe-detail-edit-btn"><i class="ti ti-edit"></i> 編輯</button>
-              </div>
-            </div>
-
-            <div class="card recipe-detail-card">
-              <div class="recipe-detail-top">
-                <div class="cover-preview recipe-cover recipe-detail-cover" id="recipe-detail-cover"><i class="ti ti-photo"></i></div>
-                <div class="recipe-detail-stats">
-                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">建立日期</span><span class="recipe-detail-stat-value" id="recipe-detail-created">—</span></div>
-                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">準備時間</span><span class="recipe-detail-stat-value" id="recipe-detail-prep-time">—</span></div>
-                  <div class="recipe-detail-stat recipe-detail-stat-with-op"><span class="recipe-detail-stat-op">＋</span><span class="recipe-detail-stat-label">製作時間</span><span class="recipe-detail-stat-value" id="recipe-detail-make-time">—</span></div>
-                  <div class="recipe-detail-stat recipe-detail-stat-with-op"><span class="recipe-detail-stat-op">＝</span><span class="recipe-detail-stat-label">總時間</span><span class="recipe-detail-stat-value" id="recipe-detail-total-time">—</span></div>
-                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">份量／人</span><span class="recipe-detail-stat-value" id="recipe-detail-servings">—</span></div>
-                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">製作快樂度</span><span class="detail-stars" id="recipe-detail-star-joy"></span></div>
-                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">用腦／費工程度</span><span class="detail-stars" id="recipe-detail-star-effort"></span></div>
-                  <div class="recipe-detail-stat"><span class="recipe-detail-stat-label">成品評分</span><span class="detail-stars" id="recipe-detail-star-result"></span></div>
-                </div>
-              </div>
-
-              <div class="notes-section" id="recipe-detail-tags-section" hidden>
-                <span class="field-label">食譜標籤</span>
-                <div class="tag-chip-list" id="recipe-detail-tags"></div>
-              </div>
-
-              <div class="notes-section">
-                <span class="field-label">食材</span>
-                <div class="detail-ingredient-groups" id="recipe-detail-ingredients"></div>
-              </div>
-
-              <div class="notes-section">
-                <span class="field-label">做法</span>
-                <div class="detail-step-list" id="recipe-detail-steps"></div>
-              </div>
-
-              <div class="notes-section" id="recipe-detail-source-section" hidden>
-                <span class="field-label">參考來源</span>
-                <p class="detail-source" id="recipe-detail-source"></p>
-              </div>
-
-              <div class="notes-section" id="recipe-detail-notes-section" hidden>
-                <span class="field-label">心得紀錄</span>
-                <p class="detail-notes" id="recipe-detail-notes"></p>
-              </div>
-
-              <div class="modal-footer">
-                <button type="button" class="btn btn-ghost" id="recipe-detail-delete-btn">
-                  <i class="ti ti-trash"></i>
-                  刪除這道食譜
-                </button>
-              </div>
-            </div>
-          </section>
-
-        </main>
-      </div>
-
-    </div>
-  </div>
-
-  <script type="module">
-    import {
-      db, storage,
-      $, wireLoginScreen, watchAuth, renderAppSwitcher, initIconSystem,
-      escapeHtml, orderNames, renderManagePillRow, wireManagePillRow, enablePointerReorder
-    } from "./shared.js";
-    import {
-      collection, doc, setDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-    import {
-      ref as storageRef, uploadBytes, getDownloadURL, deleteObject
-    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
-
-    wireLoginScreen();
-    renderAppSwitcher("recipes");
-    initIconSystem();
-
-    // ---------- State ----------
-    let currentUser = null;
-    let allRecipes = [];
-    let recipeMeta = { categoryOrder: [], manualCategories: [], tagOrder: [], manualTags: [] };
-    let unsubscribeRecipes = null;
-    let unsubscribeRecipeMeta = null;
-    let lastCategoryCounts = {};
-    let activeCategory = "all";
-    let activeTag = null;
-    let currentRecipeTags = [];
-    const RECIPE_VIEW_MODE_KEY = "recipeApp:viewMode";
-    function loadRecipeViewMode() {
-      try { return localStorage.getItem(RECIPE_VIEW_MODE_KEY) === "list" ? "list" : "grid"; } catch { return "grid"; }
-    }
-    let recipeViewMode = loadRecipeViewMode();
-    let editingRecipeId = null;
-    let recipeFormReturnPage = "recipes";
-    let currentDetailRecipe = null;
-    let recipeDetailReturnPage = "recipes";
-    let currentRecipePhotoUrl = "";
-    let pendingRecipePhotoFile = null;
-    // ---------- 小工具：產生穩定 id（食材群組／食材／做法區塊都要用） ----------
-    function genId(prefix) {
-      if (window.crypto?.randomUUID) return prefix + "_" + window.crypto.randomUUID().slice(0, 8);
-      return prefix + "_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
-    }
-
-    // ---------- 常用食材／常用單位資料庫（先存在瀏覽器 localStorage，還沒接 Firestore） ----------
-    // 之後如果要多裝置同步、或做後台管理頁，再把這幾個 load/save 函式換成讀寫 Firestore 就好，
-    // 資料結構（{id, name, defaultUnit}）現在就是照 Firestore 文件的形狀設計的。
-    const COMMON_INGREDIENTS_KEY = "recipeApp:commonIngredients";
-    const COMMON_UNITS_KEY = "recipeApp:commonUnits";
-    const RECENT_INGREDIENTS_KEY = "recipeApp:recentIngredientIds";
-    const DEFAULT_COMMON_INGREDIENTS = [
-      { id: "ci_chicken_breast", name: "雞胸肉", defaultUnit: "克" },
-      { id: "ci_chicken_thigh", name: "雞腿肉", defaultUnit: "克" },
-      { id: "ci_pork_mince", name: "豬絞肉", defaultUnit: "克" },
-      { id: "ci_cabbage", name: "高麗菜", defaultUnit: "顆" },
-      { id: "ci_onion", name: "洋蔥", defaultUnit: "顆" },
-      { id: "ci_garlic", name: "蒜頭", defaultUnit: "瓣" },
-      { id: "ci_soy_sauce", name: "醬油", defaultUnit: "大匙" },
-      { id: "ci_rice_wine", name: "米酒", defaultUnit: "大匙" },
-      { id: "ci_sugar", name: "糖", defaultUnit: "小匙" },
-      { id: "ci_salt", name: "鹽", defaultUnit: "少許" }
-    ];
-    const DEFAULT_COMMON_UNITS = ["克", "公斤", "ml", "cc", "大匙", "小匙", "顆", "條", "片", "瓣", "包", "盒", "少許", "適量"];
-    function loadCommonIngredients() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(COMMON_INGREDIENTS_KEY) || "null");
-        return Array.isArray(parsed) && parsed.length ? parsed : [...DEFAULT_COMMON_INGREDIENTS];
-      } catch { return [...DEFAULT_COMMON_INGREDIENTS]; }
-    }
-    function saveCommonIngredients(list) {
-      try { localStorage.setItem(COMMON_INGREDIENTS_KEY, JSON.stringify(list)); } catch { /* 存不進去就算了，不影響食譜本身 */ }
-    }
-    function loadCommonUnits() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(COMMON_UNITS_KEY) || "null");
-        return Array.isArray(parsed) && parsed.length ? parsed : [...DEFAULT_COMMON_UNITS];
-      } catch { return [...DEFAULT_COMMON_UNITS]; }
-    }
-    function loadRecentIngredientIds() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(RECENT_INGREDIENTS_KEY) || "[]");
-        return Array.isArray(parsed) ? parsed : [];
-      } catch { return []; }
-    }
-    function pushRecentIngredientId(id) {
-      if (!id) return;
-      const list = [id, ...loadRecentIngredientIds().filter((x) => x !== id)].slice(0, 20);
-      try { localStorage.setItem(RECENT_INGREDIENTS_KEY, JSON.stringify(list)); } catch { /* 忽略 */ }
-    }
-    let commonIngredients = loadCommonIngredients();
-    let commonUnits = loadCommonUnits();
-
-    // ---------- 食材群組／做法區塊：新舊資料格式互轉 ----------
-    // 食材舊格式：ingredients: [{name, amount}]（單層清單）
-    // 食材新格式：ingredients: [{id, groupName, items:[{id, ingredientId, name, amount, unit}]}]
-    function normalizeIngredientGroups(raw) {
-      if (!Array.isArray(raw) || !raw.length) return [{ id: genId("grp"), groupName: "", items: [] }];
-      const looksGrouped = raw.every((g) => g && typeof g === "object" && Array.isArray(g.items));
-      if (looksGrouped) {
-        return raw.map((g) => ({
-          id: g.id || genId("grp"),
-          groupName: g.groupName || "",
-          items: (Array.isArray(g.items) ? g.items : []).map((it) => ({
-            id: it.id || genId("ing"),
-            ingredientId: it.ingredientId || null,
-            name: it.name || "",
-            amount: it.amount || "",
-            unit: it.unit || ""
-          }))
-        }));
-      }
-      return [{
-        id: genId("grp"),
-        groupName: "",
-        items: raw.map((it) => ({ id: genId("ing"), ingredientId: null, name: it.name || "", amount: it.amount || "", unit: it.unit || "" }))
-      }];
-    }
-    // 做法舊格式：steps: string[]
-    // 做法新格式：steps: [{id, type: "step"|"heading"|"note"|"text", content, numberStyle}]
-    // numberStyle 只對非 step 的項目有意義：none（無編號，預設）／number（1.）／letter（a.）／roman（i.）
-    const STEP_BLOCK_TYPES = ["step", "heading", "note", "text"];
-    const STEP_NUMBER_STYLES = ["none", "number", "letter", "roman"];
-    function normalizeStepBlocks(raw) {
-      if (!Array.isArray(raw) || !raw.length) return [{ id: genId("blk"), type: "step", content: "" }];
-      const looksTyped = raw.every((s) => s && typeof s === "object" && "type" in s);
-      if (looksTyped) {
-        return raw.map((s) => ({
-          id: s.id || genId("blk"),
-          type: STEP_BLOCK_TYPES.includes(s.type) ? s.type : "step",
-          content: s.content || "",
-          numberStyle: STEP_NUMBER_STYLES.includes(s.numberStyle) ? s.numberStyle : "none"
-        }));
-      }
-      return raw.map((s) => ({ id: genId("blk"), type: "step", content: typeof s === "string" ? s : "", numberStyle: "none" }));
-    }
-    // 唯讀詳情頁用：跟上面幾乎一樣，但完全沒資料時回傳空陣列（顯示「尚未填寫」），而不是塞一個空白項目
-    function toDisplayIngredientGroups(raw) {
-      if (!Array.isArray(raw) || !raw.length) return [];
-      const looksGrouped = raw.every((g) => g && typeof g === "object" && Array.isArray(g.items));
-      const groups = looksGrouped ? raw : [{ groupName: "", items: raw }];
-      return groups.filter((g) => Array.isArray(g.items) && g.items.length);
-    }
-    function toDisplayStepBlocks(raw) {
-      if (!Array.isArray(raw) || !raw.length) return [];
-      const looksTyped = raw.every((s) => s && typeof s === "object" && "type" in s);
-      const blocks = looksTyped ? raw : raw.map((s) => ({ type: "step", content: typeof s === "string" ? s : "" }));
-      return blocks
-        .filter((b) => (b.content || "").trim())
-        .map((b) => ({
-          type: STEP_BLOCK_TYPES.includes(b.type) ? b.type : "step",
-          content: b.content || "",
-          numberStyle: STEP_NUMBER_STYLES.includes(b.numberStyle) ? b.numberStyle : "none"
-        }));
-    }
-
-    let currentIngredientGroups = [];
-    let currentStepBlocks = [];
-    let recipeRatings = { joy: 0, effort: 0, result: 0 };
-
-    // ---------- 頁面切換（跟書庫同一套邏輯：純粹切換 .page/.sidebar-link 的 active class） ----------
-    function goToPage(target) {
-      document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + target));
-      document.querySelectorAll(".sidebar-link[data-page]").forEach((b) => {
-        if (b.dataset.category !== undefined) return; // 分類按鈕的 active 狀態由 renderSidebarRecipeCategories 自己管理
-        b.classList.toggle("active", b.dataset.page === target);
-      });
-      window.scrollTo(0, 0);
-    }
-    document.querySelectorAll(".sidebar-link[data-page]:not([data-category])").forEach((btn) => {
-      btn.addEventListener("click", () => goToPage(btn.dataset.page));
-    });
-
-    // ---------- Firestore 讀取／訂閱 ----------
-    function subscribeRecipes(uid) {
-      if (unsubscribeRecipes) unsubscribeRecipes();
-      const q = query(collection(db, "recipes"), where("uid", "==", uid));
-      unsubscribeRecipes = onSnapshot(
-        q,
-        (snap) => {
-          allRecipes = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          renderSidebarRecipeCategories();
-          renderRecipeTagsUI();
-          render();
-        },
-        (err) => console.error("recipes 讀取失敗：", err)
-      );
-    }
-    function subscribeRecipeMeta(uid) {
-      if (unsubscribeRecipeMeta) unsubscribeRecipeMeta();
-      const ref = doc(db, "recipeMeta", uid);
-      unsubscribeRecipeMeta = onSnapshot(
-        ref,
-        (snap) => {
-          const d = snap.data() || {};
-          recipeMeta = {
-            categoryOrder: Array.isArray(d.categoryOrder) ? d.categoryOrder : [],
-            manualCategories: Array.isArray(d.manualCategories) ? d.manualCategories : [],
-            tagOrder: Array.isArray(d.tagOrder) ? d.tagOrder : [],
-            manualTags: Array.isArray(d.manualTags) ? d.manualTags : []
-          };
-          renderSidebarRecipeCategories();
-          renderRecipeTagsUI();
-        },
-        (err) => console.error("recipeMeta 讀取失敗：", err)
-      );
-    }
-    function saveRecipeMeta(partial) {
-      return setDoc(doc(db, "recipeMeta", currentUser.uid), partial, { merge: true });
-    }
-
-    watchAuth(
-      (user) => {
-        currentUser = user;
-        subscribeRecipes(user.uid);
-        subscribeRecipeMeta(user.uid);
-      },
-      () => {
-        currentUser = null;
-        if (unsubscribeRecipes) unsubscribeRecipes();
-        if (unsubscribeRecipeMeta) unsubscribeRecipeMeta();
-        allRecipes = [];
-      }
-    );
-
-    // ---------- Helpers ----------
-    function getRecipeCategory(r) { return (r.category || "未分類").trim() || "未分類"; }
-    function getRecipeTags(r) { return Array.isArray(r.tags) ? r.tags : []; }
-    function starsHtml(n) {
-      let s = "";
-      for (let i = 1; i <= 5; i++) s += `<i class="ti ti-star${i <= n ? "" : " empty"}"></i>`;
-      return s;
-    }
-
-    // ================= 側邊欄：食譜分類（沿用書庫「書單」同一套邏輯） =================
-    function renderSidebarRecipeCategories() {
-      const categoryCounts = {};
-      allRecipes.forEach((r) => { const c = getRecipeCategory(r); categoryCounts[c] = (categoryCounts[c] || 0) + 1; });
-      const allNames = new Set([...Object.keys(categoryCounts), ...recipeMeta.manualCategories]);
-      const categoriesSorted = orderNames([...allNames], recipeMeta.categoryOrder);
-      lastCategoryCounts = categoryCounts;
-
-      let html = `<button class="sidebar-link${activeCategory === "all" ? " active" : ""}" data-page="recipes" data-category="all">
-          <i class="ti ti-utensils"></i><span class="label">所有食譜</span>
-        </button>`;
-      html += categoriesSorted.map((c) => `
-        <button class="sidebar-link${activeCategory === c ? " active" : ""}" data-page="recipes" data-category="${escapeHtml(c)}">
-          <i class="ti ti-list"></i><span class="label">${escapeHtml(c)}</span>
-        </button>`).join("");
-      $("sidebar-recipe-list").innerHTML = html;
-
-      $("sidebar-recipe-list").querySelectorAll(".sidebar-link").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          activeCategory = btn.dataset.category;
-          goToPage("recipes");
-          renderSidebarRecipeCategories();
-          render();
-        });
-      });
-
-      $("recipe-category-options").innerHTML = categoriesSorted.map((c) => `<option value="${escapeHtml(c)}"></option>`).join("");
-      renderManageRecipeCategoryList(categoriesSorted, categoryCounts);
-    }
-
-    // ================= 食譜分類管理（重新命名／刪除／拖曳排序／新增空分類） =================
-    async function renameRecipeCategory(oldName, newName) {
-      const affected = allRecipes.filter((r) => getRecipeCategory(r) === oldName);
-      for (const r of affected) { await setDoc(doc(db, "recipes", r.id), { category: newName }, { merge: true }); }
-      const manualCategories = recipeMeta.manualCategories.filter((c) => c !== oldName);
-      if (affected.length === 0) manualCategories.push(newName);
-      const categoryOrder = recipeMeta.categoryOrder.map((c) => (c === oldName ? newName : c));
-      if (!categoryOrder.includes(newName)) categoryOrder.push(newName);
-      if (activeCategory === oldName) activeCategory = newName;
-      await saveRecipeMeta({ manualCategories, categoryOrder });
-    }
-    async function deleteRecipeCategory(name) {
-      const affected = allRecipes.filter((r) => getRecipeCategory(r) === name);
-      const msg = affected.length
-        ? `確定要刪除分類「${name}」嗎？相關食譜會改為「未分類」，食譜本身不會被刪除。`
-        : `確定要刪除分類「${name}」嗎？`;
-      if (!confirm(msg)) return;
-      for (const r of affected) { await setDoc(doc(db, "recipes", r.id), { category: "未分類" }, { merge: true }); }
-      const manualCategories = recipeMeta.manualCategories.filter((c) => c !== name);
-      const categoryOrder = recipeMeta.categoryOrder.filter((c) => c !== name);
-      if (activeCategory === name) activeCategory = "all";
-      await saveRecipeMeta({ manualCategories, categoryOrder });
-    }
-    function renderManageRecipeCategoryList(categoriesSorted, categoryCounts) {
-      const el = $("manage-recipe-category-list");
-      if (!categoriesSorted.length) {
-        el.innerHTML = `<p class="manage-empty-hint">還沒有任何分類，可按上方「新增分類」先建立，或新增食譜並填寫食物類型後自動出現在這裡。</p>`;
-        return;
-      }
-      el.className = "manage-pill-list";
-      el.innerHTML = categoriesSorted.map((c) => renderManagePillRow(c, categoryCounts[c] || 0, false)).join("");
-      el.querySelectorAll(".manage-pill").forEach((row) => {
-        wireManagePillRow(row, { onRename: renameRecipeCategory, onDelete: deleteRecipeCategory });
-      });
-      enablePointerReorder(el, (order) => saveRecipeMeta({ categoryOrder: order }), renderSidebarRecipeCategories);
-    }
-    function setupInlineAdd({ addBtnId, formId, inputId, confirmId, cancelId, onAdd }) {
-      const addBtn = $(addBtnId), form = $(formId), input = $(inputId);
-      const confirmBtn = $(confirmId), cancelBtn = $(cancelId);
-      function open() { addBtn.hidden = true; form.hidden = false; input.value = ""; input.focus(); }
-      function close() { form.hidden = true; addBtn.hidden = false; }
-      addBtn.addEventListener("click", open);
-      cancelBtn.addEventListener("click", close);
-      async function submit() {
-        const val = input.value.trim();
-        if (!val) { input.focus(); return; }
-        await onAdd(val);
-        close();
-      }
-      confirmBtn.addEventListener("click", submit);
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") { e.preventDefault(); submit(); }
-        else if (e.key === "Escape") { close(); }
-      });
-    }
-    setupInlineAdd({
-      addBtnId: "add-recipe-category-btn", formId: "manage-recipe-category-add-form", inputId: "new-recipe-category-input",
-      confirmId: "confirm-add-recipe-category", cancelId: "cancel-add-recipe-category",
-      onAdd: async (name) => {
-        if (lastCategoryCounts[name] != null || recipeMeta.manualCategories.includes(name)) {
-          alert("這個分類已經存在了。");
-          return;
-        }
-        const manualCategories = [...recipeMeta.manualCategories, name];
-        const categoryOrder = recipeMeta.categoryOrder.includes(name) ? recipeMeta.categoryOrder : [...recipeMeta.categoryOrder, name];
-        await saveRecipeMeta({ manualCategories, categoryOrder });
-      }
-    });
-
-    // ================= 食譜標籤（列表篩選、管理頁、表單挑選器，沿用書庫「標籤」同一套邏輯） =================
-    function getRecipeTagCounts() {
-      const counts = {};
-      allRecipes.forEach((r) => { getRecipeTags(r).forEach((t) => { counts[t] = (counts[t] || 0) + 1; }); });
-      return counts;
-    }
-    function getAllRecipeTagNames(tagCounts) {
-      const counts = tagCounts || getRecipeTagCounts();
-      const allNames = new Set([...Object.keys(counts), ...recipeMeta.manualTags]);
-      return orderNames([...allNames], recipeMeta.tagOrder);
-    }
-    function renderRecipeTagFilterRow(tagsSorted, tagCounts) {
-      const el = $("recipe-tag-chip-list");
-      if (!tagsSorted.length) {
-        el.innerHTML = `<span class="tag-empty-hint">尚未建立任何標籤，可至「分類與標籤管理」新增</span>`;
-        return;
-      }
-      el.innerHTML = tagsSorted.map((t) => `
-        <button type="button" class="tag-chip${activeTag === t ? " active" : ""}" data-tag="${escapeHtml(t)}">
-          #${escapeHtml(t)} <span class="tc-count">(${tagCounts[t] || 0})</span>
-        </button>`).join("");
-      el.querySelectorAll(".tag-chip").forEach((chip) => {
-        chip.addEventListener("click", () => {
-          activeTag = activeTag === chip.dataset.tag ? null : chip.dataset.tag;
-          renderRecipeTagFilterRow(tagsSorted, tagCounts);
-          render();
-        });
-      });
-    }
-    async function renameRecipeTag(oldName, newName) {
-      const affected = allRecipes.filter((r) => getRecipeTags(r).includes(oldName));
-      for (const r of affected) {
-        const tags = [...new Set(getRecipeTags(r).map((t) => (t === oldName ? newName : t)))];
-        await setDoc(doc(db, "recipes", r.id), { tags }, { merge: true });
-      }
-      const manualTags = recipeMeta.manualTags.filter((t) => t !== oldName);
-      if (affected.length === 0) manualTags.push(newName);
-      const tagOrder = recipeMeta.tagOrder.map((t) => (t === oldName ? newName : t));
-      if (!tagOrder.includes(newName)) tagOrder.push(newName);
-      if (activeTag === oldName) activeTag = newName;
-      await saveRecipeMeta({ manualTags, tagOrder });
-    }
-    async function deleteRecipeTag(name) {
-      const affected = allRecipes.filter((r) => getRecipeTags(r).includes(name));
-      const msg = affected.length
-        ? `確定要刪除標籤「${name}」嗎？會從 ${affected.length} 道相關食譜移除此標籤，食譜本身不會被刪除。`
-        : `確定要刪除標籤「${name}」嗎？`;
-      if (!confirm(msg)) return;
-      for (const r of affected) {
-        const tags = getRecipeTags(r).filter((t) => t !== name);
-        await setDoc(doc(db, "recipes", r.id), { tags }, { merge: true });
-      }
-      const manualTags = recipeMeta.manualTags.filter((t) => t !== name);
-      const tagOrder = recipeMeta.tagOrder.filter((t) => t !== name);
-      if (activeTag === name) activeTag = null;
-      await saveRecipeMeta({ manualTags, tagOrder });
-    }
-    function renderManageRecipeTagList(tagsSorted, tagCounts) {
-      const el = $("manage-recipe-tag-list");
-      if (!tagsSorted.length) {
-        el.innerHTML = `<p class="manage-empty-hint">還沒有任何標籤，可按上方「新增標籤」先建立，或在食譜表單新增標籤時自動出現在這裡。</p>`;
-        return;
-      }
-      el.className = "manage-pill-list";
-      el.innerHTML = tagsSorted.map((t) => renderManagePillRow(t, tagCounts[t] || 0, true)).join("");
-      el.querySelectorAll(".manage-pill").forEach((row) => {
-        wireManagePillRow(row, { onRename: renameRecipeTag, onDelete: deleteRecipeTag });
-      });
-      enablePointerReorder(el, (order) => saveRecipeMeta({ tagOrder: order }), renderRecipeTagsUI);
-    }
-    function renderRecipeTagPicker() {
-      const el = $("recipe-tag-picker");
-      const allTags = getAllRecipeTagNames();
-      if (!allTags.length) {
-        el.innerHTML = `<p class="manage-empty-hint">還沒有任何標籤，輸入下方欄位新增第一個標籤。</p>`;
-        return;
-      }
-      el.innerHTML = allTags.map((t) => `
-        <button type="button" class="tag-chip pickable${currentRecipeTags.includes(t) ? " selected" : ""}" data-tag="${escapeHtml(t)}">
-          #${escapeHtml(t)}
-        </button>`).join("");
-      el.querySelectorAll(".tag-chip").forEach((chip) => {
-        chip.addEventListener("click", () => {
-          const t = chip.dataset.tag;
-          currentRecipeTags = currentRecipeTags.includes(t) ? currentRecipeTags.filter((x) => x !== t) : [...currentRecipeTags, t];
-          renderRecipeTagPicker();
-        });
-      });
-    }
-    function renderRecipeTagsUI() {
-      const tagCounts = getRecipeTagCounts();
-      const tagsSorted = getAllRecipeTagNames(tagCounts);
-      renderRecipeTagFilterRow(tagsSorted, tagCounts);
-      renderManageRecipeTagList(tagsSorted, tagCounts);
-      renderRecipeTagPicker();
-    }
-    setupInlineAdd({
-      addBtnId: "add-recipe-tag-btn", formId: "manage-recipe-tag-add-form", inputId: "new-recipe-tag-input",
-      confirmId: "confirm-add-recipe-tag", cancelId: "cancel-add-recipe-tag",
-      onAdd: async (name) => {
-        const tagCounts = getRecipeTagCounts();
-        if (tagCounts[name] != null || recipeMeta.manualTags.includes(name)) {
-          alert("這個標籤已經存在了。");
-          return;
-        }
-        const manualTags = [...recipeMeta.manualTags, name];
-        const tagOrder = recipeMeta.tagOrder.includes(name) ? recipeMeta.tagOrder : [...recipeMeta.tagOrder, name];
-        await saveRecipeMeta({ manualTags, tagOrder });
-      }
-    });
-    async function addNewRecipeTagFromInput() {
-      const input = $("recipe-new-tag-input");
-      const val = input.value.trim();
-      if (!val) return;
-      if (getAllRecipeTagNames().includes(val)) {
-        if (!currentRecipeTags.includes(val)) { currentRecipeTags.push(val); renderRecipeTagPicker(); }
-        input.value = "";
-        return;
-      }
-      const manualTags = [...recipeMeta.manualTags, val];
-      const tagOrder = recipeMeta.tagOrder.includes(val) ? recipeMeta.tagOrder : [...recipeMeta.tagOrder, val];
-      await saveRecipeMeta({ manualTags, tagOrder });
-      if (!currentRecipeTags.includes(val)) currentRecipeTags.push(val);
-      input.value = "";
-      renderRecipeTagPicker();
-    }
-    $("recipe-add-tag-confirm").addEventListener("click", addNewRecipeTagFromInput);
-    $("recipe-new-tag-input").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); addNewRecipeTagFromInput(); }
-    });
-
-    // ================= 準備時間／製作時間：像鬧鐘一樣選小時／分鐘，不用手打文字 =================
-    function initTimeSelects(hourId, minuteId) {
-      $(hourId).innerHTML = Array.from({ length: 13 }, (_, i) => `<option value="${i}">${i}</option>`).join("");
-      $(minuteId).innerHTML = Array.from({ length: 12 }, (_, i) => i * 5).map((m) => `<option value="${m}">${m}</option>`).join("");
-    }
-    initTimeSelects("recipe-field-prep-hours", "recipe-field-prep-minutes");
-    initTimeSelects("recipe-field-make-hours", "recipe-field-make-minutes");
-    function parseMakeTimeToHM(raw) {
-      if (!raw) return { h: 0, m: 0 };
-      const s = String(raw);
-      const hMatch = s.match(/(\d+)\s*(?:小時|時|hr|h)/i);
-      const mMatch = s.match(/(\d+)\s*(?:分鐘|分|min|m)(?!\w)/i);
-      if (hMatch || mMatch) {
-        return { h: hMatch ? parseInt(hMatch[1], 10) : 0, m: mMatch ? parseInt(mMatch[1], 10) : 0 };
-      }
-      const num = parseInt(s, 10);
-      if (!isNaN(num)) return { h: Math.floor(num / 60), m: num % 60 };
-      return { h: 0, m: 0 };
-    }
-    function setTimeSelects(hourId, minuteId, raw) {
-      const { h, m } = parseMakeTimeToHM(raw);
-      $(hourId).value = String(Math.min(12, Math.max(0, h)));
-      const roundedM = Math.min(55, Math.max(0, Math.round(m / 5) * 5));
-      $(minuteId).value = String(roundedM);
-    }
-    function getTimeString(hourId, minuteId) {
-      const h = Number($(hourId).value) || 0;
-      const m = Number($(minuteId).value) || 0;
-      const parts = [];
-      if (h) parts.push(h + " 小時");
-      if (m) parts.push(m + " 分");
-      return parts.join(" ");
-    }
-    function setPrepTimeSelects(raw) { setTimeSelects("recipe-field-prep-hours", "recipe-field-prep-minutes", raw); }
-    function setMakeTimeSelects(raw) { setTimeSelects("recipe-field-make-hours", "recipe-field-make-minutes", raw); }
-    function getPrepTimeString() { return getTimeString("recipe-field-prep-hours", "recipe-field-prep-minutes"); }
-    function getMakeTimeString() { return getTimeString("recipe-field-make-hours", "recipe-field-make-minutes"); }
-    // 把「1 小時 30 分」這種字串換算成總分鐘數，方便加總
-    function timeStringToMinutes(raw) {
-      const { h, m } = parseMakeTimeToHM(raw);
-      return h * 60 + m;
-    }
-    function formatMinutesAsDuration(totalMin) {
-      const h = Math.floor(totalMin / 60), m = totalMin % 60;
-      const parts = [];
-      if (h) parts.push(h + " 小時");
-      if (m || !h) parts.push(m + " 分");
-      return parts.join(" ");
-    }
-    // 準備時間 10 分 + 製作時間 15 分 = 總計 25 分，兩者都沒填就顯示「—」
-    function buildTotalTimeLabel(prepMin, makeMin) {
-      if (!prepMin && !makeMin) return "";
-      return formatMinutesAsDuration(prepMin + makeMin);
-    }
-
-    // ================= 食譜列表 =================
-    function render() {
-      let recipes = [...allRecipes];
-      if (activeCategory !== "all") recipes = recipes.filter((r) => getRecipeCategory(r) === activeCategory);
-      if (activeTag) recipes = recipes.filter((r) => getRecipeTags(r).includes(activeTag));
-      const term = $("recipe-search-input").value.trim().toLowerCase();
-      if (term) {
-        recipes = recipes.filter((r) => {
-          const hay = [r.name, r.category, r.notes, r.sourceName, ...getRecipeTags(r)].filter(Boolean).join(" ").toLowerCase();
-          return hay.includes(term);
-        });
-      }
-
-      const sortValue = $("recipe-sort-select").value;
-      if (sortValue === "createdAt-desc") {
-        recipes.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      } else if (sortValue === "name-asc") {
-        recipes.sort((a, b) => (a.name || "").localeCompare(b.name || "", "zh-Hant"));
-      } else if (sortValue === "category-asc") {
-        recipes.sort((a, b) => {
-          const catCmp = getRecipeCategory(a).localeCompare(getRecipeCategory(b), "zh-Hant");
-          return catCmp !== 0 ? catCmp : (a.name || "").localeCompare(b.name || "", "zh-Hant");
-        });
-      }
-
-      const grid = $("recipe-grid");
-      grid.innerHTML = "";
-      const emptyState = $("recipe-empty-state");
-      if (allRecipes.length === 0) {
-        emptyState.hidden = false;
-        emptyState.innerHTML = `<i class="ti ti-utensils"></i><h3>還沒有任何食譜</h3><p>新增你的第一道拿手菜，記錄食材、做法與心得。</p><button class="btn btn-accent" id="recipe-empty-add-btn"><i class="ti ti-plus"></i>新增第一道食譜</button>`;
-        $("recipe-empty-add-btn").onclick = () => openAddRecipe();
-      } else if (recipes.length === 0) {
-        emptyState.hidden = false;
-        emptyState.innerHTML = `<i class="ti ti-filter-off"></i><h3>沒有符合條件的食譜</h3><p>請調整搜尋或分類篩選。</p>`;
-      } else {
-        emptyState.hidden = true;
-      }
-      recipes.forEach((r) => grid.appendChild(renderRecipeCard(r)));
-      $("recipe-count-label").textContent = "共 " + recipes.length + " 道食譜";
-      updateRecipeShelfHeading(recipes.length);
-    }
-
-    function updateRecipeShelfHeading(visibleCount) {
-      if (activeCategory === "all") {
-        $("recipe-shelf-title").textContent = "我的食譜";
-        $("recipe-shelf-subtitle").textContent = "目前收藏 " + allRecipes.length + " 道食譜";
-      } else {
-        $("recipe-shelf-title").textContent = activeCategory;
-        $("recipe-shelf-subtitle").textContent = "此分類共 " + visibleCount + " 道食譜";
-      }
-    }
-
-    function renderRecipeCard(r) {
-      const card = document.createElement("div");
-      card.className = "book-card";
-      card.dataset.recipeId = r.id;
-      card.addEventListener("click", () => openRecipeDetail(r));
-      card.innerHTML = `
-        <div class="book-cover recipe-cover">${r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`}</div>
-        <p class="book-title">${escapeHtml(r.name || "未命名食譜")}</p>
-        <p class="book-author">${escapeHtml(getRecipeCategory(r))}</p>`;
-      return card;
-    }
-
-    $("recipe-search-input").addEventListener("input", render);
-    $("recipe-sort-select").addEventListener("change", render);
-
-    // ================= 檢視方式：格狀／列表（沿用書庫 .book-grid.view-list 樣式） =================
-    function setRecipeViewMode(mode) {
-      recipeViewMode = mode;
-      try { localStorage.setItem(RECIPE_VIEW_MODE_KEY, mode); } catch { /* 忽略 */ }
-      $("recipe-grid").classList.toggle("view-list", mode === "list");
-      $("recipe-view-grid-btn").classList.toggle("active", mode === "grid");
-      $("recipe-view-list-btn").classList.toggle("active", mode === "list");
-    }
-    $("recipe-view-grid-btn").addEventListener("click", () => setRecipeViewMode("grid"));
-    $("recipe-view-list-btn").addEventListener("click", () => setRecipeViewMode("list"));
-    setRecipeViewMode(recipeViewMode);
-
-    // ================= 新增／編輯食譜表單 =================
-    function rememberRecipeReturnPage() {
-      const activePage = document.querySelector(".page.active");
-      if (activePage && activePage.id !== "page-recipe-form") recipeFormReturnPage = activePage.id.replace("page-", "");
-    }
-    function closeRecipeForm() { goToPage(recipeFormReturnPage); }
-
-    // ================= 食譜詳情（唯讀瀏覽） =================
-    function rememberRecipeDetailReturnPage() {
-      const activePage = document.querySelector(".page.active");
-      if (activePage && activePage.id !== "page-recipe-detail" && activePage.id !== "page-recipe-form") {
-        recipeDetailReturnPage = activePage.id.replace("page-", "");
-      }
-    }
-    function closeRecipeDetail() { goToPage(recipeDetailReturnPage); }
-    // 做法：主步驟維持數字編號；緊接在某個步驟後面的「小標題／注意事項／一般文字」
-    // 會變成該步驟底下的字母子項目（a. b. c...），呈現方式參考 Notion 的巢狀編號清單。
-    // 羅馬數字轉換（給「羅馬數字」編號樣式用）
-    function toRomanNumeral(num) {
-      const map = [[1000, "m"], [900, "cm"], [500, "d"], [400, "cd"], [100, "c"], [90, "xc"], [50, "l"], [40, "xl"], [10, "x"], [9, "ix"], [5, "v"], [4, "iv"], [1, "i"]];
-      let n = num, out = "";
-      for (const [val, sym] of map) { while (n >= val) { out += sym; n -= val; } }
-      return out;
-    }
-    // 依照使用者選擇的編號樣式（無編號／數字／字母／羅馬數字）產生這一項前面的符號，
-    // 每種樣式各自累計自己的計數，彼此不互相干擾。
-    function buildSubstepMarker(numberStyle, counters) {
-      if (numberStyle === "number") { counters.number = (counters.number || 0) + 1; return counters.number + "."; }
-      if (numberStyle === "letter") { counters.letter = (counters.letter || 0) + 1; return String.fromCharCode(96 + counters.letter) + "."; }
-      if (numberStyle === "roman") { counters.roman = (counters.roman || 0) + 1; return toRomanNumeral(counters.roman) + "."; }
-      return "";
-    }
-    function renderDetailStepGroups(stepBlocks) {
-      const groups = [];
-      let current = null;
-      stepBlocks.forEach((b) => {
-        if (b.type === "step") {
-          current = { step: b, subs: [] };
-          groups.push(current);
-        } else if (current) {
-          current.subs.push(b);
-        } else {
-          groups.push({ step: null, leading: b });
-        }
-      });
-
-      let stepCounter = 0;
-      const leadingCounters = {}; // 出現在第一個「步驟」之前的小標題／注意事項／一般文字，自己單獨算一組編號
-      return groups.map((g) => {
-        if (!g.step) {
-          const b = g.leading;
-          const marker = buildSubstepMarker(b.numberStyle || "none", leadingCounters);
-          const markerHtml = marker ? `<span class="detail-leading-marker">${escapeHtml(marker)}</span>` : "";
-          if (b.type === "heading") return `<h4 class="detail-step-heading">${markerHtml}${escapeHtml(b.content)}</h4>`;
-          if (b.type === "note") return `<div class="detail-step-block detail-step-block-note">${markerHtml}<i class="ti ti-alert-triangle"></i><p>${escapeHtml(b.content)}</p></div>`;
-          return `<p class="detail-step-text">${markerHtml}${escapeHtml(b.content)}</p>`;
-        }
-        stepCounter++;
-        const counters = {};
-        const subsHtml = g.subs.length
-          ? `<div class="detail-substep-list">${g.subs.map((sb) => {
-              const marker = buildSubstepMarker(sb.numberStyle || "none", counters);
-              const markerHtml = marker ? `<span class="detail-substep-letter">${escapeHtml(marker)}</span>` : "";
-              if (sb.type === "note") {
-                return `<div class="detail-substep-row detail-substep-note">${markerHtml}<div class="detail-substep-note-box"><i class="ti ti-alert-triangle"></i><p>${escapeHtml(sb.content)}</p></div></div>`;
-              }
-              if (sb.type === "heading") {
-                return `<div class="detail-substep-row detail-substep-heading">${markerHtml}<p>${escapeHtml(sb.content)}</p></div>`;
-              }
-              return `<div class="detail-substep-row">${markerHtml}<p>${escapeHtml(sb.content)}</p></div>`;
-            }).join("")}</div>`
-          : "";
-        return `<div class="detail-step-block detail-step-block-step"><span class="detail-step-num">${stepCounter}</span><div class="detail-step-body"><p>${escapeHtml(g.step.content)}</p>${subsHtml}</div></div>`;
-      }).join("");
-    }
-    function renderRecipeDetail(r) {
-      $("recipe-detail-name").textContent = r.name || "未命名食譜";
-      $("recipe-detail-category").textContent = getRecipeCategory(r);
-      $("recipe-detail-cover").innerHTML = r.photoUrl ? `<img src="${escapeHtml(r.photoUrl)}" alt="">` : `<i class="ti ti-photo"></i>`;
-      $("recipe-detail-created").textContent = r.createdDate || "—";
-      $("recipe-detail-servings").textContent = r.servings || "—";
-      $("recipe-detail-prep-time").textContent = r.prepTime || "—";
-      $("recipe-detail-make-time").textContent = r.makeTime || "—";
-      const totalMin = timeStringToMinutes(r.prepTime) + timeStringToMinutes(r.makeTime);
-      $("recipe-detail-total-time").textContent = totalMin ? formatMinutesAsDuration(totalMin) : "—";
-      $("recipe-detail-star-joy").innerHTML = starsHtml(r.ratingJoy || 0);
-      $("recipe-detail-star-effort").innerHTML = starsHtml(r.ratingEffort || 0);
-      $("recipe-detail-star-result").innerHTML = starsHtml(r.ratingResult || 0);
-
-      const detailTags = getRecipeTags(r);
-      $("recipe-detail-tags-section").hidden = !detailTags.length;
-      $("recipe-detail-tags").innerHTML = detailTags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join("");
-
-      const ingredientGroups = toDisplayIngredientGroups(r.ingredients);
-      $("recipe-detail-ingredients").innerHTML = ingredientGroups.length
-        ? ingredientGroups.map((g) => `
-            <div class="detail-ingredient-group">
-              ${g.groupName ? `<div class="detail-ingredient-group-name">${escapeHtml(g.groupName)}</div>` : ""}
-              <div class="detail-ing-list">
-                ${g.items.map((it) => `
-                  <div class="detail-ing-row">
-                    <span class="detail-ing-name">${escapeHtml(it.name || "")}</span>
-                    ${(it.amount || it.unit) ? `<span class="detail-ing-amount">${escapeHtml([it.amount, it.unit].filter(Boolean).join(" "))}</span>` : ""}
-                  </div>`).join("")}
-              </div>
-            </div>`).join("")
-        : `<p class="detail-empty-hint">尚未填寫食材</p>`;
-
-      const stepBlocks = toDisplayStepBlocks(r.steps);
-      $("recipe-detail-steps").innerHTML = stepBlocks.length
-        ? `<div class="detail-step-list">${renderDetailStepGroups(stepBlocks)}</div>`
-        : `<p class="detail-empty-hint">尚未填寫做法</p>`;
-
-      const sourceParts = [r.sourceName, r.sourcePlatform].filter((v) => (v || "").trim()).map(escapeHtml);
-      let sourceHtml = sourceParts.join(" · ");
-      if ((r.sourceUrl || "").trim()) {
-        sourceHtml += (sourceHtml ? " · " : "") + `<a class="detail-source-link" href="${escapeHtml(r.sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(r.sourceUrl)}</a>`;
-      }
-      $("recipe-detail-source-section").hidden = !sourceHtml;
-      $("recipe-detail-source").innerHTML = sourceHtml;
-
-      $("recipe-detail-notes-section").hidden = !(r.notes || "").trim();
-      $("recipe-detail-notes").textContent = r.notes || "";
-    }
-    function showRecipeDetail(r) {
-      currentDetailRecipe = r;
-      renderRecipeDetail(r);
-      goToPage("recipe-detail");
-    }
-    function openRecipeDetail(r) {
-      rememberRecipeDetailReturnPage();
-      showRecipeDetail(r);
-    }
-    async function deleteRecipeById(id) {
-      await deleteDoc(doc(db, "recipes", id));
-      try { await deleteObject(storageRef(storage, `recipe-photos/${currentUser.uid}/${id}.jpg`)); } catch (err) { /* 可能本來就沒有照片，忽略即可 */ }
-    }
-    $("recipe-detail-back-btn").addEventListener("click", closeRecipeDetail);
-    $("recipe-detail-edit-btn").addEventListener("click", () => { if (currentDetailRecipe) openEditRecipe(currentDetailRecipe); });
-    $("recipe-detail-delete-btn").addEventListener("click", async () => {
-      if (!currentDetailRecipe) return;
-      if (!confirm("確定要刪除這道食譜嗎？此動作無法復原。")) return;
-      await deleteRecipeById(currentDetailRecipe.id);
-      closeRecipeDetail();
-    });
-
-    function updateRecipeCoverPreview() {
-      $("recipe-cover-preview").innerHTML = currentRecipePhotoUrl ? `<img src="${currentRecipePhotoUrl}" alt="">` : `<i class="ti ti-photo"></i>`;
-      $("recipe-remove-cover-btn").hidden = !currentRecipePhotoUrl;
-    }
-    $("recipe-cover-upload-input").addEventListener("change", () => {
-      const file = $("recipe-cover-upload-input").files[0];
-      if (!file) return;
-      pendingRecipePhotoFile = file;
-      currentRecipePhotoUrl = URL.createObjectURL(file);
-      updateRecipeCoverPreview();
-    });
-    $("recipe-remove-cover-btn").addEventListener("click", () => {
-      currentRecipePhotoUrl = ""; pendingRecipePhotoFile = null; updateRecipeCoverPreview();
-    });
-
-    // ---------- 三組獨立星等 ----------
-    function updateStarDisplay(el, value) {
-      [...el.children].forEach((c) => c.classList.toggle("filled", Number(c.dataset.star) <= value));
-    }
-    function wireStarInput(elId, key) {
-      const el = $(elId);
-      el.addEventListener("click", (e) => {
-        const star = e.target.closest("[data-star]");
-        if (!star) return;
-        recipeRatings[key] = Number(star.dataset.star);
-        updateStarDisplay(el, recipeRatings[key]);
-      });
-    }
-    wireStarInput("recipe-star-joy", "joy");
-    wireStarInput("recipe-star-effort", "effort");
-    wireStarInput("recipe-star-result", "result");
-    function applyRatingsToForm() {
-      updateStarDisplay($("recipe-star-joy"), recipeRatings.joy);
-      updateStarDisplay($("recipe-star-effort"), recipeRatings.effort);
-      updateStarDisplay($("recipe-star-result"), recipeRatings.result);
-    }
-
-    // ================= 食材編輯器（可自由分組：內餡／外皮／醬汁...，或完全不分組） =================
-    const ingredientGroupsEl = $("recipe-ingredient-groups");
-    let acState = null; // 目前開啟中的食材自動完成下拉：{ groupIndex, itemIndex, query, matches, highlighted, addNewIdx }
-
-    function refreshUnitOptions() {
-      $("recipe-unit-options").innerHTML = commonUnits.map((u) => `<option value="${escapeHtml(u)}"></option>`).join("");
-    }
-    function ingredientItemRowHtml(it, gi, ii, total) {
-      return `
-        <div class="ingredient-item-row" data-group-index="${gi}" data-item-index="${ii}">
-          <span class="dynamic-row-num">${ii + 1}</span>
-          <div class="ingredient-autocomplete-wrap">
-            <input type="text" class="ing-name" placeholder="食材名稱" value="${escapeHtml(it.name || "")}" autocomplete="off">
-            <div class="ingredient-autocomplete-list" hidden></div>
-          </div>
-          <input type="text" class="ing-amount" placeholder="份量" value="${escapeHtml(it.amount || "")}">
-          <input type="text" class="ing-unit" placeholder="單位" value="${escapeHtml(it.unit || "")}" list="recipe-unit-options">
-          <div class="dynamic-row-actions">
-            <button type="button" class="icon-btn ing-up" title="上移" ${ii === 0 ? "disabled" : ""}><i class="ti ti-chevron-up"></i></button>
-            <button type="button" class="icon-btn ing-down" title="下移" ${ii === total - 1 ? "disabled" : ""}><i class="ti ti-chevron-down"></i></button>
-            <button type="button" class="icon-btn ing-delete" title="刪除"><i class="ti ti-trash"></i></button>
-          </div>
-        </div>`;
-    }
-    function ingredientGroupHtml(g, gi) {
-      const itemsHtml = g.items.length
-        ? g.items.map((it, ii) => ingredientItemRowHtml(it, gi, ii, g.items.length)).join("")
-        : `<p class="manage-empty-hint">還沒有食材，按下方「新增食材」開始輸入。</p>`;
-      return `
-        <div class="ingredient-group" data-group-index="${gi}">
-          <div class="ingredient-group-head">
-            <input type="text" class="ingredient-group-name-input" placeholder="群組名稱（留空＝未分組食材，例如：內餡、外皮、醬汁）" value="${escapeHtml(g.groupName || "")}">
-            <div class="dynamic-row-actions">
-              <button type="button" class="icon-btn grp-up" title="上移群組" ${gi === 0 ? "disabled" : ""}><i class="ti ti-chevron-up"></i></button>
-              <button type="button" class="icon-btn grp-down" title="下移群組" ${gi === currentIngredientGroups.length - 1 ? "disabled" : ""}><i class="ti ti-chevron-down"></i></button>
-              <button type="button" class="icon-btn grp-delete" title="刪除群組" ${currentIngredientGroups.length <= 1 ? "disabled" : ""}><i class="ti ti-trash"></i></button>
-            </div>
-          </div>
-          <div class="ingredient-item-list">${itemsHtml}</div>
-          <button type="button" class="btn btn-ghost btn-sm ingredient-add-item-btn" data-group-index="${gi}"><i class="ti ti-plus"></i> 新增食材</button>
-        </div>`;
-    }
-    function renderIngredientGroups() {
-      ingredientGroupsEl.innerHTML = currentIngredientGroups.map((g, gi) => ingredientGroupHtml(g, gi)).join("");
-      refreshUnitOptions();
-    }
-    function addIngredientItem(gi) {
-      currentIngredientGroups[gi].items.push({ id: genId("ing"), ingredientId: null, name: "", amount: "", unit: "" });
-      renderIngredientGroups();
-      const rows = ingredientGroupsEl.querySelectorAll(`.ingredient-item-row[data-group-index="${gi}"] .ing-name`);
-      rows[rows.length - 1]?.focus();
-    }
-    function moveIngredientGroup(gi, dir) {
-      const target = gi + dir;
-      if (target < 0 || target >= currentIngredientGroups.length) return;
-      [currentIngredientGroups[gi], currentIngredientGroups[target]] = [currentIngredientGroups[target], currentIngredientGroups[gi]];
-      renderIngredientGroups();
-    }
-    function moveIngredientItem(gi, ii, dir) {
-      const items = currentIngredientGroups[gi].items;
-      const target = ii + dir;
-      if (target < 0 || target >= items.length) return;
-      [items[ii], items[target]] = [items[target], items[ii]];
-      renderIngredientGroups();
-    }
-    $("recipe-add-group-btn").addEventListener("click", () => {
-      currentIngredientGroups.push({ id: genId("grp"), groupName: "", items: [] });
-      renderIngredientGroups();
-      const inputs = ingredientGroupsEl.querySelectorAll(".ingredient-group-name-input");
-      inputs[inputs.length - 1]?.focus();
-    });
-
-    // ---------- 貼上食材清單快速匯入（每行一項，抓「名稱＋數字＋單位」，抓不到就整行當名稱） ----------
-    const IMPORT_INGREDIENT_UNIT_PATTERN = "克|公克|公斤|kg|毫克|ml|cc|毫升|公升|l|大匙|小匙|湯匙|茶匙|杯|顆|粒|條|片|瓣|包|盒|罐|支|把|勺|滴|少許|適量|人份";
-    function parseImportedIngredients(text) {
-      if (!text || !text.trim()) return [];
-      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-      const withAmountRe = new RegExp("^(.*?)[\\s:：]+([\\d./]+)\\s*(" + IMPORT_INGREDIENT_UNIT_PATTERN + ")?\\s*$");
-      const noAmountRe = new RegExp("^(.*?)[\\s:：]+(" + IMPORT_INGREDIENT_UNIT_PATTERN + ")\\s*$");
-      return lines.map((rawLine) => {
-        const line = rawLine.replace(/^[-*・‧•]\s*/, "").trim();
-        let m = line.match(withAmountRe);
-        if (m && m[1].trim()) return { name: m[1].trim(), amount: m[2].trim(), unit: (m[3] || "").trim() };
-        m = line.match(noAmountRe);
-        if (m && m[1].trim()) return { name: m[1].trim(), amount: "", unit: m[2].trim() };
-        return { name: line, amount: "", unit: "" };
-      }).filter((it) => it.name);
-    }
-    function importIngredientsFromText(text) {
-      const parsed = parseImportedIngredients(text);
-      if (!parsed.length) { alert("沒有偵測到可匯入的食材內容，請確認每行一項食材。"); return; }
-      if (!currentIngredientGroups.length) currentIngredientGroups.push({ id: genId("grp"), groupName: "", items: [] });
-      const lastGroup = currentIngredientGroups[currentIngredientGroups.length - 1];
-      // 先把最後一個群組裡完全空白的項目移除，避免匯入後留下多餘的空白列
-      lastGroup.items = lastGroup.items.filter((it) => (it.name || "").trim() || (it.amount || "").trim());
-      parsed.forEach((p) => lastGroup.items.push({ id: genId("ing"), ingredientId: null, name: p.name, amount: p.amount, unit: p.unit }));
-      renderIngredientGroups();
-    }
-    function setupImportPanel({ btnId, panelId, textareaId, confirmId, cancelId, onImport }) {
-      const btn = $(btnId), panel = $(panelId), textarea = $(textareaId);
-      const confirmBtn = $(confirmId), cancelBtn = $(cancelId);
-      function open() { panel.hidden = false; btn.hidden = true; textarea.value = ""; textarea.focus(); }
-      function close() { panel.hidden = true; btn.hidden = false; textarea.value = ""; }
-      btn.addEventListener("click", open);
-      cancelBtn.addEventListener("click", close);
-      confirmBtn.addEventListener("click", () => { onImport(textarea.value); close(); });
-    }
-    setupImportPanel({
-      btnId: "recipe-import-ingredients-btn", panelId: "recipe-import-ingredients-panel",
-      textareaId: "recipe-import-ingredients-input", confirmId: "recipe-import-ingredients-confirm",
-      cancelId: "recipe-import-ingredients-cancel", onImport: importIngredientsFromText
-    });
-
-    // ---------- 常用食材 autocomplete：搜尋、鍵盤操作、選擇、找不到時可直接新增 ----------
-    function computeIngredientMatches(query) {
-      const q = query.trim().toLowerCase();
-      if (!q) return [];
-      const recentIds = loadRecentIngredientIds();
-      return commonIngredients
-        .filter((ci) => ci.name.toLowerCase().includes(q))
-        .sort((a, b) => {
-          const ra = recentIds.indexOf(a.id), rb = recentIds.indexOf(b.id);
-          if (ra !== -1 && rb !== -1) return ra - rb;
-          if (ra !== -1) return -1;
-          if (rb !== -1) return 1;
-          return a.name.localeCompare(b.name, "zh-Hant");
-        });
-    }
-    function renderAutocompleteDropdown(dropdownEl, query, groupIndex, itemIndex) {
-      const q = query.trim();
-      if (!q) { dropdownEl.hidden = true; dropdownEl.innerHTML = ""; acState = null; return; }
-      const recentIds = loadRecentIngredientIds();
-      const matches = computeIngredientMatches(q).slice(0, 8);
-      let html = matches.length
-        ? matches.map((m, idx) => `
-            <button type="button" class="ingredient-autocomplete-item" data-idx="${idx}">
-              <span>${escapeHtml(m.name)}</span>
-              ${recentIds.includes(m.id) ? `<span class="ac-tag">最近使用</span>` : ""}
-            </button>`).join("")
-        : `<p class="ingredient-autocomplete-empty">找不到符合的常用食材</p>`;
-      html += `<button type="button" class="ingredient-autocomplete-addnew" data-idx="${matches.length}"><i class="ti ti-plus"></i> 使用「${escapeHtml(q)}」</button>`;
-      dropdownEl.innerHTML = html;
-      dropdownEl.hidden = false;
-      acState = { groupIndex, itemIndex, query: q, matches, highlighted: -1, addNewIdx: matches.length };
-    }
-    function updateAutocompleteHighlight(dropdownEl) {
-      [...dropdownEl.children].forEach((el, idx) => el.classList.toggle("active", idx === acState.highlighted));
-    }
-    function selectAutocompleteMatch(gi, ii, matchIdx) {
-      if (!acState) return;
-      const row = ingredientGroupsEl.querySelector(`.ingredient-item-row[data-group-index="${gi}"][data-item-index="${ii}"]`);
-      const nameInput = row.querySelector(".ing-name");
-      const unitInput = row.querySelector(".ing-unit");
-      const dropdownEl = row.querySelector(".ingredient-autocomplete-list");
-      const item = currentIngredientGroups[gi].items[ii];
-      if (matchIdx >= acState.matches.length) {
-        const name = acState.query;
-        item.name = name;
-        nameInput.value = name;
-        const existing = commonIngredients.find((c) => c.name === name);
-        if (existing) {
-          item.ingredientId = existing.id;
-          pushRecentIngredientId(existing.id);
-        } else {
-          const newCi = { id: genId("ci"), name, defaultUnit: unitInput.value.trim() || "" };
-          commonIngredients = [...commonIngredients, newCi];
-          saveCommonIngredients(commonIngredients);
-          item.ingredientId = newCi.id;
-          pushRecentIngredientId(newCi.id);
-        }
-      } else {
-        const m = acState.matches[matchIdx];
-        item.name = m.name;
-        item.ingredientId = m.id;
-        nameInput.value = m.name;
-        if (m.defaultUnit && !item.unit) { item.unit = m.defaultUnit; unitInput.value = m.defaultUnit; }
-        pushRecentIngredientId(m.id);
-      }
-      dropdownEl.hidden = true; dropdownEl.innerHTML = "";
-      acState = null;
-      refreshUnitOptions();
-    }
-
-    ingredientGroupsEl.addEventListener("mousedown", (e) => {
-      // 防止點選自動完成清單時，輸入框先觸發 blur 把清單收起來
-      if (e.target.closest(".ingredient-autocomplete-list")) e.preventDefault();
-    });
-    ingredientGroupsEl.addEventListener("input", (e) => {
-      if (e.target.classList.contains("ingredient-group-name-input")) {
-        currentIngredientGroups[Number(e.target.closest(".ingredient-group").dataset.groupIndex)].groupName = e.target.value;
-        return;
-      }
-      const row = e.target.closest(".ingredient-item-row");
-      if (!row) return;
-      const gi = Number(row.dataset.groupIndex), ii = Number(row.dataset.itemIndex);
-      const item = currentIngredientGroups[gi].items[ii];
-      if (e.target.classList.contains("ing-name")) {
-        item.name = e.target.value;
-        item.ingredientId = null;
-        renderAutocompleteDropdown(row.querySelector(".ingredient-autocomplete-list"), e.target.value, gi, ii);
-      } else if (e.target.classList.contains("ing-amount")) {
-        item.amount = e.target.value;
-      } else if (e.target.classList.contains("ing-unit")) {
-        item.unit = e.target.value;
-      }
-    });
-    ingredientGroupsEl.addEventListener("keydown", (e) => {
-      const row = e.target.closest(".ingredient-item-row");
-      if (!row) return;
-      const gi = Number(row.dataset.groupIndex), ii = Number(row.dataset.itemIndex);
-      if (e.target.classList.contains("ing-name")) {
-        const dropdownEl = row.querySelector(".ingredient-autocomplete-list");
-        if (e.key === "ArrowDown" && acState && !dropdownEl.hidden) {
-          e.preventDefault();
-          const total = acState.matches.length + 1;
-          acState.highlighted = (acState.highlighted + 1) % total;
-          updateAutocompleteHighlight(dropdownEl);
-        } else if (e.key === "ArrowUp" && acState && !dropdownEl.hidden) {
-          e.preventDefault();
-          const total = acState.matches.length + 1;
-          acState.highlighted = (acState.highlighted - 1 + total) % total;
-          updateAutocompleteHighlight(dropdownEl);
-        } else if (e.key === "Enter") {
-          e.preventDefault();
-          if (acState && !dropdownEl.hidden && acState.highlighted >= 0) {
-            selectAutocompleteMatch(gi, ii, acState.highlighted);
-          } else {
-            dropdownEl.hidden = true; acState = null;
-            addIngredientItem(gi);
-          }
-        } else if (e.key === "Escape") {
-          dropdownEl.hidden = true; dropdownEl.innerHTML = ""; acState = null;
-        }
-      } else if (e.key === "Enter" && (e.target.classList.contains("ing-amount") || e.target.classList.contains("ing-unit"))) {
-        e.preventDefault();
-        addIngredientItem(gi);
-      }
-    });
-    ingredientGroupsEl.addEventListener("focusout", (e) => {
-      if (!e.target.classList.contains("ing-name")) return;
-      const row = e.target.closest(".ingredient-item-row");
-      setTimeout(() => {
-        if (document.activeElement === e.target) return;
-        const dropdownEl = row.querySelector(".ingredient-autocomplete-list");
-        if (dropdownEl) { dropdownEl.hidden = true; dropdownEl.innerHTML = ""; }
-        acState = null;
-      }, 120);
-    });
-    ingredientGroupsEl.addEventListener("click", (e) => {
-      const addItemBtn = e.target.closest(".ingredient-add-item-btn");
-      if (addItemBtn) { addIngredientItem(Number(addItemBtn.dataset.groupIndex)); return; }
-
-      const acItem = e.target.closest(".ingredient-autocomplete-item, .ingredient-autocomplete-addnew");
-      if (acItem) {
-        const row = acItem.closest(".ingredient-item-row");
-        selectAutocompleteMatch(Number(row.dataset.groupIndex), Number(row.dataset.itemIndex), Number(acItem.dataset.idx));
-        return;
-      }
-
-      const grpUp = e.target.closest(".grp-up");
-      if (grpUp) { moveIngredientGroup(Number(grpUp.closest(".ingredient-group").dataset.groupIndex), -1); return; }
-      const grpDown = e.target.closest(".grp-down");
-      if (grpDown) { moveIngredientGroup(Number(grpDown.closest(".ingredient-group").dataset.groupIndex), 1); return; }
-      const grpDel = e.target.closest(".grp-delete");
-      if (grpDel) {
-        const gi = Number(grpDel.closest(".ingredient-group").dataset.groupIndex);
-        if (currentIngredientGroups.length > 1) { currentIngredientGroups.splice(gi, 1); renderIngredientGroups(); }
-        return;
-      }
-      const ingUp = e.target.closest(".ing-up");
-      if (ingUp) { const row = ingUp.closest(".ingredient-item-row"); moveIngredientItem(Number(row.dataset.groupIndex), Number(row.dataset.itemIndex), -1); return; }
-      const ingDown = e.target.closest(".ing-down");
-      if (ingDown) { const row = ingDown.closest(".ingredient-item-row"); moveIngredientItem(Number(row.dataset.groupIndex), Number(row.dataset.itemIndex), 1); return; }
-      const ingDel = e.target.closest(".ing-delete");
-      if (ingDel) {
-        const row = ingDel.closest(".ingredient-item-row");
-        const gi = Number(row.dataset.groupIndex), ii = Number(row.dataset.itemIndex);
-        currentIngredientGroups[gi].items.splice(ii, 1);
-        renderIngredientGroups();
-      }
-    });
-
-    // ================= 做法編輯器（Notion 風格：Enter 新增下一步，支援步驟／小標題／注意事項／一般文字） =================
-    const stepBlocksEl = $("recipe-step-blocks");
-    function autoGrowTextarea(el) {
-      el.style.height = "auto";
-      el.style.height = el.scrollHeight + "px";
-    }
-    // 「心得紀錄」輸入時自動長高，不用手動拖曳才看得到打過的字
-    document.querySelectorAll(".autosize-textarea").forEach((el) => {
-      el.addEventListener("input", () => autoGrowTextarea(el));
-    });
-    function stepBlockHtml(block, idx, stepNumber, total) {
-      const placeholderMap = { step: "輸入這個步驟…", heading: "輸入小標題…", note: "輸入注意事項…", text: "輸入文字…" };
-      const markerHtml = block.type === "step"
-        ? `<span class="step-block-num">${stepNumber}</span>`
-        : `<i class="ti ${block.type === "heading" ? "ti-heading" : block.type === "note" ? "ti-alert-triangle" : "ti-align-left"} step-block-icon"></i>`;
-      const numberStyleSelectHtml = block.type !== "step" ? `
-            <select class="step-number-style-select" title="這一項前面要不要顯示編號">
-              <option value="none" ${(!block.numberStyle || block.numberStyle === "none") ? "selected" : ""}>無編號</option>
-              <option value="number" ${block.numberStyle === "number" ? "selected" : ""}>數字（1.）</option>
-              <option value="letter" ${block.numberStyle === "letter" ? "selected" : ""}>字母（a.）</option>
-              <option value="roman" ${block.numberStyle === "roman" ? "selected" : ""}>羅馬數字（i.）</option>
-            </select>` : "";
-      return `
-        <div class="step-block step-block-${block.type}" data-index="${idx}">
-          <div class="step-block-marker">${markerHtml}</div>
-          <div class="step-block-body">
-            <div class="step-block-selects">
-              <select class="step-type-select" title="切換類型">
-                <option value="step" ${block.type === "step" ? "selected" : ""}>步驟</option>
-                <option value="heading" ${block.type === "heading" ? "selected" : ""}>小標題</option>
-                <option value="note" ${block.type === "note" ? "selected" : ""}>注意事項</option>
-                <option value="text" ${block.type === "text" ? "selected" : ""}>一般文字</option>
-              </select>${numberStyleSelectHtml}
-            </div>
-            <textarea class="step-content" rows="1" placeholder="${placeholderMap[block.type]}">${escapeHtml(block.content || "")}</textarea>
-          </div>
-          <div class="dynamic-row-actions">
-            <button type="button" class="icon-btn blk-up" title="上移" ${idx === 0 ? "disabled" : ""}><i class="ti ti-chevron-up"></i></button>
-            <button type="button" class="icon-btn blk-down" title="下移" ${idx === total - 1 ? "disabled" : ""}><i class="ti ti-chevron-down"></i></button>
-            <button type="button" class="icon-btn blk-delete" title="刪除"><i class="ti ti-trash"></i></button>
-          </div>
-        </div>`;
-    }
-    function renderStepBlocks() {
-      let stepCounter = 0;
-      stepBlocksEl.innerHTML = currentStepBlocks.map((b, idx) => {
-        if (b.type === "step") stepCounter++;
-        return stepBlockHtml(b, idx, stepCounter, currentStepBlocks.length);
-      }).join("");
-      stepBlocksEl.querySelectorAll(".step-content").forEach(autoGrowTextarea);
-    }
-    function moveStepBlock(idx, dir) {
-      const target = idx + dir;
-      if (target < 0 || target >= currentStepBlocks.length) return;
-      [currentStepBlocks[idx], currentStepBlocks[target]] = [currentStepBlocks[target], currentStepBlocks[idx]];
-      renderStepBlocks();
-    }
-    function addStepBlock(type) {
-      currentStepBlocks.push({ id: genId("blk"), type, numberStyle: "none", content: "" });
-      renderStepBlocks();
-      const textareas = stepBlocksEl.querySelectorAll(".step-content");
-      textareas[textareas.length - 1]?.focus();
-    }
-    stepBlocksEl.addEventListener("input", (e) => {
-      if (!e.target.classList.contains("step-content")) return;
-      const idx = Number(e.target.closest(".step-block").dataset.index);
-      currentStepBlocks[idx].content = e.target.value;
-      autoGrowTextarea(e.target);
-    });
-    stepBlocksEl.addEventListener("change", (e) => {
-      const idx = Number(e.target.closest(".step-block")?.dataset.index);
-      if (Number.isNaN(idx)) return;
-      if (e.target.classList.contains("step-type-select")) {
-        currentStepBlocks[idx].type = e.target.value;
-        if (e.target.value !== "step" && !currentStepBlocks[idx].numberStyle) currentStepBlocks[idx].numberStyle = "none";
-        renderStepBlocks();
-        stepBlocksEl.querySelectorAll(".step-content")[idx]?.focus();
-      } else if (e.target.classList.contains("step-number-style-select")) {
-        currentStepBlocks[idx].numberStyle = e.target.value;
-      }
-    });
-    stepBlocksEl.addEventListener("keydown", (e) => {
-      if (!e.target.classList.contains("step-content")) return;
-      const idx = Number(e.target.closest(".step-block").dataset.index);
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        currentStepBlocks.splice(idx + 1, 0, { id: genId("blk"), type: "step", numberStyle: "none", content: "" });
-        renderStepBlocks();
-        stepBlocksEl.querySelectorAll(".step-content")[idx + 1]?.focus();
-      } else if (e.key === "Backspace" && e.target.value === "" && currentStepBlocks.length > 1) {
-        e.preventDefault();
-        currentStepBlocks.splice(idx, 1);
-        renderStepBlocks();
-        const focusIdx = Math.max(0, idx - 1);
-        const ta = stepBlocksEl.querySelectorAll(".step-content")[focusIdx];
-        if (ta) { ta.focus(); const len = ta.value.length; ta.setSelectionRange(len, len); }
-      }
-    });
-    stepBlocksEl.addEventListener("click", (e) => {
-      const upBtn = e.target.closest(".blk-up");
-      if (upBtn) { moveStepBlock(Number(upBtn.closest(".step-block").dataset.index), -1); return; }
-      const downBtn = e.target.closest(".blk-down");
-      if (downBtn) { moveStepBlock(Number(downBtn.closest(".step-block").dataset.index), 1); return; }
-      const delBtn = e.target.closest(".blk-delete");
-      if (delBtn) {
-        const idx = Number(delBtn.closest(".step-block").dataset.index);
-        if (currentStepBlocks.length > 1) { currentStepBlocks.splice(idx, 1); renderStepBlocks(); }
-        else { currentStepBlocks[0].content = ""; renderStepBlocks(); }
-      }
-    });
-    $("recipe-add-step-btn").addEventListener("click", () => addStepBlock("step"));
-    $("recipe-add-content-btn").addEventListener("click", () => {
-      $("recipe-add-content-menu").hidden = !$("recipe-add-content-menu").hidden;
-    });
-    $("recipe-add-content-menu").addEventListener("click", (e) => {
-      const btn = e.target.closest("button[data-type]");
-      if (!btn) return;
-      $("recipe-add-content-menu").hidden = true;
-      addStepBlock(btn.dataset.type);
-    });
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest(".step-add-type-wrap")) $("recipe-add-content-menu").hidden = true;
-    });
-
-    // ---------- 貼上做法快速匯入（每行/每個編號算一個步驟，去掉常見編號符號） ----------
-    function parseImportedSteps(text) {
-      if (!text || !text.trim()) return [];
-      const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-      return lines
-        .map((line) => line
-          .replace(/^(?:step\s*)?(\d+|[一二三四五六七八九十]+)[.、)）：:]\s*/i, "")
-          .replace(/^[①②③④⑤⑥⑦⑧⑨⑩]\s*/, "")
-          .replace(/^[-*・‧•]\s*/, "")
-          .trim())
-        .filter(Boolean);
-    }
-    function importStepsFromText(text) {
-      const parsed = parseImportedSteps(text);
-      if (!parsed.length) { alert("沒有偵測到可匯入的做法內容，請確認每行一個步驟。"); return; }
-      // 先把目前完全空白的步驟移除，避免匯入後留下空白項目
-      currentStepBlocks = currentStepBlocks.filter((b) => (b.content || "").trim());
-      parsed.forEach((content) => currentStepBlocks.push({ id: genId("blk"), type: "step", content }));
-      renderStepBlocks();
-    }
-    setupImportPanel({
-      btnId: "recipe-import-steps-btn", panelId: "recipe-import-steps-panel",
-      textareaId: "recipe-import-steps-input", confirmId: "recipe-import-steps-confirm",
-      cancelId: "recipe-import-steps-cancel", onImport: importStepsFromText
-    });
-
-    // ---------- 開啟新增／編輯 ----------
-    function openAddRecipe() {
-      rememberRecipeReturnPage();
-      // 先切換到表單頁面再渲染食材／做法，避免頁面還是 display:none 時
-      // 量測 textarea 高度拿到 0，導致自動長高失準、文字被裁切
-      goToPage("recipe-form");
-      editingRecipeId = null;
-      $("recipe-form-title").textContent = "新增食譜";
-      $("recipe-delete-btn").hidden = true;
-      $("recipe-form").reset();
-      currentRecipePhotoUrl = ""; pendingRecipePhotoFile = null;
-      updateRecipeCoverPreview();
-      currentIngredientGroups = normalizeIngredientGroups([]);
-      currentStepBlocks = normalizeStepBlocks([]);
-      renderIngredientGroups(); renderStepBlocks();
-      recipeRatings = { joy: 0, effort: 0, result: 0 };
-      applyRatingsToForm();
-      $("recipe-field-created-date").value = new Date().toISOString().slice(0, 10);
-      $("recipe-field-servings").value = "";
-      setPrepTimeSelects("");
-      setMakeTimeSelects("");
-      currentRecipeTags = [];
-      renderRecipeTagPicker();
-      autoGrowTextarea($("recipe-field-notes"));
-    }
-    function openEditRecipe(r) {
-      rememberRecipeReturnPage();
-      goToPage("recipe-form");
-      editingRecipeId = r.id;
-      $("recipe-form-title").textContent = "編輯食譜";
-      $("recipe-delete-btn").hidden = false;
-      $("recipe-field-name").value = r.name || "";
-      $("recipe-field-category").value = r.category || "";
-      currentRecipePhotoUrl = r.photoUrl || ""; pendingRecipePhotoFile = null;
-      updateRecipeCoverPreview();
-      currentIngredientGroups = normalizeIngredientGroups(r.ingredients);
-      currentStepBlocks = normalizeStepBlocks(r.steps);
-      renderIngredientGroups(); renderStepBlocks();
-      recipeRatings = { joy: r.ratingJoy || 0, effort: r.ratingEffort || 0, result: r.ratingResult || 0 };
-      applyRatingsToForm();
-      $("recipe-field-source-url").value = r.sourceUrl || "";
-      $("recipe-field-notes").value = r.notes || "";
-      $("recipe-field-created-date").value = r.createdDate || "";
-      $("recipe-field-servings").value = r.servings || "";
-      setPrepTimeSelects(r.prepTime || "");
-      setMakeTimeSelects(r.makeTime || "");
-      currentRecipeTags = Array.isArray(r.tags) ? [...r.tags] : [];
-      renderRecipeTagPicker();
-      autoGrowTextarea($("recipe-field-notes"));
-    }
-    $("recipe-add-btn").addEventListener("click", openAddRecipe);
-    $("recipe-cancel-btn").addEventListener("click", closeRecipeForm);
-
-    // ---------- 照片上傳（Firebase Storage，不塞進 Firestore 文件本身） ----------
-    function resizeImageToBlob(file, maxWidth = 1000, quality = 0.82) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = reject;
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onerror = reject;
-          img.onload = () => {
-            const scale = Math.min(1, maxWidth / img.width);
-            const w = Math.round(img.width * scale);
-            const h = Math.round(img.height * scale);
-            const canvas = document.createElement("canvas");
-            canvas.width = w; canvas.height = h;
-            canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-            canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("圖片轉換失敗"))), "image/jpeg", quality);
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-    async function uploadRecipePhoto(file, recipeId) {
-      const blob = await resizeImageToBlob(file);
-      const photoRef = storageRef(storage, `recipe-photos/${currentUser.uid}/${recipeId}.jpg`);
-      await uploadBytes(photoRef, blob, { contentType: "image/jpeg" });
-      return await getDownloadURL(photoRef);
-    }
-
-    // ---------- 儲存／刪除 ----------
-    $("recipe-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = $("recipe-field-name").value.trim();
-      if (!name) { $("recipe-field-name").focus(); return; }
-      const submitBtn = e.target.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true; submitBtn.textContent = "儲存中...";
-      try {
-        const id = editingRecipeId || doc(collection(db, "recipes")).id;
-        let photoUrl = currentRecipePhotoUrl;
-        if (pendingRecipePhotoFile) photoUrl = await uploadRecipePhoto(pendingRecipePhotoFile, id);
-
-        const data = {
-          uid: currentUser.uid,
-          name,
-          category: $("recipe-field-category").value.trim() || "未分類",
-          tags: currentRecipeTags,
-          servings: $("recipe-field-servings").value.trim(),
-          prepTime: getPrepTimeString(),
-          makeTime: getMakeTimeString(),
-          photoUrl: photoUrl || "",
-          ingredients: currentIngredientGroups
-            .map((g) => ({
-              groupName: (g.groupName || "").trim(),
-              items: g.items
-                .filter((it) => (it.name || "").trim() || (it.amount || "").trim())
-                .map((it) => ({ name: (it.name || "").trim(), amount: (it.amount || "").trim(), unit: (it.unit || "").trim() }))
-            }))
-            .filter((g) => g.items.length),
-          steps: currentStepBlocks
-            .filter((b) => (b.content || "").trim())
-            .map((b) => ({
-              type: STEP_BLOCK_TYPES.includes(b.type) ? b.type : "step",
-              content: b.content.trim(),
-              numberStyle: b.type !== "step" ? (STEP_NUMBER_STYLES.includes(b.numberStyle) ? b.numberStyle : "none") : "none"
-            })),
-          ratingJoy: Number(recipeRatings.joy) || 0,
-          ratingEffort: Number(recipeRatings.effort) || 0,
-          ratingResult: Number(recipeRatings.result) || 0,
-          sourceUrl: $("recipe-field-source-url").value.trim(),
-          notes: $("recipe-field-notes").value,
-          updatedAt: serverTimestamp()
-        };
-        if (!editingRecipeId) {
-          data.createdAt = serverTimestamp();
-          data.createdDate = $("recipe-field-created-date").value || new Date().toISOString().slice(0, 10);
-        }
-        await setDoc(doc(db, "recipes", id), data, { merge: true });
-        // 儲存完直接進到「食譜詳情」頁，讓照片、材料、做法可以直接瀏覽，
-        // 而不是停在新增/編輯表單，或回到列表還要再找一次剛新增的食譜。
-        const savedRecipe = { ...data, id, createdDate: $("recipe-field-created-date").value || "" };
-        if (recipeFormReturnPage !== "recipe-detail") recipeDetailReturnPage = recipeFormReturnPage;
-        showRecipeDetail(savedRecipe);
-      } catch (err) {
-        console.error("Firestore 儲存錯誤：", err);
-        let message = "儲存失敗。";
-        if (err?.code === "permission-denied") {
-          message = "Firestore 拒絕寫入（permission-denied）。\n請到 Firebase Console → Firestore Database → Rules，確認 recipes／recipeMeta 集合允許目前登入使用者建立/修改自己的資料。";
-        } else if (err?.code === "unauthenticated") {
-          message = "登入狀態已失效，請重新登入後再儲存。";
-        } else if (err?.code === "storage/unauthorized") {
-          message = "Firebase Storage 拒絕上傳照片。\n請到 Firebase Console → Storage → Rules，確認 recipe-photos 路徑允許目前登入使用者上傳自己的照片。";
-        } else {
-          message += "\n錯誤：" + (err?.message || err);
-        }
-        alert(message);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    });
-
-    $("recipe-delete-btn").addEventListener("click", async () => {
-      if (!editingRecipeId) return;
-      if (!confirm("確定要刪除這道食譜嗎？此動作無法復原。")) return;
-      await deleteRecipeById(editingRecipeId);
-      // 食譜已經刪除，詳情頁不會再有內容可看，所以直接回到列表，而不是回詳情頁
-      goToPage(recipeFormReturnPage === "recipe-detail" ? recipeDetailReturnPage : recipeFormReturnPage);
-    });
-  </script>
-</body>
-</html>
+/* ============================================================
+   shared.css — 4 個模組（書庫／食譜／日記／回顧）共用的樣式
+   內容目前直接沿用 index.html（書庫）原本內嵌的樣式表，這樣新頁面
+   跟書庫的視覺風格保證一致。之後如果想把 index.html 也改成 <link>
+   這份檔案，只要把 index.html 裡的 <style>...</style> 換成
+   <link rel="stylesheet" href="shared.css"> 即可（目前先不動它，
+   降低改動風險）。
+   ============================================================ */
+
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface2: #f2f0eb;
+    --border: #e6e3dc;
+    --text: #2c2a27;
+    --text2: #5c5852;
+    --text3: #9c968f;
+    --accent: #2c5234;
+    --accent-light: #f0f4f1;
+    --accent2: #b8621d;
+    --accent2-light: #faf2eb;
+    --red: #96352b;
+    --red-light: #f9ebea;
+    --radius: 6px;
+    --shadow: 0 4px 20px rgba(44,42,39,0.04), 0 1px 3px rgba(44,42,39,0.02);
+    --shadow-sm: 0 2px 8px rgba(44,42,39,0.03);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: 'Noto Serif TC', serif; font-weight: 600; margin: 0; }
+
+  /* ---------- Login ---------- */
+  [hidden] { display: none !important; }
+
+  .login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #f8f7f4;
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 456px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 54px 38px 52px;
+    box-shadow:
+      0 8px 30px rgba(0, 0, 0, 0.06),
+      0 2px 8px rgba(0, 0, 0, 0.03);
+    text-align: center;
+  }
+
+  .login-card h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #292929;
+  }
+
+  .login-sub {
+    margin: 12px 0 32px;
+    color: #aaa;
+    font-size: 16px;
+  }
+
+  .login-google-btn {
+    width: 100%;
+    height: 66px;
+    border: none;
+    border-radius: 12px;
+    background: #2c5a38;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+    font-size: 19px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .login-google-btn:hover {
+    background: #234a2d;
+  }
+
+  .login-google-btn:disabled,
+  .login-email-btn:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
+
+  .login-google-btn i {
+    font-size: 22px;
+  }
+  .login-google-icon { width: 22px; height: 22px; flex-shrink: 0; display: block; }
+
+  .login-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 30px 0;
+    color: #b8b8b8;
+    font-size: 16px;
+  }
+
+  .login-divider::before,
+  .login-divider::after {
+    content: "";
+    height: 1px;
+    background: #ddd;
+    flex: 1;
+  }
+
+  .login-divider span {
+    flex: 0 0 auto;
+  }
+
+  .login-input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 62px;
+    padding: 0 18px;
+    margin-bottom: 14px;
+    border: 2px solid #e1e1e1;
+    border-radius: 12px;
+    background: #fff;
+    color: #333;
+    font-family: inherit;
+    font-size: 18px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .login-input:focus {
+    border-color: #aaa;
+  }
+
+  .login-input::placeholder {
+    color: #888;
+  }
+
+  .login-email-btn {
+    width: 100%;
+    height: 63px;
+    border: none;
+    border-radius: 12px;
+    background: #2878e5;
+    color: #fff;
+    font-family: inherit;
+    font-size: 19px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .login-email-btn:hover {
+    background: #1768d5;
+  }
+
+  .forgot-password-btn {
+    margin-top: 22px;
+    border: none;
+    background: transparent;
+    color: #aaa;
+    font-family: inherit;
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .forgot-password-btn:hover {
+    color: #777;
+    text-decoration: underline;
+  }
+
+  .login-error {
+    margin: 16px 0 0;
+    color: #96352b;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .login-screen {
+      padding: 16px;
+    }
+
+    .login-card {
+      max-width: 100%;
+      padding: 42px 24px;
+    }
+
+    .login-card h1 {
+      font-size: 24px;
+    }
+
+    .login-google-btn,
+    .login-email-btn {
+      height: 58px;
+      font-size: 17px;
+    }
+
+    .login-input {
+      height: 56px;
+      font-size: 16px;
+    }
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 20px; border-radius: var(--radius);
+    font-size: 14px; font-weight: 500;
+    border: 1px solid var(--border); cursor: pointer;
+    background: var(--surface); color: var(--text);
+    transition: all 0.2s ease; white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); width: 100%; }
+  .btn-primary:hover { background: #203d27; }
+  .btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-accent:hover { background: #203d27; }
+  .btn-accent-outline { background: var(--surface); color: var(--accent); border-color: var(--accent); }
+  .btn-accent-outline:hover { background: var(--accent-light); }
+  .btn-danger { background: var(--surface); color: var(--red); border-color: var(--border); }
+  .btn-danger:hover { background: var(--red-light); border-color: var(--red); }
+  .btn-ghost { background: transparent; border-color: var(--border); color: var(--text2); }
+  .btn-ghost:hover { background: var(--surface2); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .icon-btn {
+    background: transparent; border: none; color: var(--text2); cursor: pointer;
+    padding: 6px; border-radius: 8px; font-size: 18px; display: flex;
+  }
+  .icon-btn:hover { background: var(--surface2); }
+
+  /* ---------- Inline SVG icons (取代外部圖示字型) ---------- */
+  i.ti {
+    display: inline-flex; align-items: center; justify-content: center;
+    line-height: 0; flex-shrink: 0;
+  }
+  i.ti svg { width: 1em; height: 1em; display: block; }
+
+  /* ---------- App shell (desktop: sidebar + top search bar) ---------- */
+  .app-shell { display: flex; min-height: 100vh; align-items: stretch; }
+
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--accent-light); color: var(--accent);
+    font-family: 'Noto Serif TC', serif; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .brand-name { font-size: 17px; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 252px; flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    height: 100vh; position: sticky; top: 0;
+  }
+  .sidebar-brand { padding: 20px 20px 18px; border-bottom: 1px solid var(--border); }
+  .sidebar-scroll { flex: 1; overflow-y: auto; padding: 16px 12px; display: flex; flex-direction: column; gap: 20px; }
+  .sidebar-group-label {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    color: var(--text3); padding: 0 8px 6px;
+  }
+  .sidebar-group-label .icon-btn { padding: 3px; font-size: 15px; }
+  .sidebar-list { display: flex; flex-direction: column; gap: 2px; }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 9px; width: 100%;
+    border: none; background: none; text-align: left; cursor: pointer;
+    padding: 8px 9px; border-radius: 8px; font-family: inherit;
+    font-size: 13.5px; color: var(--text2);
+  }
+  .sidebar-link i { font-size: 16px; color: var(--text3); flex-shrink: 0; width: 16px; }
+  .sidebar-link span.label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sidebar-link:hover { background: var(--surface2); }
+  .sidebar-link.active { background: var(--accent); color: #fff; }
+  .sidebar-link.active i { color: #fff; }
+  .sidebar-count {
+    font: 500 11px 'Roboto', sans-serif; color: var(--text3);
+    background: var(--surface2); padding: 1px 7px; border-radius: 8px; flex-shrink: 0;
+  }
+  .sidebar-link.active .sidebar-count { background: rgba(255,255,255,0.22); color: #fff; }
+  .sidebar-empty-hint { font-size: 12px; color: var(--text3); padding: 4px 9px; line-height: 1.6; }
+  .sidebar-footer { padding: 14px 20px 16px; border-top: 1px solid var(--border); }
+
+  /* Top search bar (right column) */
+  .content-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar-desktop {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 32px; display: flex; align-items: center; gap: 12px;
+  }
+  .global-search {
+    flex: 1; max-width: 620px; display: flex; align-items: center; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; height: 42px; padding: 0 14px;
+  }
+  .global-search i { color: var(--text3); font-size: 15px; }
+  .global-search input { border: none; background: none; outline: none; flex: 1; font-family: inherit; font-size: 14px; color: var(--text); }
+
+  .main { max-width: 1180px; padding: 26px 32px 70px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Shelf header: title/subtitle + stat pills */
+  .shelf-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; flex-wrap: wrap; margin-bottom: 20px; }
+  .shelf-eyebrow2 { font-size: 11px; letter-spacing: 0.1em; color: var(--text3); font-weight: 700; margin-bottom: 3px; }
+  .shelf-header h1 { font-size: 25px; margin: 0 0 4px; }
+  .shelf-header .shelf-sub { margin: 0; color: var(--text2); font-size: 13.5px; }
+  .stat-pills { display: flex; gap: 10px; }
+  .stat-pill {
+    min-width: 78px; text-align: center; background: var(--surface); cursor: pointer;
+    border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px;
+    box-shadow: var(--shadow-sm); transition: border-color .15s ease, background .15s ease;
+  }
+  .stat-pill:hover { background: var(--surface2); }
+  .stat-pill span { display: block; font: 700 22px 'Roboto', sans-serif; color: var(--text); }
+  .stat-pill small { display: block; margin-top: 2px; font-size: 11px; color: var(--text2); }
+  .stat-pill.pill-active { border-color: var(--accent2); background: var(--accent2-light); }
+  .stat-pill.pill-active span { color: var(--accent2); }
+
+  /* In-list search */
+  .inlist-search {
+    display: flex; align-items: center; gap: 8px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; padding: 0 14px; height: 44px;
+    margin-bottom: 14px;
+  }
+  .inlist-search i { color: var(--text3); }
+  .inlist-search input { border: none; background: none; outline: none; flex: 1; font-family: inherit; font-size: 13.5px; color: var(--text); }
+
+  /* Tag row */
+  .tag-row-wrap {
+    display: flex; align-items: flex-start; gap: 12px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px;
+  }
+  .tag-row-label { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; color: var(--text2); flex-shrink: 0; padding-top: 4px; }
+  .tag-chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag-chip {
+    border: 1px solid var(--border); background: var(--surface); color: var(--text2);
+    border-radius: 16px; padding: 4px 12px; font-size: 12px; cursor: pointer;
+    display: inline-flex; gap: 5px; align-items: center; font-family: inherit;
+  }
+  .tag-chip .tc-count { color: var(--text3); }
+  .tag-chip.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .tag-chip.active .tc-count { color: rgba(255,255,255,0.82); }
+  .tag-empty-hint { font-size: 12px; color: var(--text3); padding-top: 3px; }
+
+  /* List card wrapping the book grid */
+  .list-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 20px 22px 24px; }
+  .list-card-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .list-card-head-left { display: flex; align-items: center; gap: 12px; }
+  .select-all-checkbox { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .list-card-title { font-weight: 700; font-size: 14.5px; }
+  .list-card-count { font-size: 12px; color: var(--text3); display: block; margin-top: 1px; }
+  .view-toggle { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .view-btn { width: 32px; height: 30px; border: none; background: var(--surface); color: var(--text3); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 15px; }
+  .view-btn + .view-btn { border-left: 1px solid var(--border); }
+  .view-btn.active { background: var(--accent-light); color: var(--accent); }
+  .list-card-head-right { display: flex; align-items: center; gap: 8px; }
+  .list-card-head-right select { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); padding: 0 10px; height: 34px; color: var(--text); font-size: 12.5px; font-family: inherit; }
+  .sort-dir-btn { width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .sort-dir-btn:hover { background: var(--surface2); }
+
+  .bulk-bar {
+    display: flex; align-items: center; gap: 12px; background: var(--accent-light);
+    border: 1px solid var(--accent); border-radius: 10px; padding: 9px 14px; margin-bottom: 14px;
+    font-size: 13px; color: var(--accent); font-weight: 500;
+  }
+  .bulk-bar .spacer { flex: 1; }
+
+  /* Book grid: list view variant */
+  .book-grid.view-list { display: flex; flex-direction: column; gap: 8px; }
+  .book-grid.view-list .book-card { flex-direction: row; align-items: center; gap: 14px; padding: 8px 14px 8px 40px; }
+  .book-grid.view-list .book-cover { width: 42px; height: 58px; margin-bottom: 0; flex-shrink: 0; }
+  /* 食譜列表視圖：只需要名稱與分類，把圖片藏起來（只影響食譜的 .recipe-cover，不影響書庫書封） */
+  .book-grid.view-list .recipe-cover { display: none; }
+  .book-grid.view-list .book-title { margin: 0; -webkit-line-clamp: 1; }
+  .book-grid.view-list .book-author { margin: 0; flex-shrink: 0; width: 130px; }
+  .book-grid.view-list .book-meta { margin-top: 0; margin-left: auto; flex-wrap: nowrap; }
+  /* 食譜列表視圖：置中限制寬度＋分類改成貼右的色塊標籤，只作用於 #recipe-grid，不影響書庫清單 */
+  #recipe-grid.view-list { max-width: 640px; }
+  #recipe-grid.view-list .book-title { flex: 1; min-width: 0; }
+  #recipe-grid.view-list .book-author {
+    flex-shrink: 0; width: auto; margin: 0 0 0 auto;
+    font-size: 13px; color: var(--text2);
+  }
+  .book-card { position: relative; }
+  .book-select {
+    position: absolute; top: 10px; left: 10px; width: 16px; height: 16px;
+    accent-color: var(--accent2); z-index: 2; cursor: pointer;
+  }
+  .book-grid.view-list .book-select { left: 14px; }
+
+  /* Management / export / help pages */
+  .card-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .card-title-row .card-title { margin-bottom: 0; }
+  .manage-add-btn { flex-shrink: 0; }
+  .manage-add-form { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .manage-add-form input[type="text"] {
+    flex: 1; border: 1px solid var(--border); border-radius: 999px; padding: 7px 16px;
+    font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface);
+  }
+  .manage-add-form input[type="text"]:focus { outline: none; border-color: var(--accent); }
+
+  .manage-pill-list { display: flex; flex-direction: column; gap: 6px; }
+  .manage-empty-hint { color: var(--text3); font-size: 13px; margin: 0; }
+  .manage-pill {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 2px;
+    border-radius: 12px; border: 1px solid transparent; background: transparent;
+  }
+  .manage-pill:hover { background: var(--surface2); }
+  .manage-pill.dragging { background: var(--surface2); border-color: var(--border); box-shadow: var(--shadow); opacity: 0.85; position: relative; z-index: 5; }
+  .manage-drag-handle { flex-shrink: 0; display: flex; align-items: center; color: var(--text3); cursor: grab; touch-action: none; padding: 4px 2px; }
+  .manage-drag-handle:active { cursor: grabbing; }
+  .manage-drag-handle svg { width: 15px; height: 15px; }
+  .manage-pill-badge {
+    display: inline-flex; align-items: center; max-width: 100%;
+    padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    background: var(--accent-light); color: var(--accent);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .manage-pill-badge.is-tag { background: var(--accent2-light); color: var(--accent2); }
+  .manage-pill-input {
+    flex: 1; min-width: 0; border: 1px solid var(--accent); border-radius: 999px;
+    padding: 5px 14px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface);
+  }
+  .manage-pill-input:focus { outline: none; }
+  .manage-pill-badge, .manage-pill-input { flex: 1; }
+  .manage-row-count { font-size: 12px; color: var(--text3); min-width: 40px; text-align: right; flex-shrink: 0; }
+  .manage-pill-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .help-block { margin-bottom: 18px; }
+  .help-block:last-child { margin-bottom: 0; }
+  .help-block h3 { font-size: 14.5px; margin: 0 0 6px; color: var(--accent); }
+  .help-block p, .help-block li { font-size: 13.5px; color: var(--text2); margin: 0 0 4px; }
+  .help-block ul { margin: 0; padding-left: 18px; }
+  .export-btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
+  /* ---------- Cards / stats ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-bottom: 16px;
+    display: flex; align-items: center;
+  }
+  .card-title::before {
+    content: ''; display: inline-block; width: 3px; height: 14px;
+    background: var(--accent); margin-right: 8px; border-radius: 2px;
+  }
+  .manage-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .manage-columns { grid-template-columns: 1fr; } }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm);
+  }
+  .stat-num { font-size: 24px; font-weight: 700; font-family: 'Roboto', sans-serif; color: var(--accent); }
+  .stat-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-top: 6px; }
+
+  /* ---------- Toolbar / filters ---------- */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
+  .search-box {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0 14px; height: 42px;
+  }
+  .search-box i { color: var(--text3); }
+  .search-box input { border: none; background: none; outline: none; flex: 1; color: var(--text); font-size: 14px; }
+  .sort-select {
+    border: 1px solid var(--border); background: var(--surface);
+    border-radius: var(--radius); padding: 0 12px; height: 42px; color: var(--text); font-size: 13px;
+  }
+
+  .filter-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .filter-tab {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2); font-size: 13px; cursor: pointer; white-space: nowrap;
+  }
+  .filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ---------- Book grid ---------- */
+  .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 4px; }
+  .book-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px; cursor: pointer; box-shadow: var(--shadow-sm);
+    display: flex; flex-direction: column;
+  }
+  .book-cover {
+    width: 100%; aspect-ratio: 3/4; border-radius: 4px;
+    background: var(--accent-light); margin-bottom: 10px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; color: var(--accent);
+  }
+  .book-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .book-cover i { font-size: 26px; opacity: 0.5; }
+  .book-title { font-weight: 500; font-size: 13px; margin: 0 0 3px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .book-author { font-size: 12px; color: var(--text2); margin: 0 0 8px; }
+  .book-meta { display: flex; align-items: center; justify-content: flex-start; gap: 4px; margin-top: auto; flex-wrap: wrap; }
+  .status-badge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; background: var(--accent-light); color: var(--accent); border: 1px solid rgba(44,82,52,0.15); white-space: nowrap; }
+  .status-badge.unread { background: var(--surface2); color: var(--text3); border-color: var(--border); }
+  .status-badge.sold { background: var(--accent2-light); color: var(--accent2); border-color: rgba(184,98,29,0.18); }
+  .book-rating { display: flex; gap: 1px; color: var(--accent2); font-size: 11px; margin-left: auto; }
+  .book-rating i.empty { color: var(--border); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+  .empty-state i { font-size: 40px; color: var(--text3); margin-bottom: 10px; }
+  .empty-state h3 { margin-bottom: 6px; font-size: 16px; }
+  .empty-state p { margin: 0 0 20px; font-size: 14px; }
+
+
+  .category-stat-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .category-stat-row:last-child { border-bottom:none; }
+  .category-stat-bar { flex:1; height:6px; background:var(--surface2); border-radius:10px; overflow:hidden; }
+  .category-stat-bar > span { display:block; height:100%; background:var(--accent); border-radius:10px; }
+  .category-stat-count { min-width:78px; text-align:right; font:500 12px Roboto,sans-serif; color:var(--text2); white-space:nowrap; }
+  .source-help { font-size:12px; color:var(--text3); margin-top:6px; }
+
+  /* ---------- Profile page ---------- */
+  .profile-header { display: flex; flex-direction: column; align-items: center; padding: 24px 0 8px; }
+  .profile-avatar { width: 72px; height: 72px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; margin-bottom: 12px; }
+  .profile-email { font-size: 14px; color: var(--text2); margin-bottom: 24px; }
+
+  /* ---------- 新增／編輯書籍表單（內嵌頁面，不使用彈跳視窗） ---------- */
+  .scan-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .scan-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; border-radius: var(--radius); padding: 9px 14px; font-size: 13px; cursor: pointer; border: 1px solid var(--accent); }
+  .scan-btn-secondary { background: var(--surface); color: var(--accent); border-color: var(--accent); }
+  .scan-status { font-size: 13px; color: var(--text2); margin: 0 0 14px; }
+
+  /* ---------- ISBN camera scanner overlay ---------- */
+  .isbn-scanner-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(20,18,15,0.72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .isbn-scanner-box {
+    width: 100%; max-width: 420px;
+    background: var(--surface); border-radius: 14px;
+    padding: 18px; box-shadow: var(--shadow);
+  }
+  .isbn-scanner-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .isbn-scanner-header h3 { font-size: 16px; }
+  #isbn-scanner-reader { width: 100%; min-height: 220px; border-radius: 10px; overflow: hidden; background: #000; }
+  .isbn-scanner-hint { margin: 10px 0 0; font-size: 13px; color: var(--text2); text-align: center; }
+
+  .cover-field { display: flex; gap: 14px; align-items: center; margin-bottom: 18px; }
+  .cover-preview { width: 68px; height: 92px; border-radius: 6px; background: var(--accent-light); color: var(--accent); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+  .cover-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .cover-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--text2); }
+  .field-wide { grid-column: 1 / -1; }
+  .field input, .field select { border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; height: 38px; color: var(--text); background: var(--surface); font-family: inherit; }
+  .field input[readonly] { background: var(--surface2); color: var(--text3); }
+
+  .star-input { display: flex; gap: 6px; font-size: 26px; color: #d8d8d8; height: 38px; align-items: center; }
+  .star-input i { cursor: pointer; transition: transform .12s ease, color .12s ease; }
+  .star-input i:hover { transform: scale(1.08); color: var(--accent2); }
+  .star-input i.filled { color: var(--accent2); }
+
+  .field-label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+  .notes-section { margin-bottom: 10px; }
+  #recipe-form-notes-section, #recipe-detail-notes-section {
+    background: var(--accent2-light);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  #recipe-form-notes-section .field-label, #recipe-detail-notes-section .field-label { color: var(--accent2); }
+  .notes-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .note-item { background: var(--surface2); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; }
+  .note-item .note-date { display: block; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .note-add-row { display: flex; gap: 8px; align-items: flex-end; }
+  .note-add-row textarea { flex: 1; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; resize: vertical; color: var(--text); font-family: inherit; min-height: 60px; }
+
+  .modal-footer { display: flex; align-items: center; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .footer-spacer { flex: 1; }
+
+  @media (max-width: 640px) {
+    .field-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================
+     App 切換列（4 個模組共用）：📚 書庫／🍳 食譜／📖 日記／✨ 回顧
+     放在 .sidebar 左邊，跟 .sidebar 一起組成 .app-shell 最左側的兩欄。
+     ============================================================ */
+  .app-shell { align-items: stretch; }
+  .app-switcher {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 64px;
+    flex: 0 0 64px;
+    padding: 18px 0;
+    background: var(--surface2);
+    border-right: 1px solid var(--border);
+  }
+  .app-switcher-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 52px;
+    padding: 8px 4px 6px;
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text3);
+    font-size: 11px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .app-switcher-btn:hover { background: var(--accent-light); color: var(--text); }
+  .app-switcher-btn.active { background: var(--accent-light); color: var(--accent); font-weight: 700; }
+  .app-switcher-icon { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
+  .app-switcher-icon svg { width: 22px; height: 22px; display: block; }
+  .app-switcher-label { line-height: 1.2; }
+
+  /* 尚未開放的模組頁面用的空狀態版面 */
+  .module-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    min-height: 60vh;
+    padding: 24px;
+    color: var(--text2);
+  }
+  .module-placeholder .module-placeholder-emoji {
+    display: flex; align-items: center; justify-content: center;
+    width: 56px; height: 56px; color: var(--text3);
+  }
+  .module-placeholder .module-placeholder-emoji svg { width: 48px; height: 48px; display: block; }
+
+  /* ============================================================
+     食譜模組專用的小補充樣式。其餘全部沿用書庫既有的 .card / .field-grid /
+     .field / .book-grid / .book-card / .manage-pill 等 class，
+     這裡只新增食譜特有、書庫用不到的部分。
+     ============================================================ */
+  /* 食譜照片：跟書封的直式比例不同，用比較接近成品照片的橫式比例 */
+  .recipe-cover { aspect-ratio: 4 / 3; }
+  .cover-preview.recipe-cover { width: 130px; height: 98px; }
+
+  /* 食材／做法：可新增、刪除、上移／下移排序的清單列 */
+  .dynamic-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .dynamic-row { display: flex; align-items: flex-start; gap: 8px; }
+  .dynamic-row-num {
+    flex-shrink: 0; width: 22px; height: 38px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text3); font-weight: 600;
+  }
+  .dynamic-row input[type="text"] {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; height: 38px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px;
+  }
+  .dynamic-row .ing-name { flex: 1.4; min-width: 0; }
+  .dynamic-row .ing-amount { flex: 1; min-width: 0; }
+  .dynamic-row textarea.step-text {
+    flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 8px 10px; color: var(--text); background: var(--surface); font-family: inherit;
+    font-size: 14px; resize: vertical; min-height: 38px;
+  }
+  .dynamic-row-actions { display: flex; gap: 2px; flex-shrink: 0; padding-top: 2px; }
+  .dynamic-row-actions .icon-btn:disabled { opacity: 0.3; cursor: default; }
+  .dynamic-row-actions .icon-btn:disabled:hover { background: transparent; }
+
+  /* 三組獨立星等（製作快樂度／用腦費工程度／成品評分）排在同一列，手機自動換行 */
+  .field textarea {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px; resize: vertical;
+  }
+  .field-hint { font-size: 12.5px; color: var(--text3); margin: -4px 0 8px; line-height: 1.5; }
+
+  /* ============================================================
+     食材群組編輯器（可分組：內餡／外皮／醬汁…，或完全不分組）
+     ============================================================ */
+  .ingredient-groups { display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
+  .ingredient-group {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; background: var(--surface2);
+  }
+  .ingredient-group-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .ingredient-group-name-input {
+    flex: 1; min-width: 0; border: none; border-bottom: 1px dashed var(--border); background: transparent;
+    padding: 4px 2px 6px; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--text);
+  }
+  .ingredient-group-name-input:focus { outline: none; border-bottom-color: var(--accent2); }
+  .ingredient-group-name-input::placeholder { font-weight: 400; color: var(--text3); }
+  .ingredient-item-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .ingredient-item-row { display: flex; align-items: center; gap: 8px; }
+  .ingredient-item-row input[type="text"] {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; height: 38px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px; min-width: 0;
+  }
+  .ingredient-autocomplete-wrap { position: relative; flex: 1.6; min-width: 0; }
+  .ingredient-autocomplete-wrap .ing-name { width: 100%; }
+  .ingredient-item-row .ing-amount { flex: 0.8; min-width: 0; }
+  .ingredient-item-row .ing-unit { flex: 0.7; min-width: 0; }
+  .ingredient-autocomplete-list {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); max-height: 220px; overflow-y: auto; padding: 4px;
+  }
+  .ingredient-autocomplete-item, .ingredient-autocomplete-addnew {
+    width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 9px; border: none; background: transparent; border-radius: 6px; cursor: pointer;
+    font-family: inherit; font-size: 13.5px; color: var(--text); text-align: left;
+  }
+  .ingredient-autocomplete-item:hover, .ingredient-autocomplete-item.active,
+  .ingredient-autocomplete-addnew:hover, .ingredient-autocomplete-addnew.active { background: var(--accent-light); }
+  .ingredient-autocomplete-addnew { color: var(--accent); font-weight: 600; gap: 6px; justify-content: flex-start; }
+  .ac-tag { font-size: 11px; color: var(--text3); background: var(--surface2); padding: 2px 6px; border-radius: 999px; flex-shrink: 0; }
+  .ingredient-autocomplete-empty { padding: 8px 9px; font-size: 13px; color: var(--text3); margin: 0; }
+
+  /* ============================================================
+     做法編輯器（Notion 風格區塊：步驟／小標題／注意事項／一般文字）
+     ============================================================ */
+  .step-blocks { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .step-block { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; }
+  .step-block-marker {
+    flex-shrink: 0; width: 26px; height: 38px; display: flex; align-items: center; justify-content: center;
+    color: var(--text3);
+  }
+  .step-block-num {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--accent-light); color: var(--accent);
+    font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .step-block-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .step-block-selects { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .step-type-select {
+    align-self: flex-start; border: none; background: transparent; color: var(--text3); font-family: inherit;
+    font-size: 11.5px; padding: 0 2px; cursor: pointer;
+  }
+  .step-type-select:focus { outline: none; color: var(--accent); }
+  .step-number-style-select {
+    border: none; background: transparent; color: var(--text3); font-family: inherit;
+    font-size: 11.5px; padding: 0 2px; cursor: pointer;
+  }
+  .step-number-style-select:focus { outline: none; color: var(--accent); }
+  .step-content {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 14px; resize: none;
+    overflow: hidden; line-height: 1.6;
+  }
+  .step-content:focus { outline: none; border-color: var(--accent2); }
+  .step-block-heading .step-content { font-weight: 700; font-size: 15px; border-style: dashed; }
+  .step-block-note .step-content { background: var(--red-light); border-color: #edd7d3; }
+  .step-block-note .step-block-marker { color: var(--red); }
+  .step-block-text .step-content { background: var(--surface2); }
+  .step-add-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; position: relative; }
+  .step-add-type-wrap { position: relative; }
+  .step-type-menu {
+    position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 20; min-width: 150px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 4px; display: flex; flex-direction: column; gap: 2px;
+  }
+  .step-type-menu button {
+    display: flex; align-items: center; gap: 8px; padding: 8px 9px; border: none; background: transparent;
+    border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13.5px; color: var(--text); text-align: left;
+  }
+  .step-type-menu button:hover { background: var(--accent-light); }
+
+  /* ============================================================
+     食譜詳情頁（唯讀瀏覽）
+     ============================================================ */
+  .detail-header-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: flex-start; }
+  .recipe-detail-card { display: flex; flex-direction: column; gap: 4px; }
+  .recipe-detail-top { display: flex; gap: 20px; margin-bottom: 8px; flex-wrap: wrap; align-items: stretch; }
+  .recipe-detail-cover { flex-shrink: 0; width: 200px; height: 150px; }
+
+  /* 頂部資訊改成 4 欄 × 2 排的表格式排版：
+     第一排 建立日期／準備時間／製作時間／總時間，第二排 份量／人／製作快樂度／用腦費工／成品評分，
+     用 grid 讓上下兩排的欄位寬度完全對齊，不會像 flex-wrap 那樣忽大忽小。 */
+  .recipe-detail-stats {
+    flex: 1; min-width: 260px; display: grid; grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface2);
+  }
+  .recipe-detail-stat {
+    position: relative; padding: 10px 14px;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px; justify-content: center;
+  }
+  .recipe-detail-stat:nth-child(4n) { border-right: none; }
+  .recipe-detail-stat:nth-last-child(-n+4) { border-bottom: none; }
+  .recipe-detail-stat-label { font-size: 11.5px; color: var(--text3); }
+  .recipe-detail-stat-value { font-size: 14px; font-weight: 700; color: var(--text); }
+  .recipe-detail-stat .detail-stars { font-size: 14px; }
+  /* 準備時間 + 製作時間 = 總時間：運算符號用小圓點疊在格線上，不佔用獨立欄位，才能維持 4 欄對齊 */
+  .recipe-detail-stat-with-op { padding-left: 20px; }
+  .recipe-detail-stat-op {
+    position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--text3); z-index: 1;
+  }
+  @media (max-width: 640px) {
+    .recipe-detail-stats { grid-template-columns: repeat(2, 1fr); }
+    .recipe-detail-stat:nth-child(4n) { border-right: 1px solid var(--border); }
+    .recipe-detail-stat:nth-child(2n) { border-right: none; }
+    .recipe-detail-stat:nth-last-child(-n+4) { border-bottom: 1px solid var(--border); }
+    .recipe-detail-stat:nth-last-child(-n+2) { border-bottom: none; }
+  }
+  /* 食譜卡片上的份量／時間小標籤 */
+  .recipe-card-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; color: var(--text3);
+  }
+  .recipe-card-chip i { font-size: 12px; }
+  .detail-stars { display: inline-flex; gap: 2px; font-size: 15px; color: #d8d8d8; }
+  .detail-stars i.filled, .detail-stars i:not(.empty) { color: var(--accent2); }
+
+  .detail-ingredient-groups { display: flex; flex-direction: column; gap: 16px; }
+  .detail-ingredient-group { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .detail-ingredient-group-name {
+    background: var(--accent2-light); color: var(--accent2); font-weight: 700; font-size: 13px;
+    padding: 8px 14px;
+  }
+  .detail-ing-list {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0; padding: 4px 14px;
+  }
+  .detail-ingredient-group .detail-ing-list { padding: 6px 14px; }
+  /* 每一欄之間用網站既有的邊框色畫一條直線分隔（取代手繪紅線），
+     欄數依螢幕寬度調整，分隔線只出現在「非該排第一欄」的位置 */
+  .detail-ing-row:not(:nth-child(4n+1)) { border-left: 1px solid var(--border); padding-left: 16px; }
+  @media (max-width: 900px) {
+    .detail-ing-list { grid-template-columns: repeat(2, 1fr); }
+    .detail-ing-row:not(:nth-child(4n+1)) { border-left: none; padding-left: 0; }
+    .detail-ing-row:not(:nth-child(2n+1)) { border-left: 1px solid var(--border); padding-left: 16px; }
+  }
+  @media (max-width: 560px) {
+    .detail-ing-list { grid-template-columns: 1fr; }
+    .detail-ing-row:not(:nth-child(2n+1)) { border-left: none; padding-left: 0; }
+  }
+  .detail-ing-row {
+    /* 份量／單位改成緊跟在食材名稱後面（大幅往左靠），
+       不再用 space-between 把它推到跟右邊欄位太近的地方 */
+    display: flex; align-items: baseline; justify-content: flex-start; gap: 10px;
+    font-size: 14px; padding: 7px 16px 7px 0; border-bottom: 1px dashed var(--border);
+  }
+  .detail-ing-name { color: var(--text); }
+  .detail-ing-amount { color: var(--text3); flex-shrink: 0; white-space: nowrap; }
+
+  .detail-step-list { display: flex; flex-direction: column; gap: 10px; }
+  .detail-step-block { display: flex; gap: 10px; }
+  /* 步驟本身的圓圈數字對齊到內容區塊頂端（因為底下可能還有字母子項目列表）；
+     單行的注意事項／一般文字則置中對齊，圖示才不會偏高，跟文字對不齊 */
+  .detail-step-block-step { align-items: flex-start; }
+  .detail-step-block p { margin: 0; line-height: 1.7; white-space: pre-wrap; }
+  .detail-step-num {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .detail-step-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .detail-step-heading { font-size: 15px; font-weight: 700; margin: 6px 0 0; }
+  .detail-step-block-note {
+    align-items: center;
+    background: var(--red-light); border-radius: var(--radius); padding: 10px 12px; color: var(--red);
+  }
+  .detail-step-block-note i { flex-shrink: 0; }
+  .detail-step-text { margin: 0; line-height: 1.7; white-space: pre-wrap; color: var(--text2); }
+  /* 出現在第一個「步驟」之前的小標題／注意事項／一般文字，如果有選編號樣式，前面顯示這個小標記 */
+  .detail-leading-marker { display: inline-block; min-width: 16px; margin-right: 6px; font-size: 12px; font-weight: 700; color: var(--text3); }
+
+  /* 巢狀子步驟（緊接在某個步驟後面的小標題／注意事項／一般文字），
+     用字母 a. b. c... 呈現，仿照 Notion 的巢狀編號清單 */
+  .detail-substep-list {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-left: 2px; padding-left: 14px; border-left: 2px solid var(--border);
+  }
+  .detail-substep-row { display: flex; align-items: center; gap: 8px; }
+  .detail-substep-row p { margin: 0; line-height: 1.7; white-space: pre-wrap; color: var(--text2); }
+  .detail-substep-letter { flex-shrink: 0; min-width: 16px; font-size: 12px; font-weight: 700; color: var(--text3); }
+  .detail-substep-note {
+    color: var(--red);
+  }
+  .detail-substep-note .detail-substep-letter { color: var(--red); }
+  .detail-substep-note-box { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+  .detail-substep-note-box i { flex-shrink: 0; color: var(--red); }
+  .detail-substep-note-box p { margin: 0; color: var(--red); }
+  .detail-substep-heading p { font-weight: 700; color: var(--text); }
+
+  .detail-source { margin: 0; line-height: 1.7; word-break: break-all; }
+  /* 參考影片／網址連結改用網站主色，取代瀏覽器預設的藍色 */
+  .detail-source-link { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .detail-source-link:hover { color: var(--accent2); }
+  .detail-notes { margin: 0; line-height: 1.7; white-space: pre-wrap; }
+  .detail-empty-hint { color: var(--text3); font-size: 13px; margin: 0; }
+  .module-placeholder h2 { font-size: 20px; color: var(--text); }
+  .module-placeholder p { max-width: 420px; font-size: 14px; line-height: 1.7; margin: 0; }
+
+  /* 「心得紀錄」等輸入時自動長高的 textarea：關掉手動縮放與捲軸，
+     改由 JS 依內容量測高度撐開 */
+  .autosize-textarea { resize: none; overflow: hidden; }
+
+  /* 製作時間：改成像鬧鐘一樣選小時／分鐘，取代原本要手打文字的做法 */
+  .time-picker-field { display: flex; align-items: center; gap: 6px; }
+  .time-picker-field select.time-select { flex: 1; min-width: 0; }
+  .time-picker-field .time-unit { font-size: 12.5px; color: var(--text2); flex-shrink: 0; }
+
+  /* 食譜標籤挑選器（表單內）：沿用 .tag-chip，可點選切換是否套用在這道食譜上 */
+  .tag-picker-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .tag-chip.pickable { user-select: none; }
+  .tag-chip.pickable.selected { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .tag-picker-add { display: flex; align-items: center; gap: 8px; }
+  .tag-picker-add input[type="text"] {
+    flex: 1; border: 1px solid var(--border); border-radius: 999px; padding: 7px 16px;
+    font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface);
+  }
+  .tag-picker-add input[type="text"]:focus { outline: none; border-color: var(--accent2); }
+
+  /* 食材／做法：貼上文字快速匯入面板 */
+  .import-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .import-panel {
+    margin-top: 10px; padding: 12px 14px; border: 1px dashed var(--border); border-radius: var(--radius);
+    background: var(--surface2);
+  }
+  .import-textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px;
+    color: var(--text); background: var(--surface); font-family: inherit; font-size: 13.5px;
+    resize: vertical; line-height: 1.6; margin-top: 6px;
+  }
+  .import-textarea:focus { outline: none; border-color: var(--accent2); }
+  .import-panel-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+
+  /* 列印模式：隱藏左側 App 切換列、側邊欄、頂部工具列，只列印主要內容 */
+  @media print {
+    .app-switcher, .sidebar, .topbar-desktop { display: none !important; }
+    .app-shell { display: block; }
+    .content-col { display: block; }
+    .main { max-width: none; padding: 0; }
+  }
