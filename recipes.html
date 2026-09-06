@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#b8621d">
 <title>食譜 · 我的書齋</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="shared.css?v=20260906c">
+<link rel="stylesheet" href="shared.css?v=20260906d">
 </head>
 <body>
 
@@ -363,27 +363,27 @@
               </div>
 
               <div class="notes-section" id="recipe-detail-tags-section" hidden>
-                <span class="field-label">食譜標籤</span>
+                <span class="field-label detail-section-label">食譜標籤</span>
                 <div class="tag-chip-list" id="recipe-detail-tags"></div>
               </div>
 
               <div class="notes-section">
-                <span class="field-label">食材</span>
+                <span class="field-label detail-section-label">食材</span>
                 <div class="detail-ingredient-groups" id="recipe-detail-ingredients"></div>
               </div>
 
               <div class="notes-section">
-                <span class="field-label">做法</span>
+                <span class="field-label detail-section-label">做法</span>
                 <div class="detail-step-list" id="recipe-detail-steps"></div>
               </div>
 
               <div class="notes-section" id="recipe-detail-source-section" hidden>
-                <span class="field-label">參考來源</span>
+                <span class="field-label detail-section-label">參考來源</span>
                 <p class="detail-source" id="recipe-detail-source"></p>
               </div>
 
               <div class="notes-section" id="recipe-detail-notes-section" hidden>
-                <span class="field-label">心得紀錄</span>
+                <span class="field-label detail-section-label">心得紀錄</span>
                 <p class="detail-notes" id="recipe-detail-notes"></p>
               </div>
 
@@ -407,7 +407,7 @@
       db, storage,
       $, wireLoginScreen, watchAuth, renderAppSwitcher, initIconSystem,
       escapeHtml, orderNames, renderManagePillRow, wireManagePillRow, enablePointerReorder
-    } from "./shared.js?v=20260906c";
+    } from "./shared.js?v=20260906d";
     import {
       collection, doc, setDoc, deleteDoc, query, where, onSnapshot, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
