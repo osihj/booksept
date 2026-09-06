@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>日記批次匯入工具</title>
+<title>日記內容補更新工具</title>
 <style>
   body { font-family: "Noto Sans TC", sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #2c2a27; }
   h1 { font-size: 22px; }
   .card { border: 1px solid rgba(0,0,0,.1); border-radius: 12px; padding: 20px; margin-top: 16px; }
-  button { background: #b8621d; color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; cursor: pointer; }
+  button { background: #b8621d; color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; cursor: pointer; margin-right: 8px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
   #log { white-space: pre-wrap; font-size: 13px; background: #f7f5f2; border-radius: 8px; padding: 12px; margin-top: 14px; max-height: 360px; overflow: auto; }
   input[type=file] { margin: 10px 0; }
@@ -17,27 +17,27 @@
 <body>
 
   <div id="login-screen">
-    <h1>日記批次匯入工具</h1>
-    <p>請先用你的帳號登入，才能寫入你的日記資料庫。</p>
+    <h1>日記補更新工具</h1>
+    <p>請先用你的帳號登入，才能更新你的日記資料庫。</p>
     <button id="google-login-btn" type="button">使用 Google 登入</button>
     <p id="login-error" class="login-error" hidden></p>
   </div>
 
   <div id="app" hidden>
-    <h1>日記批次匯入工具</h1>
+    <h1>日記內容補更新工具</h1>
     <div class="card">
-      <p>1. 選擇用 <code>notion_to_diary.py</code> 轉好的 <code>diary_import.json</code></p>
+      <p>1. 選擇包含內文的 <code>diary_import.json</code> 檔案：</p>
       <input type="file" id="file-input" accept="application/json">
       <p id="file-summary"></p>
-      <p>2. 確認筆數沒問題後，按下方按鈕開始匯入（會直接寫進你目前登入帳號的日記資料庫）：</p>
-      <button id="import-btn" disabled>開始匯入</button>
+      <p>2. 點擊下方按鈕，系統會搜尋資料庫中**相同標題**的日記，並自動將內文補填進去：</p>
+      <button id="update-btn" disabled>依標題比對並更新內文</button>
       <div id="log"></div>
     </div>
   </div>
 
   <script type="module">
     import { db, $, wireLoginScreen, watchAuth } from "./shared.js?v=20260906f";
-    import { collection, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { collection, query, where, getDocs, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
     wireLoginScreen();
     let entries = [];
@@ -58,42 +58,59 @@
         const text = await file.text();
         entries = JSON.parse(text);
         if (!Array.isArray(entries)) throw new Error("檔案格式不對，應該是一個陣列");
-        $("file-summary").textContent = `讀取到 ${entries.length} 篇日記，準備匯入。`;
-        $("import-btn").disabled = entries.length === 0;
+        $("file-summary").textContent = `讀取到 ${entries.length} 篇 JSON 資料。`;
+        $("update-btn").disabled = entries.length === 0;
       } catch (err) {
         $("file-summary").textContent = "讀取失敗：" + err.message;
-        $("import-btn").disabled = true;
+        $("update-btn").disabled = true;
       }
     });
 
-    $("import-btn").addEventListener("click", async () => {
+    $("update-btn").addEventListener("click", async () => {
       if (!currentUser) { alert("尚未登入"); return; }
-      $("import-btn").disabled = true;
-      $("log").textContent = "";
-      let ok = 0, fail = 0;
+      $("update-btn").disabled = true;
+      $("log").textContent = "開始自動比對與更新...\n";
+      
+      let ok = 0, fail = 0, skipped = 0;
+
       for (const e of entries) {
+        if (!e.title || !e.content) {
+          skipped++;
+          continue;
+        }
+
         try {
-          if (!e.date) { log(`⚠️ 略過「${e.title || "未命名"}」：沒有有效日期，請手動新增`); fail++; continue; }
-          const ref = doc(collection(db, "diaryEntries"));
-          await setDoc(ref, {
-            uid: currentUser.uid,
-            title: e.title || "未命名日記",
-            date: e.date,
-            category: e.category || "未分類",
-            tags: Array.isArray(e.tags) ? e.tags : [],
-            content: e.content || "",
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
-          ok++;
-          log(`✅ ${e.date} 《${e.title}》`);
+          // 搜尋 Firestore 中屬於目前使用者且標題相同的日記
+          const q = query(
+            collection(db, "diaryEntries"),
+            where("uid", "==", currentUser.uid),
+            where("title", "==", e.title.strip ? e.title.strip() : e.title)
+          );
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            log(`⚠️ 找不到標題匹配項：《${e.title}》`);
+            skipped++;
+            continue;
+          }
+
+          // 對匹配到的所有紀錄補更新 content 內容
+          for (const docSnap of querySnapshot.docs) {
+            await updateDoc(doc(db, "diaryEntries", docSnap.id), {
+              content: e.content,
+              updatedAt: serverTimestamp()
+            });
+            ok++;
+            log(`✅ 已成功補上內文：《${e.title}》`);
+          }
         } catch (err) {
           fail++;
-          log(`❌ 《${e.title}》失敗：${err.message}`);
+          log(`❌ 更新《${e.title}》失敗：${err.message}`);
         }
       }
-      log(`\n匯入完成：成功 ${ok} 篇，失敗/略過 ${fail} 篇。`);
-      $("import-btn").disabled = false;
+
+      log(`\n補更新完成：成功補更新 ${ok} 筆內容，失敗 ${fail} 筆，略過 ${skipped} 筆。`);
+      $("update-btn").disabled = false;
     });
   </script>
 </body>
