@@ -47,9 +47,13 @@
   .diary-entry-event i { font-size: 11px; }
   .diary-entry-tags { margin-top: 7px; display: flex; gap: 6px; flex-wrap: wrap; }
 
-  /* ---- 詳情頁「事件／分類」並排對齊：跟表單的兩欄排版呼應 ---- */
-  .diary-detail-meta-row { display: flex; gap: 32px; flex-wrap: wrap; }
-  .diary-detail-meta-row .notes-section { margin-bottom: 14px; }
+  /* ---- 詳情頁：分類／事件／標籤 收進標題列右上角的小徽章列，取代原本一條條的欄位 ---- */
+  .diary-detail-header { align-items: flex-start; }
+  .diary-detail-header-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .diary-detail-pills { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; max-width: 360px; }
+  .diary-detail-pills .diary-entry-cat,
+  .diary-detail-pills .diary-entry-event,
+  .diary-detail-pills .tag-chip { font-size: 12px; }
 
   /* ---- 日期＋標題堆疊 ／ 分類＋標籤 的表單排版：日期／標題／分類／標籤統一固定寬度 360px ---- */
   .diary-date-title-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
@@ -89,8 +93,10 @@
   /* 富文字內容的顯示樣式：日記表單編輯區、日記詳情頁的內容都套用同一組，確保排版一致 */
   .rte-content h4 { font-size: 15px; font-weight: 700; margin: 14px 0 6px; }
   .rte-content h4:first-child { margin-top: 0; }
-  .rte-content p { margin: 0 0 8px; }
+  .rte-content p { margin: 0 0 4px; line-height: 1.75; }
   .rte-content p:last-child { margin-bottom: 0; }
+  .rte-content p:empty,
+  .rte-content p:has(> br:only-child) { margin: 0 0 4px; min-height: 1.75em; }
   .rte-content ul, .rte-content ol { margin: 6px 0 10px; padding-left: 22px; }
   .rte-content b, .rte-content strong { font-weight: 700; }
   .rte-content i, .rte-content em { font-style: italic; }
@@ -395,36 +401,22 @@
 
           <!-- 日記詳情（唯讀瀏覽用；點列表卡片、月曆當天清單、或新增/編輯儲存後都會進到這裡，要修改請按「編輯」） -->
           <section id="page-diary-detail" class="page">
-            <div class="shelf-header">
+            <div class="shelf-header diary-detail-header">
               <div>
                 <div class="shelf-eyebrow2">DIARY</div>
                 <h1 id="diary-detail-title">日記標題</h1>
                 <p class="shelf-sub" id="diary-detail-date">—</p>
               </div>
-              <div class="detail-header-actions">
-                <button type="button" class="btn btn-ghost btn-sm" id="diary-detail-back-btn"><i class="ti ti-arrow-left"></i> 返回列表</button>
-                <button type="button" class="btn btn-accent-outline btn-sm" id="diary-detail-edit-btn"><i class="ti ti-edit"></i> 編輯</button>
+              <div class="diary-detail-header-side">
+                <div class="detail-header-actions">
+                  <button type="button" class="btn btn-ghost btn-sm" id="diary-detail-back-btn"><i class="ti ti-arrow-left"></i> 返回列表</button>
+                  <button type="button" class="btn btn-accent-outline btn-sm" id="diary-detail-edit-btn"><i class="ti ti-edit"></i> 編輯</button>
+                </div>
+                <div class="diary-detail-pills" id="diary-detail-pills"></div>
               </div>
             </div>
 
             <div class="card">
-              <div class="diary-detail-meta-row">
-                <div class="notes-section" id="diary-detail-event-section" hidden>
-                  <span class="field-label detail-section-label">事件</span>
-                  <p class="detail-notes" id="diary-detail-event">—</p>
-                </div>
-
-                <div class="notes-section">
-                  <span class="field-label detail-section-label">分類</span>
-                  <p class="detail-notes" id="diary-detail-category">未分類</p>
-                </div>
-              </div>
-
-              <div class="notes-section" id="diary-detail-tags-section" hidden>
-                <span class="field-label detail-section-label">標籤</span>
-                <div class="tag-chip-list" id="diary-detail-tags"></div>
-              </div>
-
               <div class="notes-section">
                 <span class="field-label detail-section-label">日記</span>
                 <div class="detail-notes rte-content" id="diary-detail-content"></div>
@@ -1167,13 +1159,16 @@
       $("diary-detail-title").textContent = e.title || "未命名日記";
       const dateObj = parseDiaryDate(e.date);
       $("diary-detail-date").textContent = dateObj ? formatDiaryDateLabel(dateObj) : (e.date || "—");
-      $("diary-detail-category").textContent = getEntryCategory(e);
+      const catName = getEntryCategory(e);
+      const catColor = getCategoryColor(catName);
+      const catStyle = catColor ? ` style="background:${hexToRgba(catColor, 0.14)};color:${catColor}"` : "";
       const eventName = getEntryEvent(e);
-      $("diary-detail-event-section").hidden = !eventName;
-      $("diary-detail-event").textContent = eventName || "—";
       const tags = getEntryTags(e);
-      $("diary-detail-tags-section").hidden = !tags.length;
-      $("diary-detail-tags").innerHTML = tags.map((t) => `<span class="tag-chip"${tagChipStyle(t)}>#${escapeHtml(t)}</span>`).join("");
+      $("diary-detail-pills").innerHTML = `
+        <span class="diary-entry-cat"${catStyle}>${escapeHtml(catName)}</span>
+        ${eventName ? `<span class="diary-entry-event"><i class="ti ti-star-filled"></i>${escapeHtml(eventName)}</span>` : ""}
+        ${tags.map((t) => `<span class="tag-chip"${tagChipStyle(t)}>#${escapeHtml(t)}</span>`).join("")}
+      `;
       $("diary-detail-content").innerHTML = e.content || "";
     }
     function showEntryDetail(e) {
