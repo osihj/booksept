@@ -269,6 +269,11 @@ export const ICONS = {
   "arrow-left": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>`,
   edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L18.5 9.5a1.5 1.5 0 000-2.12l-1.88-1.88a1.5 1.5 0 00-2.12 0L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>`,
   heading: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5v14"/><path d="M19 5v14"/><path d="M5 12h14"/></svg>`,
+  // 日記「日記」欄位格式工具列用：粗體／斜體。跟 heading／list 同一套風格
+  // （stroke-width 2、圓角端點），只是這兩個字母本身的線條比較細，統一比照
+  // Tabler icons 慣用的畫法。
+  bold: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5h6a3.5 3.5 0 010 7H7z"/><path d="M7 12h7a3.5 3.5 0 010 7H7z"/></svg>`,
+  italic: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 4.5h6"/><path d="M6.5 19.5h6"/><path d="M14.5 4.5l-4 15"/></svg>`,
   "alert-triangle": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5l9 15.5H3z"/><path d="M12 10v4"/><path d="M12 17.2h.01"/></svg>`,
   "align-left": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h13"/></svg>`,
   "list-numbers": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4.5 4.5v3"/><path d="M4 7.3h1"/><path d="M4.1 11.2c.4-.5 1.4-.5 1.6.1.2.5-.1.8-.5 1l-1.1.9h1.7"/><path d="M4.1 16.9h1.4c.5 0 .6.6.2.9l-1.5 1.1h1.6"/></svg>`,
