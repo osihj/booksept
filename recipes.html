@@ -740,8 +740,10 @@
         badge.style.background = hexToRgba(color, 0.14);
         badge.style.color = color;
       } else {
-        badge.style.background = "";
-        badge.style.color = "";
+        // 無色狀態要用中性灰，不能讓它退回主題色（accent 綠），
+        // 不然清除後跟「選了跟主題色相近的預設色」看起來會一樣，分不出來到底有沒有清除
+        badge.style.background = "var(--surface2)";
+        badge.style.color = "var(--text2)";
       }
     }
     function injectCategoryColorPicker(row, name) {
@@ -751,15 +753,18 @@
       applyCategoryBadgeColor(row, current);
       const picker = document.createElement("div");
       picker.className = "category-color-picker";
-      picker.innerHTML = CATEGORY_COLOR_PRESETS.map((c) =>
+      picker.innerHTML = `<button type="button" class="color-swatch-none${current ? "" : " active"}" data-color="" title="清除顏色（恢復預設）"><i class="ti ti-x"></i></button>` +
+        CATEGORY_COLOR_PRESETS.map((c) =>
         `<button type="button" class="color-swatch-btn${current === c ? " active" : ""}" data-color="${c}" style="background:${c}" title="套用這個顏色"></button>`
       ).join("") + `<span class="color-swatch-custom-wrap" title="自訂顏色（可用滴管工具）"><i class="ti ti-color-picker"></i><input type="color" class="color-swatch-custom" value="${current || "#9c968f"}"></span>`;
       countEl.before(picker);
       function selectColor(color) {
         setCategoryColor(name, color);
         applyCategoryBadgeColor(row, color);
-        picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", b.dataset.color.toLowerCase() === color.toLowerCase()));
+        picker.querySelector(".color-swatch-none").classList.toggle("active", !color);
+        picker.querySelectorAll(".color-swatch-btn").forEach((b) => b.classList.toggle("active", !!color && b.dataset.color.toLowerCase() === color.toLowerCase()));
       }
+      picker.querySelector(".color-swatch-none").addEventListener("click", () => selectColor(""));
       picker.querySelectorAll(".color-swatch-btn").forEach((btn) => {
         btn.addEventListener("click", () => selectColor(btn.dataset.color));
       });
