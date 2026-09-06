@@ -401,8 +401,23 @@
   #recipe-grid.view-list .book-title { flex: 1; min-width: 0; }
   #recipe-grid.view-list .book-author {
     flex-shrink: 0; width: auto; margin: 0 0 0 auto;
-    font-size: 13px; color: var(--text2);
+    font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 10px;
+    background: var(--cat-bg, var(--surface2)); color: var(--cat-color, var(--text2));
+    border: 1px solid var(--cat-border, var(--border)); white-space: nowrap;
   }
+  /* 食譜分類管理：顏色選擇器（5 個基本色 ＋ 1 個滴管／自訂顏色） */
+  .category-color-picker { display: flex; align-items: center; gap: 6px; margin-right: 10px; }
+  .color-swatch-btn {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; padding: 0; box-shadow: 0 0 0 1px rgba(44,42,39,0.12) inset;
+  }
+  .color-swatch-btn.active { border-color: var(--text); }
+  .color-swatch-custom {
+    width: 18px; height: 18px; padding: 0; border: none; border-radius: 50%;
+    overflow: hidden; cursor: pointer; background: none;
+  }
+  .color-swatch-custom::-webkit-color-swatch-wrapper { padding: 0; }
+  .color-swatch-custom::-webkit-color-swatch { border: 1px dashed var(--text3); border-radius: 50%; }
   .book-card { position: relative; }
   .book-select {
     position: absolute; top: 10px; left: 10px; width: 16px; height: 16px;
